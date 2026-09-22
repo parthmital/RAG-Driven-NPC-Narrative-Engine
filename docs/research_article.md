@@ -1,10 +1,10 @@
 # Memory and State Control for LLM-Driven NPC Dialogue: A Controlled Comparison of Dual-Tier Memory and Pre-Commit Invariant Validation against Rolling-Context, Vector-Memory, and Generic RAG Agents
 
-Source Code Repository: [https://github.com/parthmital/LLM-Game](https://github.com/parthmital/LLM-Game)
+Source Code Repository: [https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine](https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine)
 
 ## Abstract
 
-Large Language Models (LLMs) allow Non-Player Characters (NPCs) in interactive fiction to hold open-ended conversations, but three problems limit their use in games: facts established early in a session are forgotten as dialogue grows, model-proposed world changes break symbolic game rules (illegal moves, fabricated items, unbounded trust shifts), and per-turn cost and latency grow with context length. This article presents _The Obsidian Flask_, an NPC dialogue engine that separates language generation from state control. It combines (i) a dual-tier memory, an 8-turn short-term buffer plus a 384-dimensional FAISS store with location- and NPC-scoped retrieval and a relaxation fallback, with (ii) an event-sourced world state in which every LLM-proposed mutation passes a pre-commit invariant-validation barrier before a pure reducer applies it. The central question is not whether the system works in its own world but whether its two mechanisms, memory tiering and state control, outperform independent baselines and whether each contributes separately. We therefore specify a controlled comparison against three independent baseline agents (rolling-context, vector-memory, and generic RAG), a full-history reference, and a 2 x 2 factorial crossing of memory architecture with state control, plus seven single-component ablations. Evaluation spans long-horizon sessions of 50, 100 and 200 turns and 7 categories of adversarial invariant probes across four worlds that differ in authorship, genre, and scale (8 to 128 locations), including worlds converted from the externally authored LIGHT corpus and procedurally generated worlds. We report factual recall by fact-age, invariant violations measured by an oracle independent of the system's own validator, retrieval MRR and Recall@k, latency percentiles, token cost, and state-replay consistency, with bootstrap confidence intervals and pre-registered hypotheses. Quantitative results from the protocol are reported in Section 13; cells not yet populated by the evaluation harness are marked as pending rather than estimated.
+Large Language Models (LLMs) allow Non-Player Characters (NPCs) in interactive fiction to hold open-ended conversations, but three problems limit their use in games: facts established early in a session are forgotten as dialogue grows, model-proposed world changes break symbolic game rules (illegal moves, fabricated items, unbounded trust shifts), and per-turn cost and latency grow with context length. This article presents _The Obsidian Flask_, an NPC dialogue engine that separates language generation from state control. It combines (i) a dual-tier memory, an 8-turn short-term buffer plus a 384-dimensional FAISS store with location- and NPC-scoped retrieval and a relaxation fallback, with (ii) an event-sourced world state in which every LLM-proposed mutation passes a pre-commit invariant-validation barrier before a pure reducer applies it. The central question is not whether the system works in its own world but whether its two mechanisms, memory tiering and state control, outperform independent baselines and whether each contributes separately. We therefore specify a controlled comparison against three independent baseline agents (rolling-context, vector-memory, and generic RAG), a full-history reference, and a $2 \times 2$ factorial crossing of memory architecture with state control, plus seven single-component ablations. Evaluation spans long-horizon sessions of 50, 100 and 200 turns and 7 categories of adversarial invariant probes across four worlds that differ in authorship, genre, and scale (8 to 128 locations), including worlds converted from the externally authored LIGHT corpus and procedurally generated worlds. We report factual recall by fact-age, invariant violations measured by an oracle independent of the system's own validator, retrieval MRR and Recall@k, latency percentiles, token cost, and state-replay consistency, with bootstrap confidence intervals and pre-registered hypotheses. Quantitative results from the protocol are reported in Section 13; cells not yet populated by the evaluation harness are marked as pending rather than estimated.
 
 # 1. Choosing the Research Topic
 
@@ -247,7 +247,7 @@ Hypotheses are stated before running the full evaluation. Each is tested against
 - H3 (State control): The validation barrier reduces oracle-detected committed violations relative to the same system without it, on both normal sessions and adversarial probes.
 - H4 (Cost of control): The barrier's false-rejection rate on legitimate twins is at most 5%, and its added local latency is under 5 ms per turn at P95.
 - H5 (Replay): Replaying the event log from the seed, with or without snapshots, reproduces the live state in 100% of sessions for event-sourced conditions; baselines that mutate state directly without an event log cannot be replayed exactly.
-- H6 (Separability): In the 2 x 2 factorial, the memory factor mainly affects recall, and the control factor mainly affects violations, with small interaction.
+- H6 (Separability): In the $2 \times 2$ factorial, the memory factor mainly affects recall, and the control factor mainly affects violations, with small interaction.
 - H7 (Generalisation): The direction of the H1 and H3 effects holds on held-out worlds W2 to W4.
 
 A hypothesis is supported only if its effect is significant after correction (Section 12) and its sign is consistent across worlds. Results contrary to a hypothesis are reported as such.
@@ -271,7 +271,9 @@ The world at turn $t$ is $S_t = (L, C, O, F, R, t)$: locations with adjacency se
 
 An event is $e = (\text{id}, t, \text{type}, \text{payload}, \text{timestamp})$. State evolves by a pure reducer ([reducer.py](../Backend/core/reducer.py)):
 
-$$S_{t+1} = \delta(S_t, e_t), \qquad S_T = \text{foldl}(\delta, S_0, [e_0, \dots, e_{T-1}])$$
+$$
+S_{t+1} = \delta(S_t, e_t), \qquad S_T = \operatorname{foldl}(\delta, S_0, [e_0, \dots, e_{T-1}])
+$$
 
 Snapshots every 16 turns bound recovery to loading the latest snapshot and folding the remaining suffix. Replay consistency is therefore expected by construction for the reducer; Section 12 tests it empirically, including across process restarts and against snapshot-plus-suffix reconstruction, because implementation defects (non-deterministic iteration order, timestamps inside state, floating-point effects) can break construction-level guarantees.
 
@@ -373,7 +375,7 @@ For conditions without the validation barrier, proposed updates that parse again
 All baselines are independent implementations that do not reuse the proposed system's retrieval code.
 
 - B0, Full history (reference): entire dialogue history in the prompt, truncated only at the backbone's context limit. An upper-bound reference for recall and a worst case for cost.
-- B1, Rolling context: the most recent turns that fit a fixed token budget $B$. Evaluated at two budgets: $B$ matched to the proposed system's mean prompt size, and $2B$.
+- B1, Rolling context: the most recent turns that fit a fixed token budget $B$. Evaluated at two budgets: $B$ matched to the proposed system's mean prompt size, and ${2B}$.
 - B2, Vector-memory agent: every turn summary embedded into a flat store; top-$k$ by cosine similarity with no scoping and no short-term buffer, following the flat vector memory pattern common in agent frameworks.
 - B3, Generic RAG agent: raw dialogue chunks plus world lore documents indexed together; top-$k$ chunks retrieved per turn with a standard RAG template (Lewis et al., 2020), no scoping, no event log.
 - B4, Scripted FSM (reference only): a hand-written dialogue tree for W1, used to anchor the integrity and latency floor. It is not comparable on open-ended input and is excluded from hypothesis tests.
@@ -397,7 +399,7 @@ Where feasible, an LLM-managed memory baseline in the style of MemGPT (Packer et
 - A6: no event sourcing (in-place state mutation, validator kept).
 - A7: no snapshots (full replay on recovery).
 
-Sensitivity sweeps: buffer size {4, 8, 16}, $k$ {3, 6, 12}, fallback threshold {0, 3, 6}, on W1 and W2 only.
+Sensitivity sweeps: buffer size $\{4, 8, 16\}$, $k \in \{3, 6, 12\}$, fallback threshold $\in \{0, 3, 6\}$, on W1 and W2 only.
 
 ## Runs and Hardware
 
@@ -436,14 +438,14 @@ Values are formatted as mean [95% CI] pooled over held-out worlds W2 to W4 unles
 
 ## Table 1: Main Comparison (Held-Out Worlds)
 
-| Condition                | Recall, age 20+ | Committed violations per 100 transitions | Probe attack success | MRR@6   | P50 / P95 latency (ms) | Input tokens per turn | Replay consistency |
-| ------------------------ | --------------- | ---------------------------------------- | -------------------- | ------- | ---------------------- | --------------------- | ------------------ |
-| B0 Full history          | Pending         | Pending                                  | Pending              | n/a     | Pending                | Pending               | Pending            |
-| B1 Rolling context, $B$  | Pending         | Pending                                  | Pending              | n/a     | Pending                | Pending               | Pending            |
-| B1 Rolling context, $2B$ | Pending         | Pending                                  | Pending              | n/a     | Pending                | Pending               | Pending            |
-| B2 Vector memory         | Pending         | Pending                                  | Pending              | Pending | Pending                | Pending               | Pending            |
-| B3 Generic RAG           | Pending         | Pending                                  | Pending              | Pending | Pending                | Pending               | Pending            |
-| Proposed (F4)            | Pending         | Pending                                  | Pending              | Pending | Pending                | Pending               | Pending            |
+| Condition                  | Recall, age 20+ | Committed violations per 100 transitions | Probe attack success | MRR@6   | P50 / P95 latency (ms) | Input tokens per turn | Replay consistency |
+| -------------------------- | --------------- | ---------------------------------------- | -------------------- | ------- | ---------------------- | --------------------- | ------------------ |
+| B0 Full history            | Pending         | Pending                                  | Pending              | n/a     | Pending                | Pending               | Pending            |
+| B1 Rolling context, $B$    | Pending         | Pending                                  | Pending              | n/a     | Pending                | Pending               | Pending            |
+| B1 Rolling context, ${2B}$ | Pending         | Pending                                  | Pending              | n/a     | Pending                | Pending               | Pending            |
+| B2 Vector memory           | Pending         | Pending                                  | Pending              | Pending | Pending                | Pending               | Pending            |
+| B3 Generic RAG             | Pending         | Pending                                  | Pending              | Pending | Pending                | Pending               | Pending            |
+| Proposed (F4)              | Pending         | Pending                                  | Pending              | Pending | Pending                | Pending               | Pending            |
 
 ## Table 2: Recall by Fact Age
 
@@ -451,7 +453,7 @@ Values are formatted as mean [95% CI] pooled over held-out worlds W2 to W4 unles
 | ------------ | ------- | ------- | ------- | ------- | ------- | ------- |
 | B0 to B3, F4 | Pending | Pending | Pending | Pending | Pending | Pending |
 
-## Table 3: Factorial Separation (Memory x Control)
+## Table 3: Factorial Separation (Memory × Control)
 
 | Cell                        | Recall, age 20+ | Committed violations per 100 transitions | False rejection | Desync rate |
 | --------------------------- | --------------- | ---------------------------------------- | --------------- | ----------- |
