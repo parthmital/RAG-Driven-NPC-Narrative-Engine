@@ -272,7 +272,7 @@ The world at turn $t$ is $S_t = (L, C, O, F, R, t)$: locations with adjacency se
 An event is $e = (\text{id}, t, \text{type}, \text{payload}, \text{timestamp})$. State evolves by a pure reducer ([reducer.py](../Backend/core/reducer.py)):
 
 $$
-S_{t+1} = \delta(S_t, e_t), \qquad S_T = \operatorname{foldl}(\delta, S_0, [e_0, \dots, e_{T-1}])
+S_{t+1} = \delta(S_t, e_t), \qquad S_T = \text{foldl}(\delta, S_0, [e_0, \dots, e_{T-1}])
 $$
 
 Snapshots every 16 turns bound recovery to loading the latest snapshot and folding the remaining suffix. Replay consistency is therefore expected by construction for the reducer; Section 12 tests it empirically, including across process restarts and against snapshot-plus-suffix reconstruction, because implementation defects (non-deterministic iteration order, timestamps inside state, floating-point effects) can break construction-level guarantees.
