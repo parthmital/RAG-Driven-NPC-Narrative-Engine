@@ -98,7 +98,7 @@ Persistence is per session under `Backend/data/sessions/{session_id}/`: `events.
 | `GameMetadataResponse` is `schemas.world_state.WorldMetadata` | One schema for seed metadata instead of two identical models                                              |
 | Frontend DTO mapping in `stores/mappers.ts`                   | Pure, testable, and removes the mapping code that was inline in the store                                 |
 | Single Node launcher (`scripts/dev.mjs`) replacing PowerShell | Cross-platform, one entry point, lockfile-hash setup skip, fail-fast ports, crash and Ctrl+C teardown     |
-| `black` in `requirements-dev.txt`                             | Keeps a development tool out of the runtime and Docker image                                              |
+| `black` in `requirements-dev.txt`                             | Keeps a development tool out of the runtime dependencies                                                  |
 | One logging setup in `log_config.py`, Uvicorn access log off  | One format and one line per request; request and session IDs on every line, including in turn threads     |
 | Groq SDK retries off; `GroqClient` retries transient errors   | Two stacked retry loops could make nine calls; auth and bad-request errors now fail at once as `LLMError` |
 | `/session` route outside the session-guarded layout           | Load game must work from the title screen, before any session exists                                      |

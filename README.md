@@ -2,6 +2,7 @@
 
 ## Table of contents
 
+- [Screenshots](#screenshots)
 - [Quick start](#quick-start)
 - [Project overview](#project-overview)
 - [Problem statement](#problem-statement)
@@ -26,7 +27,6 @@
 - [Logging](#logging)
 - [Testing and verification](#testing-and-verification)
 - [Build process](#build-process)
-- [Docker deployment](#docker-deployment)
 - [CI or CD process](#ci-or-cd-process)
 - [Security considerations](#security-considerations)
 - [Performance considerations](#performance-considerations)
@@ -38,6 +38,32 @@
 - [Coding standards](#coding-standards)
 - [Licence](#licence)
 - [Support and contact information](#support-and-contact-information)
+
+## Screenshots
+
+Title screen with continue, new game, and load game:
+
+![Title screen](docs/screenshots/title-screen.png)
+
+Scene: the conversation, speaker selection, and the current room panel with exits and people:
+
+![Scene](docs/screenshots/scene.png)
+
+In-game menu with resume, save, load, and title screen:
+
+![Menu](docs/screenshots/menu.png)
+
+Map: every location, who is there, objects to take, and where each room leads:
+
+![Map](docs/screenshots/map.png)
+
+People: NPC mood, relationship, and trust in the player:
+
+![People](docs/screenshots/people.png)
+
+Journal: discoveries recorded as the story unfolds:
+
+![Journal](docs/screenshots/journal.png)
 
 ## Quick start
 
@@ -90,7 +116,7 @@ This project addresses that by combining:
 - Let NPCs respond through an LLM while keeping world updates constrained by code.
 - Preserve sessions on disk with snapshots, dialogue history, event logs, and memory files.
 - Provide a React UI for gameplay, world navigation, NPC relationship tracking, journal entries, and save loading.
-- Keep local development runnable with one cross-platform `npm run dev`, plus Docker files.
+- Keep local development runnable with one cross-platform `npm run dev`.
 
 ## Key features
 
@@ -106,7 +132,6 @@ This project addresses that by combining:
 - Snapshot and dialogue JSON files for auto saves and manual saves.
 - Relationship, trust, emotional state, NPC switching, location travel, inventory pickup/drop, journal, and clue linking support.
 - WebSocket endpoint for session connection, ping/pong, NPC response broadcast, and NPC switch broadcast.
-- Dockerfiles for backend and frontend, plus a `docker-compose.yml` file.
 
 ## Supported use cases
 
@@ -114,8 +139,7 @@ This project addresses that by combining:
 - Testing narrative game state changes through an event reducer.
 - Experimenting with RAG style NPC memory.
 - Running the UI against the backend through Vite proxy routes.
-- Building the frontend static bundle for nginx.
-- Running both services through Docker Compose when Docker is available.
+- Building the frontend static bundle.
 
 ## System architecture
 
@@ -176,28 +200,26 @@ The production architecture guide is [ARCHITECTURE.md](ARCHITECTURE.md). It defi
 
 Versions are taken from repository files and local verification output.
 
-| Technology            | Version or range                                        | Purpose                         | Where used                                                  | Why it is needed                                                                       |
-| --------------------- | ------------------------------------------------------- | ------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Python                | `3.11` in `Backend/Dockerfile`, local `3.11.9` verified | Backend runtime                 | `Backend`                                                   | Runs FastAPI, LangGraph, persistence, embeddings, and LLM client code                  |
-| Node.js               | `^20.19.0 or >=22.12.0`, local `24.15.0` verified       | Frontend runtime and build      | `Frontend/package.json`, `Frontend/Dockerfile`              | Required by Vite `8.1.5` and the React SWC plugin                                      |
-| FastAPI               | `>=0.111,<1.0`                                          | HTTP and WebSocket API          | `Backend/api`                                               | Provides route decorators, request validation, CORS middleware, and OpenAPI generation |
-| Pydantic              | `>=2.0,<3.0`                                            | Data validation                 | `Backend/api/schemas.py`, `Backend/schemas`                 | Defines API contracts, world state, event, and LLM output models                       |
-| LangGraph             | `>=0.2,<1.0`                                            | Turn pipeline orchestration     | `Backend/graph/definition.py`                               | Runs the fixed graph from input to output                                              |
-| Groq SDK              | `>=0.9.0`                                               | LLM provider client             | `Backend/llm/groq_client.py`                                | Sends prompts to the configured Groq model                                             |
-| Sentence Transformers | `>=2.7,<4.0`                                            | Text embeddings                 | `Backend/memory/embedder.py`                                | Converts player input and memories to vectors                                          |
-| PyTorch               | `>=2.2,<3.0`                                            | ML runtime                      | Backend embeddings                                          | Required by sentence transformers                                                      |
-| FAISS CPU             | `>=1.7,<2.0`                                            | Vector search                   | `Backend/memory/faiss_index.py`                             | Retrieves semantically similar memories                                                |
-| SQLite                | Python standard library                                 | Event store and embedding cache | `Backend/core/event_store.py`, `Backend/memory/embedder.py` | Stores events and cached vectors without a separate database server                    |
-| React                 | `^18.3.1`                                               | UI framework                    | `Frontend/src`                                              | Renders the game interface                                                             |
-| TypeScript            | `^5.8.3`                                                | Frontend typing                 | `Frontend/src`, config files                                | Provides typed API client, store, and UI code                                          |
-| Vite                  | `^8.1.5`, build output used `8.1.5`                     | Dev server and build tool       | `Frontend/vite.config.ts`                                   | Serves local frontend and builds production assets                                     |
-| Tailwind CSS          | `^3.4.17`                                               | Styling                         | `Frontend/src/index.css`, `Frontend/tailwind.config.ts`     | Provides utility classes and theme tokens                                              |
-| Zustand               | `^5.0.11`                                               | Client state                    | `Frontend/src/stores`                                       | Stores session, game, and UI state                                                     |
-| React Router DOM      | `^6.30.1`                                               | Frontend routing                | `Frontend/src/App.tsx`                                      | Defines menu, game, world, NPC, journal, session, and 404 routes                       |
-| Framer Motion         | `^12.34.3`                                              | UI animation                    | `Frontend/src/components/ui/Modal.tsx`                      | Animates the menu dialog and the scene sheet, honouring reduced motion                 |
-| Lucide React          | `^0.462.0`                                              | Icons                           | Frontend components                                         | One consistent icon set for navigation, actions, and states                            |
-| nginx                 | `nginx:alpine`                                          | Static frontend server          | `Frontend/Dockerfile`, `Frontend/nginx.conf`                | Serves built frontend and proxies API and WebSocket routes in Docker                   |
-| Docker Compose        | Compose file version `3.8`                              | Multi service local deployment  | `docker-compose.yml`                                        | Builds and connects backend and frontend containers                                    |
+| Technology            | Version or range                                  | Purpose                         | Where used                                                  | Why it is needed                                                                       |
+| --------------------- | ------------------------------------------------- | ------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Python                | local `3.11.9` verified                           | Backend runtime                 | `Backend`                                                   | Runs FastAPI, LangGraph, persistence, embeddings, and LLM client code                  |
+| Node.js               | `^20.19.0 or >=22.12.0`, local `24.15.0` verified | Frontend runtime and build      | `Frontend/package.json`                                     | Required by Vite `8.1.5` and the React SWC plugin                                      |
+| FastAPI               | `>=0.111,<1.0`                                    | HTTP and WebSocket API          | `Backend/api`                                               | Provides route decorators, request validation, CORS middleware, and OpenAPI generation |
+| Pydantic              | `>=2.0,<3.0`                                      | Data validation                 | `Backend/api/schemas.py`, `Backend/schemas`                 | Defines API contracts, world state, event, and LLM output models                       |
+| LangGraph             | `>=0.2,<1.0`                                      | Turn pipeline orchestration     | `Backend/graph/definition.py`                               | Runs the fixed graph from input to output                                              |
+| Groq SDK              | `>=0.9.0`                                         | LLM provider client             | `Backend/llm/groq_client.py`                                | Sends prompts to the configured Groq model                                             |
+| Sentence Transformers | `>=2.7,<4.0`                                      | Text embeddings                 | `Backend/memory/embedder.py`                                | Converts player input and memories to vectors                                          |
+| PyTorch               | `>=2.2,<3.0`                                      | ML runtime                      | Backend embeddings                                          | Required by sentence transformers                                                      |
+| FAISS CPU             | `>=1.7,<2.0`                                      | Vector search                   | `Backend/memory/faiss_index.py`                             | Retrieves semantically similar memories                                                |
+| SQLite                | Python standard library                           | Event store and embedding cache | `Backend/core/event_store.py`, `Backend/memory/embedder.py` | Stores events and cached vectors without a separate database server                    |
+| React                 | `^18.3.1`                                         | UI framework                    | `Frontend/src`                                              | Renders the game interface                                                             |
+| TypeScript            | `^5.8.3`                                          | Frontend typing                 | `Frontend/src`, config files                                | Provides typed API client, store, and UI code                                          |
+| Vite                  | `^8.1.5`, build output used `8.1.5`               | Dev server and build tool       | `Frontend/vite.config.ts`                                   | Serves local frontend and builds production assets                                     |
+| Tailwind CSS          | `^3.4.17`                                         | Styling                         | `Frontend/src/index.css`, `Frontend/tailwind.config.ts`     | Provides utility classes and theme tokens                                              |
+| Zustand               | `^5.0.11`                                         | Client state                    | `Frontend/src/stores`                                       | Stores session, game, and UI state                                                     |
+| React Router DOM      | `^6.30.1`                                         | Frontend routing                | `Frontend/src/App.tsx`                                      | Defines menu, game, world, NPC, journal, session, and 404 routes                       |
+| Framer Motion         | `^12.34.3`                                        | UI animation                    | `Frontend/src/components/ui/Modal.tsx`                      | Animates the menu dialog and the scene sheet, honouring reduced motion                 |
+| Lucide React          | `^0.462.0`                                        | Icons                           | Frontend components                                         | One consistent icon set for navigation, actions, and states                            |
 
 ## Repository structure
 
@@ -244,7 +266,6 @@ LLM-Game/
 |   |   `-- test_logging.py      # Log formatters and request and session context
 |   |-- config.py               # Backend configuration and environment loading
 |   |-- log_config.py           # Log format, request and session context, quiet dependencies
-|   |-- Dockerfile              # Backend container image
 |   |-- requirements.txt        # Backend runtime dependencies
 |   |-- requirements-dev.txt    # Runtime plus development tools (black)
 |   `-- server.py               # Uvicorn entry point
@@ -264,13 +285,10 @@ LLM-Game/
 |   |   |-- App.tsx             # App shell and routes
 |   |   |-- index.css           # Theme and global styles
 |   |   `-- main.tsx            # React entry point
-|   |-- Dockerfile              # Frontend build and nginx image
-|   |-- nginx.conf              # nginx static serving and proxy rules
 |   |-- package.json            # Frontend dependencies and scripts
 |   |-- package-lock.json       # Locked npm dependency tree
 |   |-- vite.config.ts          # Dev server and proxy config
 |   `-- vitest.config.ts        # Vitest config
-|-- docker-compose.yml          # Backend and frontend services
 |-- docs/
 |   `-- research_article.md     # Research write-up
 |-- scripts/
@@ -284,11 +302,10 @@ LLM-Game/
 
 ## Prerequisites
 
-- Python `3.10` or newer on `PATH` (`python`, `python3`, or the `py` launcher). Docker and local verification use `3.11`.
-- Node.js `^20.19.0 || >=22.12.0`. The frontend Docker build uses `node:22-alpine`; local verification used Node `24.15.0` and npm `11.12.1`.
+- Python `3.10` or newer on `PATH` (`python`, `python3`, or the `py` launcher). Local verification used `3.11.9`.
+- Node.js `^20.19.0 || >=22.12.0`. Local verification used Node `24.15.0` and npm `11.12.1`.
 - npm with support for `npm install`.
 - Groq API key for LLM backed gameplay.
-- Docker, only if using the Docker workflow. Docker was not available in the verification environment.
 
 ## Local installation
 
@@ -328,12 +345,6 @@ Backend configuration is loaded in [Backend/config.py](Backend/config.py). The b
 | `LOG_FORMAT`     | Optional                         | Backend log line format                 | `text` or `json`                    | `json`                                      | `text`                                | `json` writes one object per line for log shippers. Invalid values stop startup.                                |
 | `VITE_API_URL`   | Optional for frontend dev server | Backend target for Vite proxy           | URL                                 | `http://localhost:8000`                     | `http://localhost:8000`               | Used only by `Frontend/vite.config.ts` during development. The runtime API base path is `/api/game`.            |
 | `VITE_DEV_HOST`  | Optional for frontend dev server | Vite bind host                          | Host or IP string                   | `localhost`                                 | `localhost`                           | Set to `0.0.0.0` only when LAN access is intended.                                                              |
-
-Docker Compose passes these environment variables to the backend:
-
-- `GROQ_API_KEY`
-- `SESSION_SECRET`
-- `CORS_ORIGINS`, with default `http://localhost:8080,http://localhost:80`
 
 ## Database and local data
 
@@ -395,14 +406,13 @@ Expected result: Vite serves the frontend on `http://localhost:8080` and proxies
 
 Root:
 
-| Command                     | Where to run    | Purpose                                                                                                     | Verification status                                                                   |
-| --------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `npm run dev`               | Repository root | Runs complete setup, starts both services in separate windows, and opens the browser                        | Passed                                                                                |
-| `npm run build`             | Repository root | Runs the existing frontend production build command                                                         | Source verified                                                                       |
-| `npm run build:dev`         | Repository root | Runs the existing frontend development build command                                                        | Source verified                                                                       |
-| `npm run preview`           | Repository root | Runs the existing frontend preview command                                                                  | Source verified                                                                       |
-| `npm run check`             | Repository root | Runs setup, clone detection, black, backend tests, frontend format check, typecheck, lint, tests, and build | Passed                                                                                |
-| `docker compose up --build` | Repository root | Builds and runs backend plus frontend containers                                                            | Source verified from `docker-compose.yml`; not executed because Docker is unavailable |
+| Command             | Where to run    | Purpose                                                                                                     | Verification status |
+| ------------------- | --------------- | ----------------------------------------------------------------------------------------------------------- | ------------------- |
+| `npm run dev`       | Repository root | Runs complete setup, starts both services in separate windows, and opens the browser                        | Passed              |
+| `npm run build`     | Repository root | Runs the existing frontend production build command                                                         | Source verified     |
+| `npm run build:dev` | Repository root | Runs the existing frontend development build command                                                        | Source verified     |
+| `npm run preview`   | Repository root | Runs the existing frontend preview command                                                                  | Source verified     |
+| `npm run check`     | Repository root | Runs setup, clone detection, black, backend tests, frontend format check, typecheck, lint, tests, and build | Passed              |
 
 Backend:
 
@@ -652,7 +662,6 @@ Verification run in this workspace:
 | Frontend build           | `npm run build` in `Frontend`                       | Passed                                                             |
 | Full local dev workflow  | `CI=1 npm run dev` on Windows 11                    | Passed: ready, busy port fails fast, crash stops all, no leftovers |
 | Full validation workflow | `npm run check`                                     | Passed                                                             |
-| Docker Compose config    | `docker compose config`                             | Not run because Docker is unavailable                              |
 
 Test coverage:
 
@@ -687,49 +696,7 @@ Verified build time:
 Backend build:
 
 - There is no separate backend build step.
-- The backend is run directly through Python or built into the Docker image.
-
-## Docker deployment
-
-Docker files:
-
-- [Backend/Dockerfile](Backend/Dockerfile)
-- [Frontend/Dockerfile](Frontend/Dockerfile)
-- [Frontend/nginx.conf](Frontend/nginx.conf)
-- [docker-compose.yml](docker-compose.yml)
-
-Run with Docker Compose:
-
-```powershell
-$env:GROQ_API_KEY = "gsk_replace_with_your_key"
-$env:SESSION_SECRET = "replace-with-a-long-random-secret"
-docker compose up --build
-```
-
-Expected ports from `docker-compose.yml`:
-
-| Service  | Host port | Container port |
-| -------- | --------- | -------------- |
-| Backend  | `8000`    | `8000`         |
-| Frontend | `8080`    | `80`           |
-
-The frontend nginx container proxies:
-
-- `/api/` to `http://backend:8000/api/`
-- `/ws/` to `http://backend:8000/ws/`
-- `/health` to `http://backend:8000/health`
-
-Persistent backend data:
-
-```text
-./Backend/data:/app/data
-```
-
-Docker verification status:
-
-```text
-Not executed in this environment because Docker is not installed or not on PATH.
-```
+- The backend is run directly through Python.
 
 ## CI or CD process
 
@@ -793,32 +760,32 @@ Maintenance tasks:
 
 ## Repository metrics
 
-| Metric                                  | Verified value                            | Source or command                                                  | Notes                                                                           |
-| --------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| Total tracked files from source listing | `93`                                      | `rg --files`                                                       | Excludes ignored generated directories                                          |
-| Backend files                           | `33`                                      | `rg --files Backend`                                               | Includes Python, JSON, Docker, requirements, and tests                          |
-| Frontend files                          | `50`                                      | `rg --files Frontend`                                              | Includes source, config, public assets, package files, Docker, and nginx config |
-| HTTP endpoints                          | `18`                                      | `rg` over `Backend\api` route decorators                           | Includes root `/health` and `/api/game` endpoints                               |
-| WebSocket endpoints                     | `1`                                       | Same command                                                       | `/ws/game/{session_id}`                                                         |
-| React route paths                       | `8`                                       | `rg "Route path=" Frontend\src\App.tsx`                            | Includes wildcard 404 route                                                     |
-| Frontend pages                          | `8`                                       | `rg --files Frontend\src\pages`                                    | Page component files                                                            |
-| Frontend components                     | `8`                                       | `rg --files Frontend\src\components`                               | Game, layout, and UI components                                                 |
-| Frontend Zustand stores                 | `2`                                       | `rg --files Frontend\src\stores`                                   | Game and UI stores                                                              |
-| Frontend npm scripts                    | `11`                                      | `Frontend/package.json`                                            | Includes `check`, `typecheck`, format scripts, lint, test, and build            |
-| Backend dependency entries              | `14`                                      | `Backend/requirements.txt`                                         | Runtime dependency lines; `black` moved to `requirements-dev.txt`               |
-| World locations                         | `8`                                       | `Backend/game/world_seed.json`                                     | Canonical seed data                                                             |
-| NPCs                                    | `4`                                       | `Backend/game/world_seed.json`                                     | Canonical seed data                                                             |
-| Objects                                 | `4`                                       | `Backend/game/world_seed.json`                                     | Canonical seed data                                                             |
-| World rules                             | `7`                                       | `Backend/game/world_seed.json`                                     | Canonical seed data                                                             |
-| Gender options                          | `4`                                       | `Backend/game/world_seed.json`                                     | Character creation metadata                                                     |
-| Occupation options                      | `5`                                       | `Backend/game/world_seed.json`                                     | Character creation metadata                                                     |
-| Test files                              | `4`                                       | `rg --files Backend\tests Frontend\src -g '*test*'`                | Backend API and architecture tests, frontend HTTP client and mapper tests       |
-| Test coverage percentage                | `Not measured in the current repository.` | Not available                                                      | No coverage tooling output is present                                           |
-| Default backend port                    | `8000`                                    | `Backend/config.py`, `docker-compose.yml`                          | Local and Docker                                                                |
-| Default frontend port                   | `8080`                                    | `Frontend/vite.config.ts`, `docker-compose.yml`, `scripts/dev.mjs` | Local Vite and Docker host port                                                 |
-| Build time                              | `895ms`                                   | `npm run build`                                                    | Local verification result                                                       |
-| JS bundle gzip size                     | `123.70 kB`                               | `npm run build`                                                    | Local verification result                                                       |
-| CSS bundle gzip size                    | `5.53 kB`                                 | `npm run build`                                                    | Local verification result                                                       |
+| Metric                                  | Verified value                            | Source or command                                   | Notes                                                                     |
+| --------------------------------------- | ----------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------- |
+| Total tracked files from source listing | `93`                                      | `rg --files`                                        | Excludes ignored generated directories                                    |
+| Backend files                           | `32`                                      | `rg --files Backend`                                | Includes Python, JSON, requirements, and tests                            |
+| Frontend files                          | `48`                                      | `rg --files Frontend`                               | Includes source, config, public assets, and package files                 |
+| HTTP endpoints                          | `18`                                      | `rg` over `Backend\api` route decorators            | Includes root `/health` and `/api/game` endpoints                         |
+| WebSocket endpoints                     | `1`                                       | Same command                                        | `/ws/game/{session_id}`                                                   |
+| React route paths                       | `8`                                       | `rg "Route path=" Frontend\src\App.tsx`             | Includes wildcard 404 route                                               |
+| Frontend pages                          | `8`                                       | `rg --files Frontend\src\pages`                     | Page component files                                                      |
+| Frontend components                     | `8`                                       | `rg --files Frontend\src\components`                | Game, layout, and UI components                                           |
+| Frontend Zustand stores                 | `2`                                       | `rg --files Frontend\src\stores`                    | Game and UI stores                                                        |
+| Frontend npm scripts                    | `11`                                      | `Frontend/package.json`                             | Includes `check`, `typecheck`, format scripts, lint, test, and build      |
+| Backend dependency entries              | `14`                                      | `Backend/requirements.txt`                          | Runtime dependency lines; `black` moved to `requirements-dev.txt`         |
+| World locations                         | `8`                                       | `Backend/game/world_seed.json`                      | Canonical seed data                                                       |
+| NPCs                                    | `4`                                       | `Backend/game/world_seed.json`                      | Canonical seed data                                                       |
+| Objects                                 | `4`                                       | `Backend/game/world_seed.json`                      | Canonical seed data                                                       |
+| World rules                             | `7`                                       | `Backend/game/world_seed.json`                      | Canonical seed data                                                       |
+| Gender options                          | `4`                                       | `Backend/game/world_seed.json`                      | Character creation metadata                                               |
+| Occupation options                      | `5`                                       | `Backend/game/world_seed.json`                      | Character creation metadata                                               |
+| Test files                              | `4`                                       | `rg --files Backend\tests Frontend\src -g '*test*'` | Backend API and architecture tests, frontend HTTP client and mapper tests |
+| Test coverage percentage                | `Not measured in the current repository.` | Not available                                       | No coverage tooling output is present                                     |
+| Default backend port                    | `8000`                                    | `Backend/config.py`                                 | Local                                                                     |
+| Default frontend port                   | `8080`                                    | `Frontend/vite.config.ts`, `scripts/dev.mjs`        | Local Vite                                                                |
+| Build time                              | `895ms`                                   | `npm run build`                                     | Local verification result                                                 |
+| JS bundle gzip size                     | `123.70 kB`                               | `npm run build`                                     | Local verification result                                                 |
+| CSS bundle gzip size                    | `5.53 kB`                                 | `npm run build`                                     | Local verification result                                                 |
 
 ## Troubleshooting
 
@@ -834,14 +801,12 @@ Maintenance tasks:
 | Travel returns `400`                     | Target location is not connected to current location | `Invoke-RestMethod http://127.0.0.1:8000/api/game/state/<session_id>` | Travel only to a location listed in `connected_to`                                  |
 | `npm run check` fails                    | One validation step failed                           | Read the first failed step in the output                              | Fix that step locally, then rerun `npm run check`                                   |
 | `npm audit` reports findings             | Dependency advisory in the current lockfile          | `cd Frontend; npm audit`                                              | Prefer non breaking updates first, then validate major updates with `npm run check` |
-| Docker command fails                     | Docker not installed or unavailable                  | `docker --version`                                                    | Install Docker Desktop or use `npm run dev`                                         |
 
 ## Known limitations
 
 - No authentication or authorisation is implemented.
 - Backend API tests stub the embedder, Groq client, and LangGraph pipeline; real LLM turns are not tested.
 - Frontend tests cover the HTTP client and dialogue mapping, not route level rendering or WebSocket flows.
-- Docker files exist, but Docker could not be executed in the verification environment.
 - `SESSION_SECRET` is loaded but not used elsewhere in the current code.
 - Some performance metrics are not measured, including request throughput, memory usage, and production latency.
 - The source contains some non ASCII characters in comments and UI text. This README is ASCII only.
