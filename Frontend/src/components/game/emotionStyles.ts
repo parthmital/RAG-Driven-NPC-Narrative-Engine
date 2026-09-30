@@ -1,13 +1,17 @@
 export const EMOTION_STYLES: Record<string, { label: string; color: string }> =
 	{
-		neutral: { label: "Composed", color: "text-muted-foreground" },
-		suspicious: { label: "Suspicious", color: "text-destructive" },
-		fearful: { label: "Fearful", color: "text-accent-foreground" },
-		angry: { label: "Hostile", color: "text-destructive" },
-		melancholic: { label: "Melancholic", color: "text-muted-foreground" },
-		guarded: { label: "Guarded", color: "text-muted-foreground" },
-		trusting: { label: "Trusting", color: "text-primary" },
-		desperate: { label: "Desperate", color: "text-destructive" },
-		hostile: { label: "Hostile", color: "text-destructive" },
-		playful: { label: "Playful", color: "text-primary" },
+		neutral: { label: "Composed", color: "text-muted" },
+		suspicious: { label: "Suspicious", color: "text-ember" },
+		fearful: { label: "Fearful", color: "text-arcane" },
+		angry: { label: "Angry", color: "text-ember" },
+		melancholic: { label: "Melancholic", color: "text-muted" },
+		guarded: { label: "Guarded", color: "text-muted" },
+		trusting: { label: "Trusting", color: "text-gilt" },
+		desperate: { label: "Desperate", color: "text-ember" },
+		hostile: { label: "Hostile", color: "text-ember" },
+		playful: { label: "Playful", color: "text-gilt" },
 	};
+
+export function emotionOf(state: string) {
+	return EMOTION_STYLES[state] ?? EMOTION_STYLES.neutral;
+}

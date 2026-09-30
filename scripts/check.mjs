@@ -1,4 +1,5 @@
 // Full local validation: `npm run check` from the repository root.
+// Each step's output is shown only when that step fails.
 import path from "node:path";
 import {
 	BACKEND,
@@ -7,11 +8,13 @@ import {
 	SetupError,
 	VENV_PYTHON,
 	ensureSetup,
-	log,
+	fail,
 	npm,
+	ok,
 	run,
 } from "./lib/workspace.mjs";
 
+const quiet = true;
 const steps = [
 	[
 		"Clone detection",
@@ -29,7 +32,7 @@ const steps = [
 					"Frontend/src",
 					"scripts",
 				],
-				{ what: "Clone detection" },
+				{ what: "Clone detection", quiet },
 			),
 	],
 	[
@@ -38,6 +41,7 @@ const steps = [
 			run(VENV_PYTHON, ["-m", "black", "--check", "--quiet", "."], {
 				cwd: BACKEND,
 				what: "black",
+				quiet,
 			}),
 	],
 	[
@@ -46,6 +50,7 @@ const steps = [
 			run(VENV_PYTHON, ["-m", "unittest", "discover", "-s", "tests"], {
 				cwd: BACKEND,
 				what: "Backend tests",
+				quiet,
 			}),
 	],
 	...["format:check", "typecheck", "lint", "test", "build"].map((script) => [
@@ -54,19 +59,24 @@ const steps = [
 			npm(["run", "--silent", script], {
 				cwd: FRONTEND,
 				what: `Frontend ${script}`,
+				quiet,
 			}),
 	]),
 ];
 
+const seconds = (since) => `${((Date.now() - since) / 1000).toFixed(1)}s`;
+
 try {
 	ensureSetup();
+	const startedAt = Date.now();
 	for (const [name, step] of steps) {
-		log(`${name}...`);
+		const stepStartedAt = Date.now();
 		step();
+		ok(`${name.padEnd(22)} ${seconds(stepStartedAt)}`);
 	}
-	log("All checks passed.");
+	ok(`All ${steps.length} checks passed in ${seconds(startedAt)}`);
 } catch (error) {
 	if (!(error instanceof SetupError)) throw error;
-	console.error(`[check] ${error.message}`);
+	fail(error.message);
 	process.exit(1);
 }

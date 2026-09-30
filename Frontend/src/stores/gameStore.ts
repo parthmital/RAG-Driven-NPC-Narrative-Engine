@@ -1,5 +1,11 @@
 import { create } from "zustand";
-import type { DialogueMessage, NPC, JournalEntry, Clue } from "@/types/game";
+import type {
+	Clue,
+	DialogueMessage,
+	JournalEntry,
+	MessageType,
+	NPC,
+} from "@/types/game";
 import {
 	apiClient,
 	wsService,
@@ -7,7 +13,6 @@ import {
 	type ActionResponse,
 	type NPCInfo,
 	type WSOutMessage,
-	type SaveInfo,
 	type GameMetadataResponse,
 } from "@/services/api";
 import {
@@ -21,7 +26,7 @@ import {
 	toJournal,
 	type InventoryItem,
 } from "@/stores/mappers";
-import { GAME_CONSTANTS } from "@/config/constants";
+import { GAME_CONSTANTS, NARRATOR_ID } from "@/config/constants";
 import { toast } from "sonner";
 
 interface GameState {
@@ -39,6 +44,7 @@ interface GameState {
 	currentLocationName: string;
 	currentLocationDescription: string;
 	connectedLocations: string[];
+	objectsHere: InventoryItem[];
 
 	// Dialogue
 	dialogueHistory: DialogueMessage[];
@@ -81,7 +87,10 @@ interface GameState {
 	/** Refresh state from the backend */
 	refreshState: () => Promise<void>;
 
-	/** Send player input (dialogue or command) to backend */
+	/**
+	 * Send player input (dialogue or command) to the backend. On failure the
+	 * player's line is removed from the transcript and the error is rethrown.
+	 */
 	sendAction: (content: string, targetNpcId?: string) => Promise<void>;
 
 	/** Directly move player to location */
@@ -90,17 +99,11 @@ interface GameState {
 	/** Link two clues logically on the backend */
 	linkClues: (id1: string, id2: string) => Promise<void>;
 
-	/** Switch active NPC via backend */
-	switchNPC: (npcId: string) => Promise<void>;
-
 	/** Trigger manual save on backend */
 	saveGame: () => Promise<boolean>;
 
 	/** Load an existing session */
 	loadGame: (sessionId: string) => Promise<void>;
-
-	/** Get list of saved sessions */
-	listSavedSessions: () => Promise<SaveInfo[]>;
 
 	/** Disconnect and clean up */
 	disconnect: () => void;
@@ -146,6 +149,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 	currentLocationName: "",
 	currentLocationDescription: "",
 	connectedLocations: [],
+	objectsHere: [],
 
 	// Dialogue
 	dialogueHistory: [],
@@ -226,6 +230,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 				updates.currentLocationName = state.location.name;
 				updates.currentLocationDescription = state.location.description;
 				updates.connectedLocations = state.location.connected_to;
+				updates.objectsHere = toInventory(state.location.objects_here);
 			}
 
 			// Active NPC
@@ -241,8 +246,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 				if (get().sessionId && oldCurrency !== newCurrency && get().turn > 0) {
 					const diff = newCurrency - oldCurrency;
 					const sign = diff > 0 ? "+" : "";
-					const msg = `Currency changed: ${sign}$${diff} (Now $${newCurrency})`;
-					toast.info("Wallet Updated", { description: msg });
+					const msg = `Purse ${sign}${diff} coins, now ${newCurrency}.`;
+					toast.info("Purse updated", { description: msg });
 					get().addMessage(systemMessage(msg, `currency-${Date.now()}`));
 				}
 
@@ -283,10 +288,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 		}
 
 		const isCommand = content.startsWith("/");
+		const playerMessageId = `player-${Date.now()}`;
 
 		// Add player message to history (slash commands are filtered in UI)
 		get().addMessage({
-			id: Date.now().toString(),
+			id: playerMessageId,
 			type: "player",
 			content,
 			timestamp: Date.now(),
@@ -306,7 +312,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 				if (result.error && content.startsWith("/move")) {
 					throw new Error(result.npc_dialogue);
 				}
-				const type = result.npc_id === "narrator" ? "narration" : "system";
+				const type = result.npc_id === NARRATOR_ID ? "narration" : "system";
 				get().addMessage({
 					id: (Date.now() + 1).toString(),
 					type: type as MessageType,
@@ -325,11 +331,17 @@ export const useGameStore = create<GameState>((set, get) => ({
 			}
 		} catch (error) {
 			console.error("[GameStore] Action error:", error);
+			set((s) => ({
+				dialogueHistory: s.dialogueHistory.filter(
+					(m) => m.id !== playerMessageId,
+				),
+			}));
 			if (!content.startsWith("/move")) {
 				get().addMessage(
 					systemMessage(
-						`Error: ${errorMessage(error, "Failed to process action")}`,
-						(Date.now() + 2).toString(),
+						`No reply (${errorMessage(error, "the game server did not respond")}). Your words are back in the message box.`,
+						`err-${Date.now()}`,
+						true,
 					),
 				);
 			}
@@ -347,18 +359,18 @@ export const useGameStore = create<GameState>((set, get) => ({
 			await refreshState();
 			const newLocName = get().currentLocationName;
 			const msg = `You arrived at ${newLocName || "a new location"}.`;
-			toast.success("Moved", {
+			toast.success("Arrived", {
 				description: msg,
 			});
 			get().addMessage(systemMessage(msg, `move-${Date.now()}`));
 		} catch (error) {
 			console.error("[GameStore] Failed to move player:", error);
 			const errMsg = errorMessage(error, "Cannot travel there.");
-			toast.error("Travel Failed", {
+			toast.error("Couldn't travel", {
 				description: errMsg,
 			});
 			get().addMessage(
-				systemMessage(`Travel Failed: ${errMsg}`, `err-${Date.now()}`),
+				systemMessage(`Couldn't travel: ${errMsg}`, `err-${Date.now()}`, true),
 			);
 			throw error;
 		}
@@ -376,30 +388,12 @@ export const useGameStore = create<GameState>((set, get) => ({
 		}
 	},
 
-	switchNPC: async (npcId: string) => {
-		const { sessionId } = get();
-		if (!sessionId) return;
-
-		try {
-			const result = await apiClient.switchNPC(sessionId, npcId);
-			const npcInfo = result.npc as NPCInfo;
-			const npc = toFrontendNPC(npcInfo);
-			set({ activeNPC: npc });
-
-			get().addMessage(systemMessage(`Now talking to: ${npc.name}`));
-		} catch (error) {
-			console.error("[GameStore] Switch NPC error:", error);
-		}
-	},
-
 	saveGame: async () => {
 		const { sessionId } = get();
 		if (!sessionId) return;
 		try {
 			await apiClient.saveSession(sessionId);
-			get().addMessage(
-				systemMessage("Game state persisted to secure archive."),
-			);
+			get().addMessage(systemMessage("Game saved."));
 			// Return true so callers know the save succeeded
 			return true;
 		} catch (error) {
@@ -421,15 +415,6 @@ export const useGameStore = create<GameState>((set, get) => ({
 		} catch (error) {
 			console.error("[GameStore] Load error:", error);
 			throw error;
-		}
-	},
-
-	listSavedSessions: async () => {
-		try {
-			return await apiClient.listSessions();
-		} catch (error) {
-			console.error("[GameStore] List saves error:", error);
-			return [];
 		}
 	},
 
@@ -469,6 +454,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 			dialogueHistory: [],
 			activeNPC: null,
 			npcs: {},
+			objectsHere: [],
 			turn: 0,
 			currency: 100,
 		});
@@ -486,14 +472,14 @@ export const useGameStore = create<GameState>((set, get) => ({
 				(i) => !inventory.some((old) => old.id === i.id),
 			);
 			const itemName = newItem?.name || "an item";
-			toast.success("Picked Up", {
-				description: `You picked up ${itemName}.`,
+			toast.success("Taken", {
+				description: `You took ${itemName}.`,
 			});
-			get().addMessage(systemMessage(`Picked up ${itemName}.`));
+			get().addMessage(systemMessage(`You took ${itemName}.`));
 		} catch (error) {
 			console.error("[GameStore] Pickup error:", error);
-			toast.error("Pickup Failed", {
-				description: errorMessage(error, "Could not pick up item."),
+			toast.error("Couldn't take it", {
+				description: errorMessage(error, "Could not pick up the item."),
 			});
 			throw error;
 		}
@@ -509,13 +495,13 @@ export const useGameStore = create<GameState>((set, get) => ({
 			await apiClient.dropObject(sessionId, objectId);
 			await refreshState();
 			toast.success("Dropped", {
-				description: `You dropped ${itemName}.`,
+				description: `You left ${itemName} here.`,
 			});
-			get().addMessage(systemMessage(`Dropped ${itemName}.`));
+			get().addMessage(systemMessage(`You left ${itemName} here.`));
 		} catch (error) {
 			console.error("[GameStore] Drop error:", error);
-			toast.error("Drop Failed", {
-				description: errorMessage(error, "Could not drop item."),
+			toast.error("Couldn't drop it", {
+				description: errorMessage(error, "Could not drop the item."),
 			});
 			throw error;
 		}

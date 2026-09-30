@@ -82,7 +82,7 @@ describe("APIClient", () => {
 				age: 17,
 				occupation: "Scholar",
 			}),
-		).rejects.toMatchObject<Partial<APIError>>({
+		).rejects.toMatchObject({
 			status: 422,
 			message: "age: Input should be greater than or equal to 18",
 		});

@@ -32,8 +32,8 @@ async def get_metadata():
     """Retrieve top-level game metadata from the seed file."""
     try:
         return load_world_seed(config.WORLD_SEED_PATH).metadata
-    except Exception as exc:
-        log.error("Failed to load metadata from %s: %s", config.WORLD_SEED_PATH, exc)
+    except Exception:
+        log.exception("world metadata unavailable")
     return GameMetadataResponse()
 
 
@@ -102,7 +102,7 @@ async def health_check(sm: SessionManager = Depends(get_session_manager)):
     try:
         llm_ok = await run_in_threadpool(sm.ping_llm)
     except Exception:
-        log.warning("LLM ping failed", exc_info=True)
+        log.warning("llm health check failed", exc_info=True)
     return HealthResponse(
         status="ok",
         llm_reachable=llm_ok,

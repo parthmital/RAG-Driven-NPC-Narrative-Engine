@@ -9,6 +9,7 @@ from api.presenters import build_npc_info
 from api.realtime import broadcast, ws_message
 from api.schemas import ActionResponse, NPCListResponse, PlayerActionRequest
 from fastapi import APIRouter, Depends, HTTPException, Query
+from llm import LLMError
 from session.dialogue import turn_entries
 from session.game_session import GameSession
 from session.manager import SessionManager
@@ -40,9 +41,10 @@ async def submit_action(
     try:
         result = await sm.process_action(session, content, req.npc_id)
     except Exception as exc:
-        log.error(
-            "Action error for session %s: %s", session.session_id, exc, exc_info=True
-        )
+        if isinstance(exc, LLMError):
+            log.error("turn failed; llm unavailable", extra={"error": str(exc)})
+        else:
+            log.exception("turn failed")
         raise HTTPException(500, "Game engine error") from exc
 
     session.dialogue_history.extend(turn_entries(content, result))

@@ -18,7 +18,9 @@ def save_snapshot(state: WorldState, path: Path, last_event_id: int) -> None:
         "world_state": state.model_dump(),
     }
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    log.debug("Snapshot saved (turn=%d, last_event_id=%d)", state.turn, last_event_id)
+    log.debug(
+        "snapshot saved", extra={"turn": state.turn, "last_event_id": last_event_id}
+    )
 
 
 def load_snapshot(path: Path) -> Optional[Tuple[WorldState, int]]:
@@ -30,9 +32,12 @@ def load_snapshot(path: Path) -> Optional[Tuple[WorldState, int]]:
         state = WorldState(**data["world_state"])
         last_event_id = int(data["last_event_id"])
         log.debug(
-            "Snapshot loaded (turn=%d, last_event_id=%d)", state.turn, last_event_id
+            "snapshot loaded",
+            extra={"turn": state.turn, "last_event_id": last_event_id},
         )
         return state, last_event_id
     except Exception as exc:
-        log.warning("Snapshot corrupt, ignoring: %s", exc)
+        log.warning(
+            "corrupt snapshot ignored", extra={"path": str(path), "error": str(exc)}
+        )
         return None

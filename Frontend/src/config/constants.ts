@@ -15,7 +15,7 @@ export const GAME_CONSTANTS = {
 	INITIAL_MORAL_ALIGNMENT: 50,
 };
 
-export const UI_CONSTANTS = {
-	ANIMATION_FADE_IN_MS: 600,
-	SCROLL_BOTTOM_THRESHOLD: 100,
-};
+/** Speaker id the backend uses for the narrator. */
+export const NARRATOR_ID = "narrator";
+
+export const PLAYER_AGE = { MIN: 18, MAX: 120 };

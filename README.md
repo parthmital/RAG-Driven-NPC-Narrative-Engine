@@ -95,7 +95,8 @@ This project addresses that by combining:
 ## Key features
 
 - Character creation using gender and occupation options from the world seed.
-- Main menu, new game screen, gameplay view, world view, NPC view, journal view, session loading view, and 404 page.
+- Title screen, character creation, Scene (conversation plus the current room), Map, People, Journal, Load game, and a 404 page. Every screen works from phone to wide desktop, by keyboard and by touch.
+- The conversation is set like a play script, with the speaker in a left gutter. The Scene panel lists exits you can travel through, people you can address with their trust, objects you can take, and your purse, standing, and pack.
 - Player actions sent to a FastAPI backend.
 - LangGraph turn pipeline with input handling, memory retrieval, prompt assembly, LLM generation, JSON parsing, world validation, event commit, and output logging.
 - Groq LLM client with configured timeout, retries, temperature, and token limit.
@@ -193,7 +194,8 @@ Versions are taken from repository files and local verification output.
 | Tailwind CSS          | `^3.4.17`                                               | Styling                         | `Frontend/src/index.css`, `Frontend/tailwind.config.ts`     | Provides utility classes and theme tokens                                              |
 | Zustand               | `^5.0.11`                                               | Client state                    | `Frontend/src/stores`                                       | Stores session, game, and UI state                                                     |
 | React Router DOM      | `^6.30.1`                                               | Frontend routing                | `Frontend/src/App.tsx`                                      | Defines menu, game, world, NPC, journal, session, and 404 routes                       |
-| Framer Motion         | `^12.34.3`                                              | UI animation                    | Frontend pages and components                               | Animates loading, menu, and page elements                                              |
+| Framer Motion         | `^12.34.3`                                              | UI animation                    | `Frontend/src/components/ui/Modal.tsx`                      | Animates the menu dialog and the scene sheet, honouring reduced motion                 |
+| Lucide React          | `^0.462.0`                                              | Icons                           | Frontend components                                         | One consistent icon set for navigation, actions, and states                            |
 | nginx                 | `nginx:alpine`                                          | Static frontend server          | `Frontend/Dockerfile`, `Frontend/nginx.conf`                | Serves built frontend and proxies API and WebSocket routes in Docker                   |
 | Docker Compose        | Compose file version `3.8`                              | Multi service local deployment  | `docker-compose.yml`                                        | Builds and connects backend and frontend containers                                    |
 
@@ -237,8 +239,11 @@ LLM-Game/
 |   |   `-- world_state.py      # World state models
 |   |-- tests/
 |   |   |-- test_api.py          # HTTP and WebSocket API tests with stubbed ML and LLM
-|   |   `-- test_architecture.py # Import boundary and graph side effect tests
+|   |   |-- test_architecture.py # Import boundary and graph side effect tests
+|   |   |-- test_llm_client.py   # Groq retry classification and error messages
+|   |   `-- test_logging.py      # Log formatters and request and session context
 |   |-- config.py               # Backend configuration and environment loading
+|   |-- log_config.py           # Log format, request and session context, quiet dependencies
 |   |-- Dockerfile              # Backend container image
 |   |-- requirements.txt        # Backend runtime dependencies
 |   |-- requirements-dev.txt    # Runtime plus development tools (black)
@@ -310,17 +315,19 @@ Notes:
 
 Backend configuration is loaded in [Backend/config.py](Backend/config.py). The backend also calls `load_dotenv()`, so a local `.env` file can be used. `.env` files are ignored by `.gitignore`.
 
-| Variable         | Required                         | Purpose                                 | Expected format      | Safe example                                | Default                               | Security notes                                                                                                  |
-| ---------------- | -------------------------------- | --------------------------------------- | -------------------- | ------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `GROQ_API_KEY`   | Required for LLM gameplay        | API key passed to the Groq SDK          | String secret        | `gsk_replace_with_your_key`                 | Empty string                          | Do not commit. Missing or invalid values break LLM generation.                                                  |
-| `API_HOST`       | Optional                         | Backend bind host                       | Host or IP string    | `0.0.0.0`                                   | `0.0.0.0`                             | Binding to `0.0.0.0` exposes the server on all interfaces.                                                      |
-| `API_PORT`       | Optional                         | Backend port                            | Integer string       | `8000`                                      | `8000`                                | Must match frontend proxy or deployment routing.                                                                |
-| `FRONTEND_URL`   | Optional                         | Default CORS origin                     | URL                  | `http://localhost:8080`                     | `http://localhost:8080`               | Used as fallback when `CORS_ORIGINS` is absent.                                                                 |
-| `CORS_ORIGINS`   | Optional                         | Allowed CORS origins                    | Comma separated URLs | `http://localhost:8080,http://localhost:80` | Value of `FRONTEND_URL`               | Keep narrow outside local development.                                                                          |
-| `SESSION_SECRET` | Optional in code                 | Session secret value loaded into config | String secret        | `replace-with-random-secret`                | Random hex generated on process start | Loaded but not used elsewhere in the current repository. Use a stable secret if later session signing is added. |
-| `DEBUG_ERRORS`   | Optional                         | Exposes internal exception details      | Boolean string       | `false`                                     | `false`                               | Keep false outside local debugging.                                                                             |
-| `VITE_API_URL`   | Optional for frontend dev server | Backend target for Vite proxy           | URL                  | `http://localhost:8000`                     | `http://localhost:8000`               | Used only by `Frontend/vite.config.ts` during development. The runtime API base path is `/api/game`.            |
-| `VITE_DEV_HOST`  | Optional for frontend dev server | Vite bind host                          | Host or IP string    | `localhost`                                 | `localhost`                           | Set to `0.0.0.0` only when LAN access is intended.                                                              |
+| Variable         | Required                         | Purpose                                 | Expected format                     | Safe example                                | Default                               | Security notes                                                                                                  |
+| ---------------- | -------------------------------- | --------------------------------------- | ----------------------------------- | ------------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `GROQ_API_KEY`   | Required for LLM gameplay        | API key passed to the Groq SDK          | String secret                       | `gsk_replace_with_your_key`                 | Empty string                          | Do not commit. Missing or invalid values break LLM generation.                                                  |
+| `API_HOST`       | Optional                         | Backend bind host                       | Host or IP string                   | `0.0.0.0`                                   | `0.0.0.0`                             | Binding to `0.0.0.0` exposes the server on all interfaces.                                                      |
+| `API_PORT`       | Optional                         | Backend port                            | Integer string                      | `8000`                                      | `8000`                                | Must match frontend proxy or deployment routing.                                                                |
+| `FRONTEND_URL`   | Optional                         | Default CORS origin                     | URL                                 | `http://localhost:8080`                     | `http://localhost:8080`               | Used as fallback when `CORS_ORIGINS` is absent.                                                                 |
+| `CORS_ORIGINS`   | Optional                         | Allowed CORS origins                    | Comma separated URLs                | `http://localhost:8080,http://localhost:80` | Value of `FRONTEND_URL`               | Keep narrow outside local development.                                                                          |
+| `SESSION_SECRET` | Optional in code                 | Session secret value loaded into config | String secret                       | `replace-with-random-secret`                | Random hex generated on process start | Loaded but not used elsewhere in the current repository. Use a stable secret if later session signing is added. |
+| `DEBUG_ERRORS`   | Optional                         | Exposes internal exception details      | Boolean string                      | `false`                                     | `false`                               | Keep false outside local debugging.                                                                             |
+| `LOG_LEVEL`      | Optional                         | Backend log verbosity                   | `debug`, `info`, `warning`, `error` | `info`                                      | `info`                                | `debug` adds per-turn retrieval, prompt, snapshot, and event lines. Invalid values stop startup.                |
+| `LOG_FORMAT`     | Optional                         | Backend log line format                 | `text` or `json`                    | `json`                                      | `text`                                | `json` writes one object per line for log shippers. Invalid values stop startup.                                |
+| `VITE_API_URL`   | Optional for frontend dev server | Backend target for Vite proxy           | URL                                 | `http://localhost:8000`                     | `http://localhost:8000`               | Used only by `Frontend/vite.config.ts` during development. The runtime API base path is `/api/game`.            |
+| `VITE_DEV_HOST`  | Optional for frontend dev server | Vite bind host                          | Host or IP string                   | `localhost`                                 | `localhost`                           | Set to `0.0.0.0` only when LAN access is intended.                                                              |
 
 Docker Compose passes these environment variables to the backend:
 
@@ -417,7 +424,7 @@ Frontend scripts from [Frontend/package.json](Frontend/package.json):
 | `npm run preview`      | `Frontend`   | Serves the built frontend locally                   | Source verified                                         |
 | `npm run test`         | `Frontend`   | Runs Vitest once                                    | Passed                                                  |
 | `npm run test:watch`   | `Frontend`   | Runs Vitest in watch mode                           | Source verified                                         |
-| `npm run typecheck`    | `Frontend`   | Runs TypeScript without emitting                    | Passed                                                  |
+| `npm run typecheck`    | `Frontend`   | Type-checks the app and the Vite config projects    | Passed                                                  |
 | `npm run format`       | `Frontend`   | Formats frontend files                              | Source verified                                         |
 | `npm run format:check` | `Frontend`   | Checks frontend formatting                          | Source verified                                         |
 | `npm run check`        | `Frontend`   | Runs format check, typecheck, lint, test, and build | Passed through root `npm run check`                     |
@@ -587,23 +594,41 @@ The LLM is instructed to return a strict JSON object. The backend parses this JS
 
 - FastAPI validation errors return standard `422` responses.
 - Missing sessions and missing entities return route level `404` or `400` errors.
-- The global exception handler in `Backend/api/app.py` logs unhandled exceptions server side and hides details unless `DEBUG_ERRORS=true`.
-- `GroqClient.generate()` retries failed generation calls. Rate limit style errors use exponential backoff.
+- The request middleware in `Backend/api/app.py` logs unhandled exceptions with their traceback and request ID, and returns a generic `500` body unless `DEBUG_ERRORS=true`.
+- `GroqClient.generate()` retries only transient failures (rate limits, `5xx`, connection errors and timeouts) with exponential backoff. Other failures, such as an invalid API key, fail at once as `LLMError` with a one-line reason. The Groq SDK's own retries are turned off so there is one retry policy.
+- When a turn fails, the frontend removes the unanswered line from the transcript, explains the failure there, and puts the player's text back in the message box.
 - The frontend API client converts FastAPI validation details into readable error messages through `APIError`.
 - WebSocket invalid JSON returns an `error` message instead of closing the socket.
 
 ## Logging
 
-Backend logging:
+Backend logging is configured once in [Backend/log_config.py](Backend/log_config.py), called from `Backend/server.py` before the app is imported.
 
-- Configured in `Backend/server.py`.
-- Request logging middleware records method, path, status code, and elapsed time.
-- Session startup, shutdown, resource loading, LLM errors, validation warnings, and turn completion are logged.
+- One handler and one format for the app, Uvicorn, and dependencies. Uvicorn's access log is off; the request middleware writes one line per request instead.
+- Every line carries structured fields. Modules pass them with `extra=`, and the request ID (`req`) and session ID (`session`) are added from context, including inside the turn pipeline's worker thread.
+- Each response has an `X-Request-ID` header. A client-supplied `X-Request-ID` is reused, so a browser request can be matched to its server log lines.
+- `/health` and CORS preflight requests are logged at `DEBUG` only, because the launcher and browser poll them.
+- Chatty dependencies (`httpx`, `sentence_transformers`, `uvicorn`, `faiss`, and others) are limited to warnings. Python warnings go through logging, and one known langgraph deprecation notice is dropped.
+
+Text format (`LOG_FORMAT=text`, the default):
+
+```text
+01:29:09.521 INFO    api.app              starting  host=0.0.0.0 port=8000 cors=http://localhost:8080
+01:29:20.538 INFO    memory.embedder      embedding model loaded  model=sentence-transformers/all-MiniLM-L12-v2 ms=4499
+01:29:20.842 INFO    api.app              ready  url=http://localhost:8000 startup_ms=11328
+01:29:22.027 INFO    session.manager      session created  session=17ecceaa-... player="Ada Lovelace" req=9f6c8fa5
+01:29:22.695 ERROR   api.routes.gameplay  turn failed; llm unavailable  error="HTTP 401: Invalid API Key" req=b40e5a91 session=17ecceaa-...
+01:29:22.695 INFO    api.http             POST /api/game/action/17ecceaa-...  status=500 ms=420 req=b40e5a91
+```
+
+JSON format (`LOG_FORMAT=json`) writes the same fields as one object per line, with an ISO 8601 UTC `ts`.
+
+The root scripts print one tagged status line per step (`[dev]`, `[check]`). `npm run check` shows a tool's output only when that step fails.
 
 Frontend logging:
 
-- API, WebSocket, session, and game store errors are logged through `console.error`.
-- User facing notifications use `sonner` toast messages.
+- API, WebSocket, session, and game store errors are logged through `console.error` with a `[Module]` prefix.
+- User-facing notifications use `sonner` toasts, styled to match the game.
 
 No external log collector or metrics exporter is configured in the repository.
 
@@ -619,7 +644,7 @@ Verification run in this workspace:
 | Frontend install         | `npm install` in `Frontend`                         | Passed through root setup                                          |
 | Dependency audit         | `npm audit` in `Frontend`                           | Passed, `0` vulnerabilities                                        |
 | Backend format           | `python -m black --check .` in `Backend`            | Passed                                                             |
-| Backend tests            | `python -m unittest discover -s tests` in `Backend` | Passed, `7` tests                                                  |
+| Backend tests            | `python -m unittest discover -s tests` in `Backend` | Passed, `15` tests                                                 |
 | Frontend format check    | `npm run format:check` in `Frontend`                | Passed                                                             |
 | Frontend typecheck       | `npm run typecheck` in `Frontend`                   | Passed                                                             |
 | Frontend lint            | `npm run lint` in `Frontend`                        | Passed                                                             |
@@ -756,7 +781,7 @@ Available runtime checks:
 
 - `GET /health` checks backend readiness.
 - `GET /api/game/health` checks API status, LLM reachability, active session count, and readiness.
-- Backend logs include request latency in milliseconds.
+- Backend logs include request latency in milliseconds and a request ID that matches the `X-Request-ID` response header.
 - Session data can be inspected under `Backend/data/sessions`.
 
 Maintenance tasks:

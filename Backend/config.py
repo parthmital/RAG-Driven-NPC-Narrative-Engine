@@ -22,6 +22,13 @@ def _env_csv(name: str, default: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
+def _env_choice(name: str, default: str, choices: set[str]) -> str:
+    value = os.getenv(name, default).strip().lower()
+    if value not in choices:
+        raise ValueError(f"{name} must be one of {sorted(choices)}, got {value!r}")
+    return value
+
+
 # Paths
 BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
@@ -82,3 +89,9 @@ DEBUG_ERRORS = _env_bool("DEBUG_ERRORS", False)
 SESSION_SECRET = os.getenv("SESSION_SECRET", os.urandom(32).hex())
 WS_HEARTBEAT_INTERVAL = 30
 MAX_CONCURRENT_SESSIONS = 50
+
+# Logging
+LOG_LEVEL = _env_choice(
+    "LOG_LEVEL", "info", {"debug", "info", "warning", "error"}
+).upper()
+LOG_FORMAT = _env_choice("LOG_FORMAT", "text", {"text", "json"})

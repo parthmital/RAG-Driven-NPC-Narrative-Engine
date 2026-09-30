@@ -70,9 +70,11 @@ def make_node_retrieval(
 
         state["retrieved_memories"] = results
         log.debug(
-            "Retrieval: %d memories in %.0fms",
-            len(results),
-            (time.perf_counter() - started_at) * 1000,
+            "memories retrieved",
+            extra={
+                "count": len(results),
+                "ms": round((time.perf_counter() - started_at) * 1000),
+            },
         )
         return state
 
@@ -91,7 +93,7 @@ def make_node_prompt_assembly(
             history=short_term.format_for_prompt(),
             max_chars=max_chars,
         )
-        log.debug("Prompt assembled: %d chars", len(state["prompt"]))
+        log.debug("prompt built", extra={"chars": len(state["prompt"])})
         return state
 
     return node_prompt_assembly
@@ -108,7 +110,6 @@ def make_node_llm_generation(client: GroqClient):
         )
         state["raw_llm_output"] = raw
         state["elapsed_ms"] = (time.perf_counter() - started_at) * 1000
-        log.debug("LLM generation: %.0fms", state["elapsed_ms"])
         return state
 
     return node_llm_generation
@@ -118,7 +119,7 @@ def node_json_parsing(state: TurnState) -> TurnState:
     raw = state.get("raw_llm_output") or ""
     parsed_dict = GroqClient.extract_json(raw)
     if parsed_dict is None:
-        log.warning("JSON parse failed; using fallback dialogue.")
+        log.warning("llm output is not JSON; using raw text as dialogue")
         state["parsed_output"] = None
         state["turn_errors"] = state.get("turn_errors", []) + ["JSON parse failed"]
         state["npc_dialogue"] = raw.strip() or "..."
@@ -130,7 +131,10 @@ def node_json_parsing(state: TurnState) -> TurnState:
         state["npc_dialogue"] = output.npc_response
         state["narration"] = output.narration
     except Exception as exc:
-        log.warning("LLMOutput schema validation failed: %s", exc)
+        log.warning(
+            "llm output failed schema validation",
+            extra={"error": str(exc).splitlines()[0]},
+        )
         state["parsed_output"] = None
         state["npc_dialogue"] = parsed_dict.get("npc_response", raw.strip() or "...")
         state["narration"] = parsed_dict.get("narration", "")
@@ -151,8 +155,6 @@ def make_node_world_validation():
         valid_events, errors = validate_and_build_events(output, state["world"], turn)
         state["valid_events"] = valid_events
         state["validation_errors"] = errors
-        if errors:
-            log.warning("Validation errors: %s", errors)
         return state
 
     return node_world_validation
@@ -222,7 +224,7 @@ def make_node_event_commit(
             if snapshot_path is not None:
                 save_snapshot(world, snapshot_path, store.get_last_id())
             memory.save()
-            log.info("Snapshot and FAISS saved at turn %d", turn)
+            log.debug("periodic snapshot saved", extra={"turn": turn})
 
         state["world"] = world
         return state
@@ -231,23 +233,18 @@ def make_node_event_commit(
 
 
 def node_output(state: TurnState) -> TurnState:
-    """Log turn completion metadata."""
-    npc_id = state.get("active_npc_id") or "narrator"
-    world = state["world"]
-    npc = world.npcs.get(npc_id)
-    npc_name = npc.name if npc else npc_id
-    elapsed = state.get("elapsed_ms", 0)
-
+    """Log one summary line per turn."""
     log.info(
-        "Turn %d complete: %s responded in %.0fms",
-        world.turn,
-        npc_name,
-        elapsed,
+        "turn complete",
+        extra={
+            "turn": state["world"].turn,
+            "npc": state.get("active_npc_id") or "narrator",
+            "llm_ms": round(state.get("elapsed_ms", 0)),
+            "memories": len(state.get("retrieved_memories", [])),
+            "events": len(state.get("valid_events", [])),
+            "rejected": len(state.get("validation_errors", [])),
+        },
     )
-
-    for error in state.get("validation_errors", []):
-        log.debug("Validation error: %s", error)
-
     return state
 
 

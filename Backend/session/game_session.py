@@ -63,5 +63,5 @@ class GameSession:
         try:
             self.faiss_mem.save()
             self.store.close()
-        except Exception as exc:
-            log.error("Error closing session %s: %s", self.session_id, exc)
+        except Exception:
+            log.exception("session close failed", extra={"session": self.session_id})

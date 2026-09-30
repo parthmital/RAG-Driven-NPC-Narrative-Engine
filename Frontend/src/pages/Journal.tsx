@@ -1,78 +1,55 @@
-import { motion } from "framer-motion";
+import { BookOpen } from "lucide-react";
 import { useGameStore } from "@/stores/gameStore";
+import { EmptyState } from "@/components/ui/EmptyState";
+
+const timeFormat = new Intl.DateTimeFormat(undefined, {
+	hour: "2-digit",
+	minute: "2-digit",
+});
 
 export default function JournalPage() {
-	const { journalEntries } = useGameStore();
-
-	const sortedEntries = [...journalEntries].sort(
-		(a, b) => b.timestamp - a.timestamp,
-	);
+	const journalEntries = useGameStore((s) => s.journalEntries);
+	const entries = [...journalEntries].sort((a, b) => b.timestamp - a.timestamp);
 
 	return (
-		<div className="flex h-full flex-col bg-background">
-			{/* Header */}
-			<div className="flex items-center border-b border-border px-8 py-6">
-				<div className="space-y-1">
-					<h3 className="font-heading text-lg tracking-[0.2em] text-primary">
-						CHRONICLE OF EVENTS
-					</h3>
-					<p className="font-mono text-[9px] uppercase tracking-[0.3em] text-muted-foreground opacity-60">
-						Automated dossier logs
+		<div className="h-full scroll-area">
+			<div className="mx-auto flex max-w-3xl flex-col gap-8 px-5 py-8 sm:px-10 sm:py-12">
+				<header className="flex flex-col gap-2">
+					<h1 className="text-headline sm:text-hero">Journal</h1>
+					<p className="text-body text-muted">
+						What you have learned, newest first.
 					</p>
-				</div>
-			</div>
+				</header>
 
-			{/* Content */}
-			<div className="custom-scrollbar flex-1 overflow-y-auto p-8">
-				<div className="mx-auto max-w-3xl space-y-8">
-					{sortedEntries.length === 0 ? (
-						<div className="flex h-[40vh] items-center justify-center border border-dashed border-border/40">
-							<p className="font-mono text-[10px] uppercase italic tracking-widest text-muted-foreground opacity-40">
-								The archive is currently empty. Events will be logged
-								automatically.
-							</p>
-						</div>
-					) : (
-						<div className="space-y-6">
-							{sortedEntries.map((entry, idx) => (
-								<motion.div
-									key={entry.id || idx}
-									initial={{ opacity: 0, x: -10 }}
-									animate={{ opacity: 1, x: 0 }}
-									transition={{ delay: idx * 0.05 }}
-									className="group relative border-l border-primary/20 py-4 pl-6 transition-all hover:border-primary/50"
+				{entries.length === 0 ? (
+					<EmptyState
+						icon={<BookOpen aria-hidden />}
+						title="Nothing written yet"
+						className="rounded-lg border border-dashed"
+					>
+						Discoveries from your conversations are recorded here as the story
+						unfolds.
+					</EmptyState>
+				) : (
+					<ol className="flex flex-col">
+						{entries.map((entry, index) => (
+							<li
+								key={entry.id || index}
+								className="grid gap-x-6 gap-y-1 border-t py-5 sm:grid-cols-[5rem_minmax(0,1fr)]"
+							>
+								<time
+									dateTime={new Date(entry.timestamp).toISOString()}
+									className="pt-1 text-label tabular-nums text-faint"
 								>
-									{/* Timeline marker */}
-									<div className="absolute -left-[4.5px] top-6 h-2 w-2 rounded-full border border-primary/20 bg-background group-hover:border-primary group-hover:bg-primary/20" />
-
-									<div className="mb-2 flex items-center justify-between">
-										<span className="font-mono text-[10px] tracking-widest text-primary/70">
-											LOG ENTRY #{sortedEntries.length - idx}
-										</span>
-										<span className="font-mono text-[9px] text-muted-foreground opacity-60">
-											{new Date(entry.timestamp).toLocaleString([], {
-												hour: "2-digit",
-												minute: "2-digit",
-												second: "2-digit",
-											})}
-										</span>
-									</div>
-
-									<p className="font-body text-sm leading-relaxed text-foreground/90 selection:bg-primary/30">
-										{entry.content}
-									</p>
-								</motion.div>
-							))}
-						</div>
-					)}
-				</div>
-			</div>
-
-			{/* Footer / Info */}
-			<div className="border-t border-border bg-card/20 px-8 py-4">
-				<p className="text-center font-mono text-[9px] tracking-widest text-muted-foreground opacity-40">
-					[ END OF ARCHIVE ]
-				</p>
+									{timeFormat.format(entry.timestamp)}
+								</time>
+								<p className="font-read text-read text-text/90">
+									{entry.content}
+								</p>
+							</li>
+						))}
+					</ol>
+				)}
 			</div>
 		</div>
 	);

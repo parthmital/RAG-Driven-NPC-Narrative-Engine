@@ -1,23 +1,16 @@
 import { create } from "zustand";
+import { NARRATOR_ID } from "@/config/constants";
+
+type ModalId = "pause" | "scene";
 
 interface UIState {
-	activeModal: string | null;
-	openModal: (id: string) => void;
+	activeModal: ModalId | null;
+	openModal: (id: ModalId) => void;
 	closeModal: () => void;
 
-	loadingStates: Record<string, boolean>;
-	setLoading: (key: string, value: boolean) => void;
-
-	notifications: {
-		id: string;
-		message: string;
-		type: "info" | "warning" | "danger";
-	}[];
-	addNotification: (n: UIState["notifications"][0]) => void;
-	dismissNotification: (id: string) => void;
-
-	sidebarCollapsed: { left: boolean; right: boolean };
-	toggleSidebar: (side: "left" | "right") => void;
+	/** Who the player is speaking to: an NPC id, or "narrator". */
+	addresseeId: string;
+	setAddressee: (id: string) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -25,22 +18,6 @@ export const useUIStore = create<UIState>((set) => ({
 	openModal: (id) => set({ activeModal: id }),
 	closeModal: () => set({ activeModal: null }),
 
-	loadingStates: {},
-	setLoading: (key, value) =>
-		set((s) => ({ loadingStates: { ...s.loadingStates, [key]: value } })),
-
-	notifications: [],
-	addNotification: (n) =>
-		set((s) => ({ notifications: [...s.notifications, n] })),
-	dismissNotification: (id) =>
-		set((s) => ({ notifications: s.notifications.filter((n) => n.id !== id) })),
-
-	sidebarCollapsed: { left: false, right: false },
-	toggleSidebar: (side) =>
-		set((s) => ({
-			sidebarCollapsed: {
-				...s.sidebarCollapsed,
-				[side]: !s.sidebarCollapsed[side],
-			},
-		})),
+	addresseeId: NARRATOR_ID,
+	setAddressee: (id) => set({ addresseeId: id }),
 }));

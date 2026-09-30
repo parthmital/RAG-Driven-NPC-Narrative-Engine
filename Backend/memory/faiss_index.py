@@ -56,12 +56,12 @@ class FAISSMemory:
                 )
                 for m in meta
             ]
-            log.info("FAISS index loaded: %d entries", len(self._entries))
+            log.debug("memory index loaded", extra={"entries": len(self._entries)})
         else:
             self._index = faiss.IndexFlatIP(
                 dim
             )  # inner product on normalised vecs = cosine
-            log.info("FAISS index created (empty).")
+            log.debug("memory index created")
 
     def add(
         self,
@@ -123,7 +123,9 @@ class FAISSMemory:
 
         if len(self._entries) <= keep:
             return
-        log.info("Pruning FAISS memory: %d -> %d entries", len(self._entries), keep)
+        log.info(
+            "memory index pruned", extra={"before": len(self._entries), "after": keep}
+        )
         keep_entries = self._entries[-keep:]
         # Re-embed is expensive; we reconstruct from stored vecs
         # Since IndexFlatIP supports reconstruct:
@@ -151,7 +153,7 @@ class FAISSMemory:
             for e in self._entries
         ]
         self.meta_path.write_text(json.dumps(meta), encoding="utf-8")
-        log.debug("FAISS index saved: %d entries", len(self._entries))
+        log.debug("memory index saved", extra={"entries": len(self._entries)})
 
     def __len__(self) -> int:
         return len(self._entries)

@@ -8,6 +8,8 @@ export interface DialogueMessage {
 	timestamp: number;
 	trustChange?: number;
 	memoryRef?: string;
+	/** System notes that report a failure. */
+	isError?: boolean;
 }
 
 export interface NPC {
@@ -16,14 +18,10 @@ export interface NPC {
 	title?: string;
 	description?: string;
 	personality?: string;
-	portraitUrl?: string;
 	trust: number;
 	maxTrust: number;
 	trustThresholds: TrustThreshold[];
 	emotionalState: EmotionalState;
-	hiddenSecrets: number;
-	revealedSecrets: number;
-	allegiances: string[];
 	relationshipTier: RelationshipTier;
 	suspicion: number;
 	emotionalLabel: string;

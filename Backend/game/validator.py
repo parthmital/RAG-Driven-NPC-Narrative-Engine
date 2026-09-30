@@ -28,14 +28,15 @@ def validate_and_build_events(
     errors: List[str] = []
 
     if output.new_entities:
-        msg = f"LLM attempted entity creation - blocked: {output.new_entities}"
-        log.warning(msg)
-        errors.append(msg)
+        log.warning("entity creation blocked", extra={"entities": output.new_entities})
+        errors.append(f"LLM attempted entity creation - blocked: {output.new_entities}")
 
     for proposal in output.world_updates:
         err = _validate_proposal(proposal, world)
         if err:
-            log.warning("Rejected update (%s): %s", proposal.type, err)
+            log.warning(
+                "world update rejected", extra={"type": proposal.type, "reason": err}
+            )
             errors.append(f"Rejected {proposal.type}: {err}")
             continue
 

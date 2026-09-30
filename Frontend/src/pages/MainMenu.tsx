@@ -1,93 +1,126 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { toast } from "sonner";
+import { FolderOpen, Play, Plus } from "lucide-react";
 import { useGameStore } from "@/stores/gameStore";
 import { useSavedSessions } from "@/hooks/useSavedSessions";
+import { Button } from "@/components/ui/Button";
+import { formatRelativeTime, splitPlaceName } from "@/lib/format";
+import { errorMessage } from "@/stores/mappers";
 
 export default function MainMenu() {
 	const navigate = useNavigate();
-	const { sessionId, metadata } = useGameStore();
-	const { saves, isLoading } = useSavedSessions();
+	const sessionId = useGameStore((s) => s.sessionId);
+	const playerName = useGameStore((s) => s.playerName);
+	const locationName = useGameStore((s) => s.currentLocationName);
+	const turn = useGameStore((s) => s.turn);
+	const metadata = useGameStore((s) => s.metadata);
+	const loadGame = useGameStore((s) => s.loadGame);
+	const { saves, isLoading, failed } = useSavedSessions();
+	const [isContinuing, setIsContinuing] = useState(false);
 
-	const hasSaves = saves.length > 0;
+	const latest = saves[0];
+	const opening = metadata?.initial_narrator_message?.split("\n")[0];
 
-	const menuItems = [
-		{
-			label: "NEW GAME",
-			action: () => navigate("/new-game"),
-			enabled: !isLoading,
-		},
-		// Only include Continue if there's an active session or saved games
-		...(!!sessionId || hasSaves
-			? [
-					{
-						label: "CONTINUE",
-						action: async () => {
-							if (sessionId) {
-								navigate("/game");
-								return;
-							}
-							if (saves.length > 0) {
-								try {
-									await useGameStore.getState().loadGame(saves[0].session_id);
-									navigate("/game");
-								} catch (err) {
-									console.error(err);
-								}
-							}
-						},
-						enabled: !isLoading,
-					},
-				]
-			: []),
-		// Only include Load Game if there are saved games
-		...(hasSaves
-			? [
-					{
-						label: "LOAD GAME",
-						action: () => navigate("/session"),
-						enabled: !isLoading,
-					},
-				]
-			: []),
-	];
+	const continueLatest = async () => {
+		setIsContinuing(true);
+		try {
+			await loadGame(latest.session_id);
+			navigate("/game");
+		} catch (error) {
+			toast.error("Couldn't continue", {
+				description: errorMessage(error, "The save could not be loaded."),
+			});
+			setIsContinuing(false);
+		}
+	};
+
+	const resume = sessionId
+		? {
+				label: "Resume",
+				detail: `${playerName} · ${splitPlaceName(locationName).place} · turn ${turn}`,
+				action: () => navigate("/game"),
+			}
+		: latest
+			? {
+					label: "Continue",
+					detail: `${latest.player_name} · ${splitPlaceName(latest.location_name).place} · ${formatRelativeTime(latest.created_at)}`,
+					action: continueLatest,
+				}
+			: null;
 
 	return (
-		<div className="flex h-screen w-screen flex-col items-center justify-center bg-background">
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.8, ease: "easeOut" }}
-				className="flex flex-col items-center gap-12"
-			>
-				<div className="text-center">
-					<h1 className="font-heading text-4xl tracking-[0.2em] text-primary">
-						{metadata?.title ? metadata.title.toUpperCase() : "LOADING..."}
-					</h1>
-					<p className="mx-auto mt-3 w-96 font-mono text-xs leading-relaxed tracking-[0.3em] text-muted-foreground">
-						{metadata?.description
-							? metadata.description.toUpperCase()
-							: "AWAITING ENGINE..."}
-					</p>
+		<main className="scroll-area h-dvh animate-fade bg-ground">
+			<div className="mx-auto grid min-h-dvh max-w-6xl items-center gap-10 px-6 py-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-16">
+				<div className="flex justify-center lg:justify-end">
+					<img
+						src="/favicon.png"
+						alt="A black glass flask with gilt edges, a violet constellation glowing inside"
+						className="w-40 sm:w-56 lg:w-80"
+					/>
 				</div>
 
-				<div className="h-px w-48 bg-border" />
+				<div className="flex max-w-xl flex-col gap-8">
+					<div className="flex flex-col gap-4">
+						<h1 className="text-headline sm:text-hero">
+							{metadata?.title ?? "The Obsidian Flask"}
+						</h1>
+						<p className="text-body text-muted sm:text-read">
+							{metadata?.description ??
+								"A dark fantasy text adventure where every character remembers you."}
+						</p>
+						{opening && (
+							<blockquote className="border-l-2 border-gilt/60 pl-4 font-read text-read italic text-text/80">
+								{opening}
+							</blockquote>
+						)}
+					</div>
 
-				<nav className="flex flex-col items-center gap-3">
-					{menuItems.map((item, i) => (
-						<motion.button
-							key={item.label}
-							initial={{ opacity: 0 }}
-							animate={{ opacity: 1 }}
-							transition={{ delay: 0.3 + i * 0.1 }}
-							onClick={item.action}
-							disabled={!item.enabled}
-							className="w-56 border border-border px-6 py-3 font-heading text-xs tracking-[0.2em] text-foreground transition-all duration-300 hover:border-primary/50 hover:bg-secondary hover:text-primary disabled:cursor-not-allowed disabled:opacity-30"
+					<div className="flex flex-col gap-3 sm:max-w-sm">
+						{resume && (
+							<Button
+								variant="primary"
+								block
+								loading={isContinuing}
+								icon={<Play aria-hidden className="size-4" />}
+								onClick={resume.action}
+								className="justify-start py-3 text-left"
+							>
+								<span className="flex flex-col items-start">
+									<span>{resume.label}</span>
+									<span className="text-caption font-normal text-gilt-ink/75">
+										{resume.detail}
+									</span>
+								</span>
+							</Button>
+						)}
+						<Button
+							variant={resume ? "secondary" : "primary"}
+							block
+							disabled={isLoading}
+							icon={<Plus aria-hidden className="size-4" />}
+							onClick={() => navigate("/new-game")}
 						>
-							{item.label}
-						</motion.button>
-					))}
-				</nav>
-			</motion.div>
-		</div>
+							New game
+						</Button>
+						{saves.length > 0 && (
+							<Button
+								variant="ghost"
+								block
+								icon={<FolderOpen aria-hidden className="size-4" />}
+								onClick={() => navigate("/session")}
+							>
+								Load game
+							</Button>
+						)}
+						{failed && (
+							<p role="alert" className="text-label text-ember">
+								Saved games couldn't be read. New game still works.
+							</p>
+						)}
+					</div>
+				</div>
+			</div>
+		</main>
 	);
 }

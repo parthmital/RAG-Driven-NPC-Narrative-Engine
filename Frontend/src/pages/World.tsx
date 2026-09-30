@@ -1,249 +1,217 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { Footprints, Hand, Loader2, MapPin } from "lucide-react";
 import { useGameStore } from "@/stores/gameStore";
-import { apiClient, type LocationInfo, type NPCInfo } from "@/services/api";
-import { toast } from "sonner";
-import { toTitleCase } from "@/lib/format";
+import { useLocations } from "@/hooks/useLocations";
+import { splitPlaceName } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/Button";
+import { EmptyState, SectionLabel } from "@/components/ui/EmptyState";
+import { ListRow, MasterDetail } from "@/components/layout/MasterDetail";
+import { ItemList } from "@/components/game/scene/ItemList";
+import { emotionOf } from "@/components/game/emotionStyles";
+import type { LocationInfo } from "@/services/api";
+
+function PlaceDetail({
+	place,
+	onSelect,
+	nameOf,
+}: {
+	place: LocationInfo;
+	onSelect: (id: string) => void;
+	nameOf: (id: string) => string;
+}) {
+	const currentLocation = useGameStore((s) => s.currentLocation);
+	const connected = useGameStore((s) => s.connectedLocations);
+	const movePlayer = useGameStore((s) => s.movePlayer);
+	const pickupObject = useGameStore((s) => s.pickupObject);
+	const isProcessing = useGameStore((s) => s.isProcessing);
+	const [isTravelling, setIsTravelling] = useState(false);
+
+	const isHere = place.id === currentLocation;
+	const isAdjacent = connected.includes(place.id);
+	const { area, place: title } = splitPlaceName(place.name);
+
+	const travel = async () => {
+		setIsTravelling(true);
+		try {
+			await movePlayer(place.id);
+		} catch {
+			// The store reports travel failures.
+		} finally {
+			setIsTravelling(false);
+		}
+	};
+
+	return (
+		<>
+			<header className="flex flex-col gap-3">
+				{area && <p className="text-label text-faint">{area}</p>}
+				<h1 className="text-headline sm:text-hero">{title}</h1>
+				{isHere ? (
+					<p className="flex items-center gap-2 text-label text-gilt">
+						<MapPin aria-hidden className="size-4" /> You are here
+					</p>
+				) : isAdjacent ? (
+					<Button
+						variant="primary"
+						loading={isTravelling}
+						disabled={isProcessing}
+						icon={<Footprints aria-hidden className="size-4" />}
+						onClick={travel}
+						className="self-start"
+					>
+						Travel here
+					</Button>
+				) : (
+					<p className="text-label text-muted">
+						Not reachable from where you stand. Travel through a neighbouring
+						place.
+					</p>
+				)}
+			</header>
+
+			<p className="font-read text-read text-text/85">{place.description}</p>
+
+			<div className="flex flex-col gap-3">
+				<SectionLabel count={place.npcs_present.length}>People</SectionLabel>
+				{place.npcs_present.length === 0 ? (
+					<p className="text-body text-muted">No one of note.</p>
+				) : (
+					<ul className="flex flex-col gap-1">
+						{place.npcs_present.map((npc) => (
+							<li key={npc.id} className="flex items-baseline gap-2">
+								<span className="font-display text-title text-arcane">
+									{npc.name}
+								</span>
+								<span
+									className={cn(
+										"text-label",
+										emotionOf(npc.emotional_state).color,
+									)}
+								>
+									{emotionOf(npc.emotional_state).label}
+								</span>
+							</li>
+						))}
+					</ul>
+				)}
+			</div>
+
+			{place.objects_here.length > 0 && (
+				<div className="flex flex-col gap-3">
+					<SectionLabel count={place.objects_here.length}>Objects</SectionLabel>
+					{isHere ? (
+						<ItemList
+							items={place.objects_here}
+							actionLabel="Take"
+							actionIcon={<Hand aria-hidden className="size-4" />}
+							onAction={pickupObject}
+							disabled={isProcessing}
+						/>
+					) : (
+						<ul className="flex flex-col gap-3">
+							{place.objects_here.map((obj) => (
+								<li key={obj.id}>
+									<p className="text-body font-medium">{obj.name}</p>
+									<p className="text-label text-muted">{obj.description}</p>
+								</li>
+							))}
+						</ul>
+					)}
+				</div>
+			)}
+
+			<div className="flex flex-col gap-3">
+				<SectionLabel>Leads to</SectionLabel>
+				<div className="flex flex-wrap gap-2">
+					{place.connected_to.map((id) => (
+						<Button key={id} onClick={() => onSelect(id)}>
+							{nameOf(id)}
+						</Button>
+					))}
+				</div>
+			</div>
+		</>
+	);
+}
 
 export default function WorldPage() {
-	const { currentLocation, sessionId } = useGameStore();
-	const [locations, setLocations] = useState<LocationInfo[]>([]);
+	const currentLocation = useGameStore((s) => s.currentLocation);
+	const connected = useGameStore((s) => s.connectedLocations);
+	const { locations, isLoading, failed } = useLocations();
 	const [selectedId, setSelectedId] = useState<string | null>(null);
-	const [isLoading, setIsLoading] = useState(false);
+	const [detailOpen, setDetailOpen] = useState(false);
 
-	// Fetch world locations (only depends on sessionId)
-	useEffect(() => {
-		if (!sessionId) return;
-		setIsLoading(true);
-		apiClient
-			.listLocations(sessionId)
-			.then((list) => {
-				setLocations(list);
-			})
-			.catch(console.error)
-			.finally(() => setIsLoading(false));
-	}, [sessionId, currentLocation]);
-
-	// Always sync selectedId with currentLocation when it changes
-	useEffect(() => {
-		if (currentLocation) {
-			setSelectedId(currentLocation);
-		}
-	}, [currentLocation]);
-
-	// Fetch detailed current location whenever we move
-	useEffect(() => {
-		if (!sessionId || !currentLocation) return;
-		apiClient
-			.getLocation(sessionId)
-			.then((loc) => {
-				setLocations((prev) => prev.map((l) => (l.id === loc.id ? loc : l)));
-			})
-			.catch(console.error);
-	}, [sessionId, currentLocation]);
-
-	const selected = locations.find((l) => l.id === selectedId);
-
-	const handleSelect = (locId: string) => {
-		setSelectedId(locId);
+	const selected =
+		locations.find((l) => l.id === (selectedId ?? currentLocation)) ?? null;
+	const nameOf = (id: string) =>
+		splitPlaceName(locations.find((l) => l.id === id)?.name ?? id).place;
+	const select = (id: string) => {
+		setSelectedId(id);
+		setDetailOpen(true);
 	};
 
-	const handleTravel = async (locId: string) => {
-		try {
-			const { movePlayer } = useGameStore.getState();
-			await movePlayer(locId);
-		} catch (error: unknown) {
-			const err = error as Error;
-			toast.error("Travel Failed", {
-				description: err.message || "Cannot travel there.",
-			});
-		}
-	};
-
-	if (!sessionId) {
+	if (isLoading) {
 		return (
-			<div className="flex h-full items-center justify-center">
-				<p className="font-mono text-xs tracking-wider text-muted-foreground/50">
-					START A GAME TO EXPLORE THE WORLD
-				</p>
+			<div className="flex h-full items-center justify-center gap-2 text-muted">
+				<Loader2 aria-hidden className="size-4 animate-spin" /> Loading the map
 			</div>
+		);
+	}
+	if (failed) {
+		return (
+			<EmptyState icon={<MapPin aria-hidden />} title="The map didn't load">
+				The game server didn't return the list of places. Return to the scene
+				and try again.
+			</EmptyState>
 		);
 	}
 
 	return (
-		<div className="flex h-full">
-			{/* Location list */}
-			<div className="flex w-[300px] flex-col border-r border-border">
-				<div className="border-b border-border px-4 py-3">
-					<h2 className="font-heading text-xs tracking-widest text-muted-foreground">
-						LOCATIONS
-					</h2>
-					<p className="mt-1 font-mono text-[9px] text-muted-foreground/60">
-						EXPLORE THE WORLD
-					</p>
-				</div>
-				<div className="flex-1 overflow-y-auto">
-					{isLoading ? (
-						<div className="p-4">
-							<p className="animate-pulse font-mono text-xs text-muted-foreground/50">
-								Loading...
-							</p>
-						</div>
-					) : (
-						locations.map((loc) => {
-							const isHere = currentLocation === loc.id;
-							const isSelected = selectedId === loc.id;
-
-							return (
-								<button
-									key={loc.id}
-									onClick={() => setSelectedId(loc.id)}
-									className={cn(
-										"flex w-full flex-col gap-1 border-b border-border px-4 py-3 text-left transition-colors",
-										isSelected ? "bg-secondary" : "hover:bg-secondary/50",
-									)}
-								>
-									<div className="flex items-center gap-2">
-										{isHere && (
-											<span className="h-1.5 w-1.5 rounded-full bg-primary" />
-										)}
-										<span
-											className={cn(
-												"font-heading text-xs tracking-wider",
-												isHere ? "text-primary" : "text-foreground",
-											)}
-										>
-											{loc.name}
-										</span>
-									</div>
-									{loc.npcs_present.length > 0 && (
-										<span className="font-mono text-[9px] text-muted-foreground">
-											{loc.npcs_present.map((n: NPCInfo) => n.name).join(" · ")}
-										</span>
-									)}
-								</button>
-							);
-						})
-					)}
-
-					{/* Show connected locations */}
-					{selected &&
-						selected.connected_to.map((connId: string) => {
-							const exists = locations.find((l) => l.id === connId);
-							if (exists) return null;
-							return (
-								<button
-									key={connId}
-									onClick={() => handleSelect(connId)}
-									className="flex w-full flex-col gap-1 border-b border-border px-4 py-3 text-left transition-colors hover:bg-secondary/50"
-								>
-									<div className="flex items-center gap-2">
-										<span className="font-heading text-xs tracking-wider text-muted-foreground">
-											→ {toTitleCase(connId)}
-										</span>
-									</div>
-									<span className="font-mono text-[9px] text-muted-foreground/50">
-										View location
-									</span>
-								</button>
-							);
-						})}
-				</div>
-			</div>
-
-			{/* Detail panel */}
-			<div className="flex flex-1 flex-col">
-				{selected ? (
-					<motion.div
-						key={selected.id}
-						initial={{ opacity: 0 }}
-						animate={{ opacity: 1 }}
-						transition={{ duration: 0.3 }}
-						className="flex flex-1 flex-col p-8"
-					>
-						<h3 className="font-heading text-lg tracking-wider text-foreground">
-							{selected.name}
-						</h3>
-
-						{currentLocation === selected.id ? (
-							<span className="mt-1 inline-block font-mono text-[10px] tracking-wider text-primary">
-								● YOU ARE HERE
-							</span>
-						) : (
-							<button
-								onClick={() => handleTravel(selected.id)}
-								className="mt-2 w-fit border border-primary px-4 py-1.5 font-mono text-[10px] tracking-wider text-primary transition-colors hover:bg-primary/10"
+		<MasterDetail
+			listLabel="All places"
+			detailKey={selected?.id}
+			detailOpen={detailOpen}
+			onBack={() => setDetailOpen(false)}
+			list={
+				<ul>
+					{locations.map((loc) => {
+						const { area, place } = splitPlaceName(loc.name);
+						const isHere = loc.id === currentLocation;
+						return (
+							<ListRow
+								key={loc.id}
+								selected={selected?.id === loc.id}
+								onSelect={() => select(loc.id)}
 							>
-								TRAVEL HERE
-							</button>
-						)}
-
-						<p className="mt-4 text-sm italic leading-relaxed text-foreground/80">
-							{selected.description}
-						</p>
-
-						{/* Objects */}
-						{selected.objects_here.length > 0 && (
-							<div className="mt-6 space-y-1 border-t border-border pt-4">
-								<span className="font-mono text-[10px] tracking-wider text-muted-foreground">
-									OBJECTS
+								<span className="text-caption text-faint">
+									{area ?? "Outside"}
 								</span>
-								{selected.objects_here.map((obj) => (
-									<p key={obj.id} className="text-sm text-foreground">
-										{obj.name}{" "}
-										<span className="text-xs text-muted-foreground">
-											— {obj.description}
-										</span>
-									</p>
-								))}
-							</div>
-						)}
-
-						{/* NPCs Present */}
-						<div className="mt-4 space-y-1 border-t border-border pt-4">
-							<span className="font-mono text-[10px] tracking-wider text-muted-foreground">
-								PRESENT
-							</span>
-							{selected.npcs_present.length > 0 ? (
-								selected.npcs_present.map((npc: NPCInfo) => (
-									<p key={npc.id} className="text-sm text-foreground">
-										{npc.name}
-									</p>
-								))
-							) : (
-								<p className="text-xs italic text-muted-foreground">
-									No one of note
-								</p>
-							)}
-						</div>
-
-						{/* Connected locations */}
-						<div className="mt-4 space-y-1 border-t border-border pt-4">
-							<span className="font-mono text-[10px] tracking-wider text-muted-foreground">
-								CONNECTED TO
-							</span>
-							<div className="flex flex-wrap gap-2">
-								{selected.connected_to.map((connId: string) => (
-									<button
-										key={connId}
-										onClick={() => handleSelect(connId)}
-										className="border border-border px-2 py-1 font-mono text-[10px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
-									>
-										→ {toTitleCase(connId)}
-									</button>
-								))}
-							</div>
-						</div>
-					</motion.div>
-				) : (
-					<div className="flex flex-1 items-center justify-center">
-						<p className="font-mono text-xs text-muted-foreground/50">
-							Select a location
-						</p>
-					</div>
-				)}
-			</div>
-		</div>
+								<span className="flex items-center gap-2 font-display text-title">
+									{place}
+									{isHere && (
+										<MapPin aria-hidden className="size-4 text-gilt" />
+									)}
+								</span>
+								<span className="text-label text-muted">
+									{isHere
+										? "You are here"
+										: connected.includes(loc.id)
+											? "Next door"
+											: "Further away"}
+									{loc.npcs_present.length > 0 &&
+										` · ${loc.npcs_present.map((n) => n.name).join(", ")}`}
+								</span>
+							</ListRow>
+						);
+					})}
+				</ul>
+			}
+			detail={
+				selected && (
+					<PlaceDetail place={selected} onSelect={select} nameOf={nameOf} />
+				)
+			}
+		/>
 	);
 }

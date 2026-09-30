@@ -22,7 +22,16 @@ export const VENV_PYTHON = path.join(
 const STAMP = path.join(CACHE, "setup-stamp.json");
 const REQUIREMENTS = path.join(BACKEND, "requirements-dev.txt");
 
-export const log = (msg) => console.log(`[dev] ${msg}`);
+// Status lines are tagged with the running script: [dev] or [check].
+const TAG = `[${path.basename(process.argv[1] ?? "dev", ".mjs")}]`;
+const COLOR = process.stdout.isTTY && !process.env.NO_COLOR && !process.env.CI;
+const paint = (code, text) => (COLOR ? `\x1b[${code}m${text}\x1b[0m` : text);
+
+export const log = (msg) => console.log(`${paint(2, TAG)} ${msg}`);
+export const ok = (msg) => log(`${paint(32, "✓")} ${msg}`);
+export const warn = (msg) => log(`${paint(33, "!")} ${msg}`);
+export const fail = (msg) =>
+	console.error(`${paint(2, TAG)} ${paint(31, "✗")} ${msg}`);
 
 export class SetupError extends Error {}
 
@@ -53,32 +62,41 @@ export function repoEnv() {
 	return env;
 }
 
-/** Run a command to completion, streaming output, and throw on failure. */
-export function run(file, args, { cwd = ROOT, env = repoEnv(), what } = {}) {
-	const result = spawnSync(file, args, { cwd, env, stdio: "inherit" });
+/**
+ * Run a command to completion and throw on failure. `quiet` captures the
+ * output and prints it only when the command fails.
+ */
+export function run(
+	file,
+	args,
+	{ cwd = ROOT, env = repoEnv(), what, quiet = false, shell = false } = {},
+) {
+	const result = spawnSync(file, args, {
+		cwd,
+		env,
+		shell,
+		stdio: quiet ? "pipe" : "inherit",
+		encoding: "utf-8",
+		maxBuffer: 64 * 1024 * 1024,
+	});
 	if (result.error) throw new SetupError(`${what}: ${result.error.message}`);
 	if (result.status !== 0) {
+		if (quiet) process.stderr.write(`${result.stdout}${result.stderr}`);
 		throw new SetupError(`${what} failed (exit code ${result.status}).`);
 	}
 }
 
 /** npm invocation that works from `npm run` and from a bare `node` call. */
-export function npm(args, options) {
+export function npm(args, options = {}) {
 	const npmCli = process.env.npm_execpath;
 	if (npmCli && npmCli.endsWith(".js")) {
 		return run(process.execPath, [npmCli, ...args], options);
 	}
-	const result = spawnSync(IS_WINDOWS ? "npm.cmd" : "npm", args, {
-		cwd: options?.cwd ?? ROOT,
-		env: options?.env ?? repoEnv(),
-		stdio: "inherit",
+	return run(IS_WINDOWS ? "npm.cmd" : "npm", args, {
+		what: "npm",
+		...options,
 		shell: IS_WINDOWS,
 	});
-	if (result.status !== 0) {
-		throw new SetupError(
-			`${options?.what ?? "npm"} failed (exit code ${result.status}).`,
-		);
-	}
 }
 
 function findSystemPython() {
@@ -166,6 +184,7 @@ export function ensureSetup() {
 	const nodeHealthy =
 		fs.existsSync(path.join(ROOT, "node_modules")) &&
 		fs.existsSync(path.join(FRONTEND, "node_modules/vite"));
+	const upToDate = [];
 	if (stamp.node !== nodeHash || !nodeHealthy) {
 		log("Installing Node dependencies...");
 		const quiet = ["--no-audit", "--no-fund", "--loglevel=error"];
@@ -173,7 +192,7 @@ export function ensureSetup() {
 		npm(["ci", ...quiet], { cwd: FRONTEND, env, what: "Frontend npm install" });
 		stamp.node = nodeHash;
 	} else {
-		log("Node dependencies up to date.");
+		upToDate.push("Node");
 	}
 
 	const pyFiles = [REQUIREMENTS, path.join(BACKEND, "requirements.txt")];
@@ -185,10 +204,7 @@ export function ensureSetup() {
 			run(
 				python.file,
 				[...python.prefix, "-m", "venv", path.join(ROOT, ".venv")],
-				{
-					env,
-					what: "Creating .venv",
-				},
+				{ env, what: "Creating .venv", quiet: true },
 			);
 		}
 		log(
@@ -201,22 +217,21 @@ export function ensureSetup() {
 		});
 		stamp.python = pyHash;
 	} else {
-		log("Python environment up to date.");
+		upToDate.push("Python");
 	}
+	if (upToDate.length) ok(`${upToDate.join(" and ")} dependencies up to date`);
 
 	const dotenv = path.join(BACKEND, ".env");
 	if (!fs.existsSync(dotenv)) {
 		fs.copyFileSync(path.join(BACKEND, ".env.example"), dotenv);
-		log("Created Backend/.env from .env.example. Set GROQ_API_KEY in it.");
+		ok("Created Backend/.env from .env.example");
 	}
 	if (
 		/GROQ_API_KEY=(your_groq_api_key_here)?\s*$/m.test(
 			fs.readFileSync(dotenv, "utf-8"),
 		)
 	) {
-		log(
-			"Warning: GROQ_API_KEY is not set in Backend/.env; NPC replies will fail.",
-		);
+		warn("GROQ_API_KEY is not set in Backend/.env; NPC replies will fail");
 	}
 
 	fs.writeFileSync(STAMP, JSON.stringify(stamp, null, 2));

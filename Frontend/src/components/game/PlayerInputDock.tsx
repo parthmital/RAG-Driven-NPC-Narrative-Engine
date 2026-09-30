@@ -1,136 +1,142 @@
-import { useState, useCallback, useRef } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { SendHorizontal } from "lucide-react";
 import { useGameStore } from "@/stores/gameStore";
+import { useUIStore } from "@/stores/uiStore";
+import { NARRATOR_ID } from "@/config/constants";
+import { ChoiceGroup } from "@/components/ui/ChoiceGroup";
 import { cn } from "@/lib/utils";
 
+const HISTORY_LIMIT = 50;
+
+/** Who to address and what to say. */
 export function PlayerInputDock() {
 	const [input, setInput] = useState("");
-	const [commandHistory, setCommandHistory] = useState<string[]>([]);
+	const [history, setHistory] = useState<string[]>([]);
 	const [historyIndex, setHistoryIndex] = useState(-1);
-	const [targetNpcId, setTargetNpcId] = useState<string | null>(null);
-	const { isProcessing, sendAction, sessionId, npcs, currentLocation } =
-		useGameStore();
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-	const presentNpcs = Object.values(npcs).filter(
-		(npc) => npc.id !== "narrator" && npc.locationId === currentLocation,
+	const isProcessing = useGameStore((s) => s.isProcessing);
+	const sendAction = useGameStore((s) => s.sendAction);
+	const npcs = useGameStore((s) => s.npcs);
+	const currentLocation = useGameStore((s) => s.currentLocation);
+	const addresseeId = useUIStore((s) => s.addresseeId);
+	const setAddressee = useUIStore((s) => s.setAddressee);
+
+	const present = Object.values(npcs).filter(
+		(npc) => npc.id !== NARRATOR_ID && npc.locationId === currentLocation,
 	);
+	const addressee = present.find((npc) => npc.id === addresseeId);
 
-	// Ensure targetNpcId defaults to narrator
-	const currentTarget = targetNpcId === null ? "narrator" : targetNpcId;
+	// Someone who has left the room can no longer be addressed.
+	useEffect(() => {
+		if (addresseeId !== NARRATOR_ID && !addressee) setAddressee(NARRATOR_ID);
+	}, [addresseeId, addressee, setAddressee]);
 
-	const handleSend = useCallback(() => {
-		const curInput = input.trim();
-		if (!curInput || isProcessing) return;
+	// Grow with the text up to the CSS max height.
+	useLayoutEffect(() => {
+		const el = textareaRef.current;
+		if (!el) return;
+		el.style.height = "auto";
+		el.style.height = `${el.scrollHeight}px`;
+	}, [input]);
 
-		setCommandHistory((prev) => [curInput, ...prev.slice(0, 49)]);
+	const send = async () => {
+		const text = input.trim();
+		if (!text || isProcessing) return;
+		setHistory((prev) => [text, ...prev].slice(0, HISTORY_LIMIT));
 		setHistoryIndex(-1);
 		setInput("");
-
-		let npcIdForAction: string | undefined;
-		if (currentTarget === "narrator") {
-			npcIdForAction = "narrator";
-		} else {
-			npcIdForAction = currentTarget;
+		try {
+			await sendAction(text, addresseeId);
+		} catch {
+			// The store explains the failure in the transcript; keep the words.
+			setInput((current) => current || text);
 		}
+		textareaRef.current?.focus();
+	};
 
-		sendAction(curInput, npcIdForAction);
-	}, [isProcessing, sendAction, currentTarget, input]);
+	const recall = (index: number) => {
+		setHistoryIndex(index);
+		setInput(index === -1 ? "" : history[index]);
+	};
 
-	const handleKeyDown = (e: React.KeyboardEvent) => {
-		if (e.key === "Enter" && !e.shiftKey) {
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+		if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
 			e.preventDefault();
-			handleSend();
+			void send();
+			return;
 		}
-		if (e.key === "ArrowUp" && commandHistory.length > 0) {
+		// Browse earlier lines only while not editing a draft.
+		const browsing = input === "" || historyIndex !== -1;
+		if (e.key === "ArrowUp" && browsing && history.length) {
 			e.preventDefault();
-			const newIndex = Math.min(historyIndex + 1, commandHistory.length - 1);
-			setHistoryIndex(newIndex);
-			setInput(commandHistory[newIndex]);
-		}
-		if (e.key === "ArrowDown") {
+			recall(Math.min(historyIndex + 1, history.length - 1));
+		} else if (e.key === "ArrowDown" && historyIndex !== -1) {
 			e.preventDefault();
-			if (historyIndex <= 0) {
-				setHistoryIndex(-1);
-				setInput("");
-			} else {
-				const newIndex = historyIndex - 1;
-				setHistoryIndex(newIndex);
-				setInput(commandHistory[newIndex]);
-			}
+			recall(historyIndex - 1);
 		}
 	};
 
 	const isCommand = input.startsWith("/");
-	const isDisabled = !sessionId;
-
-	// Addressing options: Narrator, + specific NPCs
-	const addressingOptions: { id: string | null; label: string }[] = [
-		{ id: "narrator", label: "NARRATOR" },
-		...presentNpcs.map((npc) => ({
-			id: npc.id,
-			label: npc.name.toUpperCase(),
-		})),
+	const choices = [
+		{ value: NARRATOR_ID, label: "Narrator" },
+		...present.map((npc) => ({ value: npc.id, label: npc.name })),
 	];
 
 	return (
-		<div className="border-t border-border bg-card px-4 py-3 pb-6">
-			{/* Addressing Selector */}
-			{!isCommand && !isDisabled && (
-				<div className="mb-3 flex flex-wrap gap-2">
-					<span className="mr-1 self-center font-mono text-[9px] tracking-widest text-muted-foreground">
-						ADDRESSING:
+		<div className="border-t bg-surface/80 px-4 pb-4 pt-3 sm:px-8">
+			<div className="mx-auto flex max-w-3xl flex-col gap-3">
+				<div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+					<span aria-hidden className="text-label text-muted">
+						Speak to
 					</span>
-					{addressingOptions.map((opt) => (
-						<button
-							key={opt.id ?? "__fallback__"}
-							onClick={() => setTargetNpcId(opt.id)}
-							className={cn(
-								"border px-2 py-0.5 font-mono text-[9px] tracking-wider transition-all",
-								currentTarget === opt.id
-									? "border-primary bg-primary/10 text-primary"
-									: "border-border text-muted-foreground opacity-60 hover:opacity-100",
-							)}
-						>
-							{opt.label}
-						</button>
-					))}
+					<ChoiceGroup
+						label="Speak to"
+						choices={choices}
+						value={addresseeId}
+						onChange={setAddressee}
+						disabled={isProcessing}
+					/>
 				</div>
-			)}
-
-			<div className="flex items-end gap-2">
-				<textarea
-					ref={textareaRef}
-					value={input}
-					onChange={(e) => setInput(e.target.value)}
-					onKeyDown={handleKeyDown}
-					placeholder={
-						isDisabled
-							? "Start a new game to begin..."
-							: isCommand
-								? "/command..."
-								: "Say something..."
-					}
-					disabled={isDisabled}
-					rows={1}
+				<div
 					className={cn(
-						"flex-1 resize-none border bg-secondary px-3 py-2 text-sm text-foreground transition-colors placeholder:text-muted-foreground/40 focus:outline-none disabled:opacity-40",
-						isCommand
-							? "border-accent/40 font-mono text-xs focus:border-accent/60"
-							: "border-border focus:border-primary/30",
+						"flex items-end gap-2 rounded-lg border bg-raised/50 p-1.5 pl-4 transition-colors focus-within:border-gilt",
+						isCommand && "focus-within:border-arcane",
 					)}
-				/>
-				<button
-					onClick={handleSend}
-					disabled={!input.trim() || isProcessing || isDisabled}
-					className="shrink-0 border border-primary/30 px-4 py-2 font-mono text-xs tracking-wider text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-30"
 				>
-					{isProcessing ? (
-						<motion.span className="inline-block text-primary">···</motion.span>
-					) : (
-						"SEND"
-					)}
-				</button>
+					<label htmlFor="player-input" className="sr-only">
+						Your words
+					</label>
+					<textarea
+						id="player-input"
+						ref={textareaRef}
+						value={input}
+						rows={1}
+						onChange={(e) => {
+							setInput(e.target.value);
+							setHistoryIndex(-1);
+						}}
+						onKeyDown={handleKeyDown}
+						placeholder={
+							addressee
+								? `Say something to ${addressee.name}…`
+								: "Say or do something…"
+						}
+						className={cn(
+							"max-h-40 min-h-11 flex-1 resize-none bg-transparent py-2.5 font-read text-read text-text focus-visible:outline-none",
+							isCommand && "font-ui text-arcane",
+						)}
+					/>
+					<button
+						type="button"
+						aria-label="Send"
+						onClick={() => void send()}
+						disabled={!input.trim() || isProcessing}
+						className="inline-flex size-11 shrink-0 items-center justify-center press rounded-md bg-gilt text-gilt-ink hover:bg-gilt/90 active:bg-gilt/80 disabled:bg-raised disabled:text-faint"
+					>
+						<SendHorizontal aria-hidden className="size-5" />
+					</button>
+				</div>
 			</div>
 		</div>
 	);

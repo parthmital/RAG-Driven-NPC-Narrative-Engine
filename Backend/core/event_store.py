@@ -38,7 +38,7 @@ class EventStore:
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_events_turn ON events(turn)")
         conn.commit()
-        log.debug("Event store initialised at %s", self.db_path)
+        log.debug("event store opened", extra={"path": str(self.db_path)})
 
     def append(self, event: Event) -> int:
         """Persist event; returns assigned row id."""
@@ -55,10 +55,8 @@ class EventStore:
         conn.commit()
         event.id = cur.lastrowid
         log.debug(
-            "Appended event id=%d type=%s turn=%d",
-            event.id,
-            event.event_type,
-            event.turn,
+            "event appended",
+            extra={"event_id": event.id, "type": event.event_type, "turn": event.turn},
         )
         return cur.lastrowid
 
@@ -86,7 +84,10 @@ class EventStore:
                 )
                 events.append(e)
             except Exception as exc:
-                log.warning("Skipping corrupt event id=%s: %s", row["id"], exc)
+                log.warning(
+                    "corrupt event skipped",
+                    extra={"event_id": row["id"], "error": str(exc)},
+                )
         return events
 
     def load_from_turn(self, since_turn: int) -> List[Event]:

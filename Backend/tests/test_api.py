@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import config  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
+from log_config import request_id_var, session_id_var  # noqa: E402
 
 MANAGER_MODULE = "session.manager"
 
@@ -34,7 +35,10 @@ class _StubClient:
 
 
 class _StubGraph:
+    seen_context = None
+
     def invoke(self, state):
+        _StubGraph.seen_context = (request_id_var.get(), session_id_var.get())
         world = state["world"]
         world.turn += 1
         return {
@@ -184,6 +188,30 @@ class ApiTests(unittest.TestCase):
             message = ws.receive_json()
             self.assertEqual("npc_response", message["type"])
             self.assertEqual("Welcome.", message["payload"]["npc_dialogue"])
+
+    def test_request_id_reaches_response_and_turn_pipeline(self):
+        session_id = self._create()
+        response = self.client.post(
+            f"/api/game/action/{session_id}",
+            json={"content": "hello"},
+            headers={"X-Request-ID": "trace-1"},
+        )
+        self.assertEqual("trace-1", response.headers["X-Request-ID"])
+        self.assertEqual(("trace-1", session_id), _StubGraph.seen_context)
+        self.assertRegex(
+            self.client.get("/health").headers["X-Request-ID"], r"^[0-9a-f]{8}$"
+        )
+
+    def test_unhandled_error_returns_generic_500(self):
+        manager = self.client.app.state.session_manager
+        with mock.patch.object(
+            manager, "list_sessions", side_effect=RuntimeError("disk gone")
+        ), self.assertLogs("api.app", "ERROR") as logs:
+            response = self.client.get("/api/game/sessions")
+        self.assertEqual(500, response.status_code)
+        self.assertEqual({"error": "Internal server error"}, response.json())
+        self.assertIn("X-Request-ID", response.headers)
+        self.assertIn("unhandled error", logs.output[0])
 
 
 if __name__ == "__main__":

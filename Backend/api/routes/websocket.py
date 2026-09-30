@@ -8,6 +8,8 @@ import logging
 from api.dependencies import get_session_manager
 from api.realtime import broadcast, ws_message
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from llm import LLMError
+from log_config import session_id_var
 
 log = logging.getLogger(__name__)
 
@@ -35,7 +37,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
 
     await websocket.accept()
     session.ws_connections.add(websocket)
-    log.info("WS connected: session=%s", session_id)
+    session_id_var.set(session.session_id)
+    log.info("websocket connected")
 
     try:
         active_npc_obj = session.world.npcs.get(session.active_npc_id)
@@ -50,8 +53,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                 "location": session.world.player.current_location_id,
             },
         )
-    except Exception as exc:
-        log.error("WS init error: %s", exc)
+    except Exception:
+        log.exception("websocket handshake message failed")
 
     try:
         while True:
@@ -80,13 +83,16 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                 result = await sm.process_action(session, content)
                 await broadcast(session, ws_message("npc_response", result))
                 await sm.save_session(session_id, is_auto=True)
-            except Exception as exc:
-                log.error("WS action error: %s", exc, exc_info=True)
+            except LLMError as exc:
+                log.error("turn failed; llm unavailable", extra={"error": str(exc)})
+                await _send(websocket, "error", {"message": "Game engine error"})
+            except Exception:
+                log.exception("turn failed")
                 await _send(websocket, "error", {"message": "Game engine error"})
 
     except WebSocketDisconnect:
-        log.info("WS disconnected: session=%s", session_id)
-    except Exception as exc:
-        log.error("WS error: %s", exc, exc_info=True)
+        log.info("websocket disconnected")
+    except Exception:
+        log.exception("websocket failed")
     finally:
         session.ws_connections.discard(websocket)

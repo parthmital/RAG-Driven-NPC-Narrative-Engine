@@ -46,7 +46,7 @@ def load_dialogue(path: Path) -> list:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except Exception:
-        log.warning("Skipping corrupt dialogue history: %s", path)
+        log.warning("corrupt dialogue file skipped", extra={"path": str(path)})
         return []
 
 
@@ -88,6 +88,6 @@ def list_saves() -> List[Dict[str, Any]]:
                     }
                 )
             except Exception:
-                log.warning("Skipping corrupt snapshot: %s", path)
+                log.warning("corrupt snapshot skipped", extra={"path": str(path)})
 
     return sorted(results, key=lambda item: item["created_at"], reverse=True)

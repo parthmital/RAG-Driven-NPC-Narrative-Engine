@@ -15,7 +15,9 @@ import {
 	SetupError,
 	VENV_PYTHON,
 	ensureSetup,
+	fail,
 	log,
+	ok,
 	repoEnv,
 } from "./lib/workspace.mjs";
 
@@ -157,7 +159,9 @@ async function probe(service) {
 function crashed() {
 	for (const name of Object.keys(SERVICES)) {
 		if (fs.existsSync(exitFile(name))) {
-			return `${SERVICES[name].title} exited with code ${fs.readFileSync(exitFile(name), "utf-8")}.`;
+			// Windows reports signed exit codes as unsigned 32-bit numbers.
+			const code = Number(fs.readFileSync(exitFile(name), "utf-8")) | 0;
+			return `${SERVICES[name].title} exited with code ${code}.`;
 		}
 	}
 	return null;
@@ -179,7 +183,7 @@ async function main() {
 	const stop = (code) => {
 		if (stopping) return;
 		stopping = true;
-		log("Stopping services...");
+		log("Stopping all services...");
 		for (const child of children) killTree(child.pid);
 		fs.rmSync(RUN_DIR, { recursive: true, force: true });
 		process.exit(code);
@@ -199,59 +203,61 @@ async function main() {
 		}
 	} catch (error) {
 		if (!(error instanceof SetupError)) throw error;
-		console.error(`[dev] ${error.message}`);
+		fail(error.message);
 		process.exit(1);
 	}
 
 	fs.rmSync(RUN_DIR, { recursive: true, force: true });
 	fs.mkdirSync(RUN_DIR, { recursive: true });
 	for (const [name, service] of Object.entries(SERVICES)) {
-		const child = IS_WINDOWS
-			? startInWindow(name, service)
-			: startPrefixed(name, service);
-		children.push(child);
-		log(`Started ${name}${IS_WINDOWS ? " in its own window" : ""}.`);
+		children.push(
+			IS_WINDOWS ? startInWindow(name, service) : startPrefixed(name, service),
+		);
 	}
+	log(
+		`Starting ${Object.keys(SERVICES).join(" and ")}${IS_WINDOWS ? " in their own windows" : ""}...`,
+	);
 
 	const ready = new Set();
 	const startedAt = Date.now();
-	let lastStatus = 0;
+	const elapsed = () => `${Math.round((Date.now() - startedAt) / 1000)}s`;
+	let lastStatus = startedAt;
 	while (ready.size < children.length) {
 		const failure = crashed();
 		if (failure) {
-			console.error(`[dev] ${failure} Check its window or output above.`);
+			fail(`${failure} See its window or output above.`);
 			return stop(1);
 		}
 		if (Date.now() - startedAt > READY_TIMEOUT_MS) {
-			console.error("[dev] Services were not ready within 10 minutes.");
+			fail("Services were not ready within 10 minutes.");
 			return stop(1);
 		}
 		for (const [name, service] of Object.entries(SERVICES)) {
 			if (!ready.has(name) && (await probe(service))) {
 				ready.add(name);
-				log(
-					`${name} ready at ${service.readyUrl.replace("127.0.0.1", "localhost")}`,
+				const url = new URL(service.readyUrl).origin.replace(
+					"127.0.0.1",
+					"localhost",
 				);
+				ok(`${name.padEnd(8)} ready  ${url}  (${elapsed()})`);
 			}
 		}
-		if (Date.now() - lastStatus > 10000 && ready.size < children.length) {
+		if (Date.now() - lastStatus > 15000 && ready.size < children.length) {
 			const waiting = Object.keys(SERVICES).filter((n) => !ready.has(n));
-			log(
-				`Waiting for ${waiting.join(" and ")} (the backend loads the embedding model first)...`,
-			);
+			const why = ready.has("backend") ? "" : "; it loads the embedding model";
+			log(`Still waiting for ${waiting.join(" and ")}${why} (${elapsed()})`);
 			lastStatus = Date.now();
 		}
 		await sleep(1000);
 	}
 
-	log(`All services ready: ${APP_URL}`);
 	openBrowser(APP_URL);
-	log("Press Ctrl+C to stop everything.");
+	ok(`Open ${APP_URL}  ·  Ctrl+C stops everything`);
 
 	while (!stopping) {
 		const failure = crashed();
 		if (failure) {
-			console.error(`[dev] ${failure}`);
+			fail(failure);
 			return stop(1);
 		}
 		await sleep(1000);

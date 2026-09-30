@@ -1,213 +1,154 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
+import { MessageCircle, Users } from "lucide-react";
 import { useGameStore } from "@/stores/gameStore";
+import { useUIStore } from "@/stores/uiStore";
+import { toTitleCase } from "@/lib/format";
+import { Button } from "@/components/ui/Button";
+import { EmptyState, SectionLabel } from "@/components/ui/EmptyState";
+import { ListRow, MasterDetail } from "@/components/layout/MasterDetail";
+import { TrustScale } from "@/components/game/TrustScale";
+import { emotionOf } from "@/components/game/emotionStyles";
 import type { NPC } from "@/types/game";
-import { EMOTION_STYLES } from "@/components/game/emotionStyles";
+
+function PersonDetail({ npc }: { npc: NPC }) {
+	const navigate = useNavigate();
+	const currentLocation = useGameStore((s) => s.currentLocation);
+	const setAddressee = useUIStore((s) => s.setAddressee);
+	const emotion = emotionOf(npc.emotionalState);
+	const isHere = npc.locationId === currentLocation;
+
+	const talk = () => {
+		setAddressee(npc.id);
+		navigate("/game");
+	};
+
+	return (
+		<>
+			<header className="flex flex-col gap-3">
+				<h1 className="text-headline text-arcane sm:text-hero">{npc.name}</h1>
+				{npc.title && <p className="text-read text-muted">{npc.title}.</p>}
+				{isHere ? (
+					<Button
+						variant="primary"
+						icon={<MessageCircle aria-hidden className="size-4" />}
+						onClick={talk}
+						className="self-start"
+					>
+						Speak to {npc.name}
+					</Button>
+				) : (
+					<p className="text-label text-muted">
+						Last seen at {toTitleCase(npc.locationId ?? "an unknown place")}. Go
+						there to speak with them.
+					</p>
+				)}
+			</header>
+
+			<dl className="grid grid-cols-2 gap-6 sm:grid-cols-3">
+				<div>
+					<dt className="text-caption text-faint">Mood</dt>
+					<dd className={`font-display text-title ${emotion.color}`}>
+						{emotion.label}
+					</dd>
+				</div>
+				<div>
+					<dt className="text-caption text-faint">Relationship</dt>
+					<dd className="font-display text-title capitalize">
+						{npc.relationshipTier}
+					</dd>
+				</div>
+				<div>
+					<dt className="text-caption text-faint">Trust</dt>
+					<dd className="font-display text-title lining-nums tabular-nums">
+						{npc.trust > 0 ? "+" : ""}
+						{npc.trust}
+					</dd>
+				</div>
+			</dl>
+
+			<div className="flex flex-col gap-4">
+				<SectionLabel>Trust in you</SectionLabel>
+				<TrustScale
+					name={npc.name}
+					trust={npc.trust}
+					thresholds={npc.trustThresholds}
+					showLabels
+				/>
+			</div>
+
+			{npc.description && (
+				<div className="flex flex-col gap-3">
+					<SectionLabel>What you know</SectionLabel>
+					<p className="font-read text-read text-text/85">{npc.description}</p>
+				</div>
+			)}
+		</>
+	);
+}
 
 export default function NpcsPage() {
-	const { npcs } = useGameStore();
-	const npcList = Object.values(npcs);
-	const [selectedId, setSelectedId] = useState<string | null>(
-		npcList[0]?.id ?? null,
-	);
-	const selected = npcList.find((n) => n.id === selectedId);
+	const npcs = useGameStore((s) => s.npcs);
+	const currentLocation = useGameStore((s) => s.currentLocation);
+	const people = Object.values(npcs);
+	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const [detailOpen, setDetailOpen] = useState(false);
+	const selected = people.find((n) => n.id === selectedId) ?? people[0];
 
-	if (npcList.length === 0) {
+	if (people.length === 0) {
 		return (
-			<div className="flex h-full items-center justify-center">
-				<p className="font-mono text-xs tracking-wider text-muted-foreground/50">
-					NO KNOWN CHARACTERS
-				</p>
-			</div>
+			<EmptyState icon={<Users aria-hidden />} title="No one met yet">
+				People you meet on your travels appear here with how they feel about
+				you.
+			</EmptyState>
 		);
 	}
 
 	return (
-		<div className="flex h-full">
-			{/* NPC List */}
-			<div className="flex w-[300px] flex-col border-r border-border bg-card">
-				<div className="border-b border-border px-4 py-3">
-					<h2 className="font-heading text-xs tracking-widest text-muted-foreground">
-						KNOWN CHARACTERS
-					</h2>
-				</div>
-				<div className="flex-1 overflow-y-auto">
-					{npcList.map((npc) => {
-						const emotion =
-							EMOTION_STYLES[npc.emotionalState] ?? EMOTION_STYLES.neutral;
-
+		<MasterDetail
+			listLabel="Everyone you've met"
+			detailKey={selected?.id}
+			detailOpen={detailOpen}
+			onBack={() => setDetailOpen(false)}
+			list={
+				<ul>
+					{people.map((npc) => {
+						const emotion = emotionOf(npc.emotionalState);
 						return (
-							<button
+							<ListRow
 								key={npc.id}
-								onClick={() => setSelectedId(npc.id)}
-								className={cn(
-									"w-full border-b border-border px-4 py-3 text-left transition-colors duration-200",
-									selectedId === npc.id
-										? "bg-secondary"
-										: "hover:bg-secondary/50",
-								)}
+								selected={selected?.id === npc.id}
+								onSelect={() => {
+									setSelectedId(npc.id);
+									setDetailOpen(true);
+								}}
 							>
-								<div className="flex items-center justify-between">
-									<span className="font-heading text-sm tracking-wider text-foreground">
+								<span className="flex items-baseline justify-between gap-3">
+									<span className="font-display text-title text-arcane">
 										{npc.name}
 									</span>
-									<span className={cn("text-[10px] capitalize", emotion.color)}>
+									<span className={`text-label ${emotion.color}`}>
 										{emotion.label}
 									</span>
-								</div>
-								<span className="mt-0.5 block text-[10px] text-muted-foreground">
-									{npc.title}
 								</span>
-								{/* Mini trust bar */}
-								<div className="mt-2 h-1 overflow-hidden rounded-full bg-secondary">
-									<div
-										className="trust-gradient h-full transition-all duration-500"
-										style={{
-											width: `${npc.trustPercent}%`,
-										}}
+								<span className="text-label text-muted">
+									{npc.locationId === currentLocation
+										? "Here with you"
+										: toTitleCase(npc.locationId ?? "")}
+								</span>
+								<span className="mt-2 block">
+									<TrustScale
+										name={npc.name}
+										trust={npc.trust}
+										thresholds={npc.trustThresholds}
 									/>
-								</div>
-							</button>
+								</span>
+							</ListRow>
 						);
 					})}
-				</div>
-			</div>
-
-			{/* NPC Detail */}
-			<div className="flex flex-1 flex-col overflow-y-auto">
-				<AnimatePresence mode="wait">
-					{selected ? (
-						<motion.div
-							key={selected.id}
-							initial={{ opacity: 0 }}
-							animate={{ opacity: 1 }}
-							exit={{ opacity: 0 }}
-							transition={{ duration: 0.3 }}
-							className="flex flex-1 flex-col p-6"
-						>
-							<div className="mb-6">
-								<h1 className="font-heading text-4xl tracking-widest text-primary">
-									{selected.name.toUpperCase()}
-								</h1>
-								<p className="mt-1 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground opacity-70">
-									{selected.title}
-								</p>
-								<div className="mt-4 flex flex-wrap gap-2">
-									<span className="border border-primary/20 bg-primary/5 px-3 py-1 font-mono text-[9px] tracking-widest text-primary/80">
-										LOC:{" "}
-										{selected.locationId?.replace(/_/g, " ").toUpperCase() ||
-											"UNKNOWN"}
-									</span>
-									{selected.allegiances.map((a) => (
-										<span
-											key={a}
-											className="border border-primary/20 bg-primary/5 px-3 py-1 font-mono text-[9px] tracking-widest text-primary/80"
-										>
-											{a.toUpperCase()}
-										</span>
-									))}
-								</div>
-							</div>
-
-							{/* Stats Grid */}
-							<div className="mb-6 grid grid-cols-3 gap-4">
-								<StatBlock label="TRUST" value={`${selected.trust}`} />
-								<StatBlock label="SUSPICION" value={`${selected.suspicion}%`} />
-								<StatBlock
-									label="MOOD"
-									value={selected.emotionalState.toUpperCase()}
-								/>
-								<StatBlock
-									label="RELATIONSHIP"
-									value={selected.relationshipTier.toUpperCase()}
-								/>
-								<StatBlock
-									label="SECRETS KNOWN"
-									value={`${selected.revealedSecrets}/${selected.revealedSecrets + selected.hiddenSecrets}`}
-								/>
-								<StatBlock label="HIDDEN" value={`${selected.hiddenSecrets}`} />
-							</div>
-
-							{/* Trust Meter */}
-							<div className="mb-6">
-								<h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground">
-									TRUST PROGRESSION
-								</h3>
-								<div className="relative h-3 overflow-hidden rounded-full bg-secondary">
-									<motion.div
-										className="trust-gradient h-full"
-										initial={{ width: 0 }}
-										animate={{
-											width: `${selected.trustPercent}%`,
-										}}
-										transition={{
-											duration: 0.8,
-											ease: "easeOut",
-										}}
-									/>
-									{selected.trustThresholds.map((t) => (
-										<div
-											key={t.value}
-											className="absolute top-0 h-full w-px bg-background"
-											style={{
-												left: `${((t.value + 100) / 200) * 100}%`,
-											}}
-											title={t.label}
-										/>
-									))}
-								</div>
-								<div className="mt-2 flex justify-between">
-									{selected.trustThresholds.map((t) => (
-										<span
-											key={t.value}
-											className={cn(
-												"font-mono text-[9px]",
-												t.unlocked
-													? "text-primary"
-													: "text-muted-foreground/50",
-											)}
-										>
-											{t.label}
-										</span>
-									))}
-								</div>
-							</div>
-
-							{/* Description */}
-							<div className="border-t border-border pt-4">
-								<h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground">
-									NOTES
-								</h3>
-								<p className="text-sm italic leading-relaxed text-foreground/80">
-									{selected.title
-										? `${selected.name} — ${selected.title}.`
-										: "No notes recorded."}
-								</p>
-							</div>
-						</motion.div>
-					) : (
-						<div className="flex flex-1 items-center justify-center">
-							<p className="font-mono text-xs text-muted-foreground/50">
-								SELECT A CHARACTER
-							</p>
-						</div>
-					)}
-				</AnimatePresence>
-			</div>
-		</div>
-	);
-}
-
-function StatBlock({ label, value }: { label: string; value: string }) {
-	return (
-		<div className="border border-border bg-secondary/50 p-3">
-			<span className="block font-mono text-[9px] tracking-widest text-muted-foreground">
-				{label}
-			</span>
-			<span className="mt-1 block font-heading text-sm tracking-wider text-foreground">
-				{value}
-			</span>
-		</div>
+				</ul>
+			}
+			detail={selected && <PersonDetail npc={selected} />}
+		/>
 	);
 }

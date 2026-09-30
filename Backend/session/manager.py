@@ -47,32 +47,22 @@ class SessionManager:
             if self._initialised:
                 return
 
-            log.info("Initialising shared game resources...")
-            loop = asyncio.get_running_loop()
-            self._seed = await loop.run_in_executor(
-                None, load_world_seed, config.WORLD_SEED_PATH
+            self._seed = await asyncio.to_thread(
+                load_world_seed, config.WORLD_SEED_PATH
             )
-            self._embedder = await loop.run_in_executor(
-                None,
-                lambda: Embedder(
-                    config.EMBEDDING_MODEL,
-                    config.EMBED_CACHE_PATH,
-                    config.EMBEDDING_DIM,
-                ),
+            self._embedder = await asyncio.to_thread(
+                Embedder,
+                config.EMBEDDING_MODEL,
+                config.EMBED_CACHE_PATH,
+                config.EMBEDDING_DIM,
             )
             self._client = GroqClient(
                 model=config.MODEL_NAME,
                 api_key=config.GROQ_API_KEY,
                 timeout=config.REQUEST_TIMEOUT,
             )
-            if self._embedder:
-                await loop.run_in_executor(
-                    None, self._embedder.embed, config.EMBEDDING_WARMUP_TEXT
-                )
-                log.info("Embedding model warmed up.")
-
+            await asyncio.to_thread(self._embedder.embed, config.EMBEDDING_WARMUP_TEXT)
             self._initialised = True
-            log.info("Shared resources ready.")
 
     def _open_session(
         self,
@@ -143,7 +133,7 @@ class SessionManager:
             store.append(Event(turn=0, event_type=EventType.SESSION_START, payload={}))
             return self._open_session(session_id, data_dir, store, world, None)
 
-        session = await asyncio.get_running_loop().run_in_executor(None, _create)
+        session = await asyncio.to_thread(_create)
         self._sessions[session_id] = session
 
         if self._seed and self._seed.metadata.initial_narrator_message:
@@ -156,12 +146,7 @@ class SessionManager:
 
         await self.save_session(session_id, is_auto=True)
 
-        log.info(
-            "Session created: %s (Player: %s, NPC: %s)",
-            session_id,
-            name,
-            session.active_npc_id,
-        )
+        log.info("session created", extra={"session": session_id, "player": name})
         return session
 
     async def list_sessions(self) -> List[Dict[str, Any]]:
@@ -200,12 +185,13 @@ class SessionManager:
             )
 
         try:
-            session = await asyncio.get_running_loop().run_in_executor(None, _load)
-            self._sessions[session_id] = session
-            return session
-        except Exception as exc:
-            log.error("Failed to load session %s: %s", save_id, exc)
+            session = await asyncio.to_thread(_load)
+        except Exception:
+            log.exception("session load failed", extra={"save": save_id})
             return None
+        self._sessions[session_id] = session
+        log.info("session loaded", extra={"save": save_id, "turn": session.world.turn})
+        return session
 
     def get_session(self, save_id: str) -> Optional[GameSession]:
         return self._sessions.get(save_files.split_save_id(save_id)[0])
@@ -216,7 +202,7 @@ class SessionManager:
         if session is None:
             return False
         session.close()
-        log.info("Session destroyed: %s", session_id)
+        log.info("session closed", extra={"session": session_id})
         return True
 
     async def save_session(self, session_id: str, is_auto: bool = False) -> bool:
@@ -237,7 +223,9 @@ class SessionManager:
                 session.dialogue_history,
             )
 
-        await asyncio.get_running_loop().run_in_executor(None, _save)
+        await asyncio.to_thread(_save)
+        if not is_auto:
+            log.info("game saved", extra={"session": session_id})
         return True
 
     async def commit_event(
@@ -274,8 +262,7 @@ class SessionManager:
                 "elapsed_ms": 0.0,
             }
 
-            loop = asyncio.get_running_loop()
-            result = await loop.run_in_executor(None, session.graph.invoke, turn_state)
+            result = await asyncio.to_thread(session.graph.invoke, turn_state)
 
             session.world = result["world"]
             session.active_npc_id = result.get("active_npc_id", active_npc)
@@ -338,4 +325,4 @@ class SessionManager:
             self.destroy_session(session_id)
         if self._embedder:
             self._embedder.close()
-        log.info("Session manager shut down.")
+        log.info("shutdown complete")

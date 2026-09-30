@@ -32,9 +32,6 @@ export function toFrontendNPC(info: NPCInfo): NPC {
 		maxTrust: info.max_trust,
 		trustThresholds: info.trust_thresholds,
 		emotionalState: info.emotional_state as EmotionalState,
-		hiddenSecrets: 0,
-		revealedSecrets: 0,
-		allegiances: [],
 		relationshipTier: info.relationship_tier as RelationshipTier,
 		suspicion: info.suspicion,
 		emotionalLabel: info.emotional_label,
@@ -43,12 +40,17 @@ export function toFrontendNPC(info: NPCInfo): NPC {
 	};
 }
 
-export function systemMessage(content: string, id = `${Date.now()}`) {
+export function systemMessage(
+	content: string,
+	id = `${Date.now()}`,
+	isError = false,
+) {
 	return {
 		id,
 		type: "system" as const,
 		content,
 		timestamp: Date.now(),
+		isError: isError || undefined,
 	} satisfies DialogueMessage;
 }
 

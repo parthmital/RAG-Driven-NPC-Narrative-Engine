@@ -9,7 +9,7 @@ import time
 from typing import Optional
 
 import config
-from groq import Groq
+from groq import APIConnectionError, APIError, APIStatusError, Groq
 
 log = logging.getLogger(__name__)
 
@@ -17,10 +17,31 @@ _JSON_FENCE = re.compile(r"```(?:json)?\s*(\{.*?})\s*```", re.DOTALL)
 _JSON_RAW = re.compile(r"(\{.*})", re.DOTALL)
 
 
+class LLMError(RuntimeError):
+    """An LLM request failed permanently; the message is safe to log."""
+
+
+def _is_transient(exc: APIError) -> bool:
+    if isinstance(exc, APIStatusError):
+        return exc.status_code == 429 or exc.status_code >= 500
+    return isinstance(exc, APIConnectionError)
+
+
+def _describe(exc: Exception) -> str:
+    """One-line summary of a Groq error without the raw response body."""
+    if isinstance(exc, APIStatusError):
+        body = exc.body if isinstance(exc.body, dict) else {}
+        error = body.get("error", body)
+        message = error.get("message") if isinstance(error, dict) else None
+        return f"HTTP {exc.status_code}: {message or exc.message}"
+    return f"{type(exc).__name__}: {exc}"
+
+
 class GroqClient:
     def __init__(self, model: str, api_key: Optional[str] = None, timeout: int = 30):
         self.model = model
-        self.client = Groq(api_key=api_key, timeout=timeout)
+        # Retries are handled in generate(), so the SDK must not add its own.
+        self.client = Groq(api_key=api_key, timeout=timeout, max_retries=0)
 
     def _complete(self, prompt: str, max_tokens: int, **kwargs):
         return self.client.chat.completions.create(
@@ -35,7 +56,7 @@ class GroqClient:
             self._complete("ping", max_tokens=1)
             return True
         except Exception as exc:
-            log.error("Groq unreachable or error: %s", exc)
+            log.warning("llm unreachable", extra={"error": _describe(exc)})
             return False
 
     def generate(
@@ -46,45 +67,28 @@ class GroqClient:
         stream: bool = False,
         max_retries: int = config.LLM_MAX_RETRIES,
     ) -> str:
-        """Return full response text with retry handling for rate limits."""
-        retries = 0
+        """Return full response text, retrying rate limits and transient failures."""
         backoff = config.LLM_RETRY_BACKOFF
-
-        while retries <= max_retries:
+        for attempt in range(1, max_retries + 2):
             try:
                 if stream:
                     return self._stream_generate(prompt, max_tokens, temperature)
-
                 response = self._complete(prompt, max_tokens, temperature=temperature)
                 return response.choices[0].message.content or ""
-            except Exception as exc:
-                exc_str = str(exc).lower()
-                is_rate_limit = (
-                    "429" in exc_str
-                    or "rate_limit" in exc_str
-                    or "too_many_requests" in exc_str
+            except APIError as exc:
+                if not _is_transient(exc) or attempt > max_retries:
+                    raise LLMError(_describe(exc)) from exc
+                log.warning(
+                    "llm request failed; retrying",
+                    extra={
+                        "attempt": f"{attempt}/{max_retries}",
+                        "wait_s": backoff,
+                        "error": _describe(exc),
+                    },
                 )
-
-                if is_rate_limit and retries < max_retries:
-                    log.warning(
-                        "Rate limited by Groq. Retrying in %ss. Attempt %d/%d",
-                        backoff,
-                        retries + 1,
-                        max_retries,
-                    )
-                    time.sleep(backoff)
-                    retries += 1
-                    backoff *= 2
-                    continue
-
-                log.error("Groq generation error. Attempt %d: %s", retries + 1, exc)
-                if retries >= max_retries:
-                    raise
-
-                retries += 1
-                time.sleep(1)
-
-        return ""
+                time.sleep(backoff)
+                backoff *= 2
+        raise AssertionError("unreachable")
 
     def _stream_generate(self, prompt: str, max_tokens: int, temperature: float) -> str:
         """Stream tokens from Groq and return the full text."""

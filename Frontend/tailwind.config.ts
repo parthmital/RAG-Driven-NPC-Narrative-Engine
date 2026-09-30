@@ -1,121 +1,48 @@
 import type { Config } from "tailwindcss";
-import tailwindcssAnimate from "tailwindcss-animate";
+
+// Palette roles (values live in src/index.css):
+//   obsidian surfaces, vellum text, gilt = the player and primary actions,
+//   arcane = NPC voices and trust, ember = danger, distrust, and errors.
+const token = (name: string) => `hsl(var(--${name}) / <alpha-value>)`;
 
 export default {
-	darkMode: ["class"],
-	content: [
-		"./pages/**/*.{ts,tsx}",
-		"./components/**/*.{ts,tsx}",
-		"./app/**/*.{ts,tsx}",
-		"./src/**/*.{ts,tsx}",
-	],
-	prefix: "",
+	content: ["./index.html", "./src/**/*.{ts,tsx}"],
+	// Hover styles would otherwise stick after a tap on touch screens.
+	future: { hoverOnlyWhenSupported: true },
 	theme: {
-		container: {
-			center: true,
-			padding: "2rem",
-			screens: {
-				"2xl": "1400px",
-			},
-		},
 		extend: {
-			fontFamily: {
-				heading: ["Cinzel", "serif"],
-				body: ["Libre Baskerville", "Georgia", "serif"],
-				mono: ["JetBrains Mono", "monospace"],
-			},
 			colors: {
-				border: "hsl(var(--border))",
-				input: "hsl(var(--input))",
-				ring: "hsl(var(--ring))",
-				background: "hsl(var(--background))",
-				foreground: "hsl(var(--foreground))",
-				primary: {
-					DEFAULT: "hsl(var(--primary))",
-					foreground: "hsl(var(--primary-foreground))",
-				},
-				secondary: {
-					DEFAULT: "hsl(var(--secondary))",
-					foreground: "hsl(var(--secondary-foreground))",
-				},
-				destructive: {
-					DEFAULT: "hsl(var(--destructive))",
-					foreground: "hsl(var(--destructive-foreground))",
-				},
-				muted: {
-					DEFAULT: "hsl(var(--muted))",
-					foreground: "hsl(var(--muted-foreground))",
-				},
-				accent: {
-					DEFAULT: "hsl(var(--accent))",
-					foreground: "hsl(var(--accent-foreground))",
-				},
-				popover: {
-					DEFAULT: "hsl(var(--popover))",
-					foreground: "hsl(var(--popover-foreground))",
-				},
-				card: {
-					DEFAULT: "hsl(var(--card))",
-					foreground: "hsl(var(--card-foreground))",
-				},
-				brass: {
-					DEFAULT: "hsl(var(--brass))",
-					glow: "hsl(var(--brass-glow))",
-					dim: "hsl(var(--brass-dim))",
-				},
-				violet: {
-					cold: "hsl(var(--cold-violet))",
-					glow: "hsl(var(--cold-violet-glow))",
-				},
-				crimson: {
-					DEFAULT: "hsl(var(--crimson))",
-					deep: "hsl(var(--crimson-deep))",
-				},
-				parchment: {
-					DEFAULT: "hsl(var(--parchment))",
-					dark: "hsl(var(--parchment-dark))",
-				},
-				system: "hsl(var(--system-text))",
-				smoke: "hsl(var(--smoke))",
-				candle: "hsl(var(--candle))",
-				"panel-elevated": "hsl(var(--panel-elevated))",
-				intellect: "hsl(var(--intellect))",
-				psyche: "hsl(var(--psyche))",
-				physique: "hsl(var(--physique))",
-				motorics: "hsl(var(--motorics))",
-				health: "hsl(var(--health))",
-				moraleColor: "hsl(var(--morale))",
-				sidebar: {
-					DEFAULT: "hsl(var(--sidebar-background))",
-					foreground: "hsl(var(--sidebar-foreground))",
-					primary: "hsl(var(--sidebar-primary))",
-					"primary-foreground": "hsl(var(--sidebar-primary-foreground))",
-					accent: "hsl(var(--sidebar-accent))",
-					"accent-foreground": "hsl(var(--sidebar-accent-foreground))",
-					border: "hsl(var(--sidebar-border))",
-					ring: "hsl(var(--sidebar-ring))",
-				},
+				ground: token("ground"),
+				surface: token("surface"),
+				raised: token("raised"),
+				line: token("line"),
+				text: token("text"),
+				muted: token("muted"),
+				faint: token("faint"),
+				gilt: { DEFAULT: token("gilt"), ink: token("gilt-ink") },
+				arcane: token("arcane"),
+				ember: token("ember"),
 			},
-			borderRadius: {
-				lg: "var(--radius)",
-				md: "calc(var(--radius) - 2px)",
-				sm: "calc(var(--radius) - 4px)",
+			fontFamily: {
+				display: ['"Cormorant Garamond"', "Georgia", "serif"],
+				read: ["Literata", "Georgia", "serif"],
+				ui: ['"Instrument Sans"', "system-ui", "sans-serif"],
 			},
-			keyframes: {
-				"accordion-down": {
-					from: { height: "0" },
-					to: { height: "var(--radix-accordion-content-height)" },
-				},
-				"accordion-up": {
-					from: { height: "var(--radix-accordion-content-height)" },
-					to: { height: "0" },
-				},
+			fontSize: {
+				caption: ["0.8125rem", { lineHeight: "1.25rem" }],
+				label: ["0.875rem", { lineHeight: "1.25rem" }],
+				body: ["1rem", { lineHeight: "1.5rem" }],
+				read: ["1.125rem", { lineHeight: "1.85rem" }],
+				title: ["1.625rem", { lineHeight: "2rem" }],
+				headline: ["2.25rem", { lineHeight: "2.5rem" }],
+				hero: ["3.5rem", { lineHeight: "1" }],
 			},
-			animation: {
-				"accordion-down": "accordion-down 0.2s ease-out",
-				"accordion-up": "accordion-up 0.2s ease-out",
+			maxWidth: {
+				read: "68ch",
+			},
+			transitionTimingFunction: {
+				out: "cubic-bezier(0.22, 1, 0.36, 1)",
 			},
 		},
 	},
-	plugins: [tailwindcssAnimate],
 } satisfies Config;

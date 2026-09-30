@@ -1,100 +1,117 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { toast } from "sonner";
+import { ArrowLeft, FolderOpen, Loader2 } from "lucide-react";
 import { useGameStore } from "@/stores/gameStore";
 import { useSavedSessions } from "@/hooks/useSavedSessions";
+import { errorMessage } from "@/stores/mappers";
+import { formatRelativeTime, splitPlaceName } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 
+/** Saved games, newest first. Reachable from the title screen and the game menu. */
 export default function SessionPage() {
 	const navigate = useNavigate();
-	const { loadGame } = useGameStore();
-	// Always re-fetch when this page mounts (e.g. after saving)
-	const { saves, isLoading } = useSavedSessions();
+	const loadGame = useGameStore((s) => s.loadGame);
+	const inGame = useGameStore((s) => Boolean(s.sessionId));
+	const { saves, isLoading, failed } = useSavedSessions();
+	const [loadingId, setLoadingId] = useState<string | null>(null);
 
-	const handleLoad = async (id: string) => {
+	const load = async (id: string) => {
+		setLoadingId(id);
 		try {
 			await loadGame(id);
 			navigate("/game");
 		} catch (error) {
-			console.error("Load failed:", error);
+			toast.error("Couldn't load that save", {
+				description: errorMessage(error, "The save may be damaged."),
+			});
+			setLoadingId(null);
 		}
 	};
 
 	return (
-		<div className="flex h-full flex-col bg-background p-8">
-			<div className="mb-8 space-y-2">
-				<h2 className="font-heading text-xl tracking-[0.2em] text-primary">
-					ARCHIVED DOSSIERS
-				</h2>
-				<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground opacity-60">
-					Select a session to resume investigation
-				</p>
-			</div>
+		<main className="scroll-area h-dvh animate-fade bg-ground">
+			<div className="mx-auto flex max-w-3xl flex-col gap-8 px-5 py-8 sm:py-14">
+				<div className="flex flex-col gap-4">
+					<Button
+						variant="ghost"
+						icon={<ArrowLeft aria-hidden className="size-4" />}
+						onClick={() => navigate(inGame ? "/game" : "/")}
+						className="-ml-3 self-start"
+					>
+						{inGame ? "Back to the game" : "Title screen"}
+					</Button>
+					<h1 className="text-headline sm:text-hero">Load game</h1>
+				</div>
 
-			<div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
 				{isLoading ? (
-					<div className="col-span-full py-20 text-center">
-						<p className="animate-pulse font-mono text-xs text-muted-foreground">
-							SCANNING ARCHIVES...
-						</p>
-					</div>
+					<p className="flex items-center gap-2 text-muted">
+						<Loader2 aria-hidden className="size-4 animate-spin" /> Reading
+						saved games
+					</p>
+				) : failed ? (
+					<EmptyState
+						icon={<FolderOpen aria-hidden />}
+						title="Saves unavailable"
+					>
+						The game server didn't return your saved games. Check that it is
+						running, then reopen this page.
+					</EmptyState>
 				) : saves.length === 0 ? (
-					<div className="col-span-full border border-dashed border-border/40 bg-card/10 py-20 text-center">
-						<p className="font-mono text-xs uppercase tracking-widest text-muted-foreground opacity-40">
-							NO SAVED SESSIONS FOUND
-						</p>
-					</div>
+					<EmptyState
+						icon={<FolderOpen aria-hidden />}
+						title="No saved games"
+						action={
+							<Button variant="primary" onClick={() => navigate("/new-game")}>
+								Start a new game
+							</Button>
+						}
+					>
+						Games save automatically after every turn.
+					</EmptyState>
 				) : (
-					saves.map((save) => (
-						<motion.button
-							key={save.session_id}
-							initial={{ opacity: 0, scale: 0.98 }}
-							animate={{ opacity: 1, scale: 1 }}
-							onClick={() => handleLoad(save.session_id)}
-							className="group flex flex-col border border-border bg-card/40 p-6 text-left shadow-sm transition-all hover:border-primary/50 hover:bg-secondary/40 hover:shadow-primary/5"
-						>
-							<div className="mb-4 flex items-start justify-between">
-								<div className="flex flex-col">
-									<span className="font-heading text-sm tracking-widest text-primary">
-										{save.player_name.toUpperCase()}
-									</span>
-									<span
-										className={cn(
-											"mt-1 font-mono text-[8px] uppercase tracking-widest",
-											save.is_auto ? "text-accent/60" : "text-primary/60",
-										)}
-									>
-										{save.is_auto ? "Auto-Save" : "Manual Save"}
-									</span>
-								</div>
-								<span className="font-mono text-[9px] text-muted-foreground/40">
-									TURN {save.turn}
-								</span>
-							</div>
-
-							<div className="space-y-4">
-								<div className="space-y-1">
-									<label className="block font-mono text-[9px] uppercase tracking-widest text-muted-foreground opacity-50">
-										LAST KNOWN LOCATION
-									</label>
-									<p className="text-sm font-medium text-foreground/90">
-										{save.location_name}
+					<ul className="flex flex-col">
+						{saves.map((save) => (
+							<li
+								key={save.session_id}
+								className="flex flex-wrap items-center gap-x-6 gap-y-3 border-t py-5"
+							>
+								<div className="min-w-0 flex-1">
+									<p className="flex items-center gap-3">
+										<span className="font-display text-title">
+											{save.player_name}
+										</span>
+										<span
+											className={cn(
+												"rounded-full px-2 text-caption",
+												save.is_auto
+													? "bg-raised text-muted"
+													: "bg-gilt/15 text-gilt",
+											)}
+										>
+											{save.is_auto ? "Autosave" : "Saved"}
+										</span>
+									</p>
+									<p className="text-label text-muted">
+										{splitPlaceName(save.location_name).place} · turn{" "}
+										{save.turn} · {formatRelativeTime(save.created_at)}
 									</p>
 								</div>
-
-								<div className="flex items-center justify-between border-t border-border/40 pt-4">
-									<span className="font-mono text-[9px] text-muted-foreground">
-										RECORDED:{" "}
-										{new Date(save.created_at * 1000).toLocaleDateString()}
-									</span>
-									<span className="font-mono text-[9px] text-primary opacity-0 transition-opacity group-hover:opacity-100">
-										RESUME →
-									</span>
-								</div>
-							</div>
-						</motion.button>
-					))
+								<Button
+									onClick={() => load(save.session_id)}
+									loading={loadingId === save.session_id}
+									disabled={loadingId !== null}
+									aria-label={`Load ${save.player_name}, turn ${save.turn}`}
+								>
+									Load
+								</Button>
+							</li>
+						))}
+					</ul>
 				)}
 			</div>
-		</div>
+		</main>
 	);
 }

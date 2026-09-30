@@ -27,7 +27,10 @@ def apply_event(state: WorldState, event: Event) -> WorldState:
                 next_state.player.current_location_id = destination
                 next_state.turn = event.turn
             else:
-                log.warning("PLAYER_MOVED: unknown location %s ignored", destination)
+                log.warning(
+                    "move to unknown location ignored",
+                    extra={"location": destination},
+                )
 
         elif event_type == EventType.RELATIONSHIP_CHANGED:
             npc_id = payload.get("npc_id")
@@ -129,13 +132,12 @@ def apply_event(state: WorldState, event: Event) -> WorldState:
             next_state.player.currency = max(0, next_state.player.currency + delta)
 
         else:
-            log.warning("Reducer: unhandled event type %s", event_type)
+            log.warning("unhandled event type", extra={"type": event_type})
 
-    except Exception as exc:
-        log.error(
-            "Reducer error on event %s: %s. State unchanged for this event.",
-            event.id,
-            exc,
+    except Exception:
+        log.exception(
+            "event could not be applied; state unchanged",
+            extra={"event_id": event.id, "type": event_type},
         )
 
     return next_state

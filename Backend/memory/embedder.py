@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import sqlite3
+import time
 from pathlib import Path
 from typing import List
 
@@ -19,9 +20,15 @@ def _get_model(model_name: str):
     if _model is None:
         from sentence_transformers import SentenceTransformer
 
-        log.info("Loading embedding model: %s", model_name)
+        started_at = time.perf_counter()
         _model = SentenceTransformer(model_name, device="cpu")
-        log.info("Embedding model loaded.")
+        log.info(
+            "embedding model loaded",
+            extra={
+                "model": model_name,
+                "ms": round((time.perf_counter() - started_at) * 1000),
+            },
+        )
     return _model
 
 

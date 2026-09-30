@@ -1,212 +1,193 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { useGameStore } from "@/stores/gameStore";
-import { cn } from "@/lib/utils";
+import { PLAYER_AGE } from "@/config/constants";
+import { errorMessage } from "@/stores/mappers";
+import { Button } from "@/components/ui/Button";
+import { ChoiceGroup } from "@/components/ui/ChoiceGroup";
+import { Field, inputClass } from "@/components/ui/Field";
+import { Stepper } from "@/components/ui/Stepper";
+
+type Errors = Partial<Record<"name" | "age" | "gender" | "occupation", string>>;
+
+function validate(
+	name: string,
+	age: string,
+	gender: string,
+	occupation: string,
+) {
+	const errors: Errors = {};
+	const years = Number.parseInt(age, 10);
+	if (!name.trim()) errors.name = "Give your character a name.";
+	if (Number.isNaN(years) || years < PLAYER_AGE.MIN || years > PLAYER_AGE.MAX) {
+		errors.age = `Age must be between ${PLAYER_AGE.MIN} and ${PLAYER_AGE.MAX}.`;
+	}
+	if (!gender) errors.gender = "Choose one.";
+	if (!occupation) errors.occupation = "Choose a background.";
+	return errors;
+}
 
 export default function NewGame() {
 	const navigate = useNavigate();
-	const { createSession, metadata } = useGameStore();
+	const createSession = useGameStore((s) => s.createSession);
+	const metadata = useGameStore((s) => s.metadata);
 	const [name, setName] = useState("");
+	const [age, setAge] = useState("30");
 	const [gender, setGender] = useState("");
-	const [age, setAge] = useState<string>("");
 	const [occupation, setOccupation] = useState("");
+	const [submitted, setSubmitted] = useState(false);
 	const [isCreating, setIsCreating] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+	const [serverError, setServerError] = useState<string | null>(null);
 
-	const activeGenders = metadata?.character_options?.genders || [];
-	const activeOccupations = metadata?.character_options?.occupations || [];
+	// Errors appear after the first submit and clear as the player fixes them.
+	const liveErrors: Errors = submitted
+		? validate(name, age, gender, occupation)
+		: {};
 
-	const isLoadingMetadata = !metadata;
+	const handleSubmit = async (event: React.FormEvent) => {
+		event.preventDefault();
+		setSubmitted(true);
+		if (Object.keys(validate(name, age, gender, occupation)).length) {
+			// Move focus to the first field that needs attention once errors render.
+			requestAnimationFrame(() => {
+				const invalid = document.querySelector<HTMLElement>(
+					'[aria-invalid="true"]',
+				);
+				(
+					invalid?.querySelector<HTMLElement>('[role="radio"]') ?? invalid
+				)?.focus();
+			});
+			return;
+		}
 
-	const isFormValid =
-		name.trim() !== "" && gender !== "" && age !== "" && occupation !== "";
-
-	const handleStart = async () => {
 		setIsCreating(true);
-		setError(null);
-
+		setServerError(null);
 		try {
 			await createSession({
-				name,
+				name: name.trim(),
 				gender,
-				age: parseInt(age) || 0,
+				age: Number.parseInt(age, 10),
 				occupation,
 			});
-
 			navigate("/game");
-		} catch (err) {
-			console.error("Failed to create game session:", err);
-			setError(
-				err instanceof Error
-					? err.message
-					: "Failed to connect to game server. Is the backend running?",
+		} catch (error) {
+			setServerError(
+				errorMessage(error, "The game server did not respond. Try again."),
 			);
-		} finally {
 			setIsCreating(false);
 		}
 	};
 
-	if (isLoadingMetadata) {
+	if (!metadata) {
 		return (
-			<div className="flex h-screen w-screen items-center justify-center bg-background">
-				<div className="flex flex-col items-center gap-4 text-center">
-					<div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-					<p className="font-mono text-xs tracking-widest text-primary">
-						RETRIEVING METADATA...
-					</p>
-				</div>
-			</div>
+			<main className="flex h-dvh items-center justify-center gap-2 bg-ground text-muted">
+				<Loader2 aria-hidden className="size-4 animate-spin" />
+				Loading character options
+			</main>
 		);
 	}
 
+	const genders = (metadata.character_options?.genders ?? []).map((g) => ({
+		value: g,
+		label: g,
+	}));
+	const occupations = (metadata.character_options?.occupations ?? []).map(
+		(o) => ({ value: o.name, label: o.name, description: o.desc }),
+	);
+
 	return (
-		<div className="h-screen w-screen overflow-y-auto bg-background">
-			<div className="flex min-h-full w-full items-center justify-center p-4 py-12">
-				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.6 }}
-					className="panel-shadow w-full max-w-2xl space-y-10 rounded-lg border border-border bg-card/30 p-10 backdrop-blur-sm"
-				>
-					<div className="space-y-2 text-center">
-						<h2 className="font-heading text-3xl tracking-[0.2em] text-primary">
-							NEW INVESTIGATION
-						</h2>
-						<div className="mx-auto h-px w-24 bg-primary/30" />
-						<p className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground opacity-70">
-							Establish your dossier
-						</p>
-					</div>
+		<main className="scroll-area h-dvh animate-fade bg-ground">
+			<form
+				noValidate
+				onSubmit={handleSubmit}
+				className="mx-auto flex max-w-2xl flex-col gap-10 px-5 py-8 sm:py-14"
+			>
+				<div className="flex flex-col gap-4">
+					<Button
+						variant="ghost"
+						icon={<ArrowLeft aria-hidden className="size-4" />}
+						onClick={() => navigate("/")}
+						className="-ml-3 self-start"
+					>
+						Title screen
+					</Button>
+					<h1 className="text-headline sm:text-hero">Who walks in?</h1>
+					<p className="text-body text-muted sm:text-read">
+						The people of the tavern judge you by what they see. Your background
+						shapes how they speak to you.
+					</p>
+				</div>
 
-					{/* Error message */}
-					{error && (
-						<motion.div
-							initial={{ opacity: 0, height: 0 }}
-							animate={{ opacity: 1, height: "auto" }}
-							className="border border-destructive/30 bg-destructive/10 px-4 py-3 text-center"
-						>
-							<p className="font-mono text-xs text-destructive">{error}</p>
-						</motion.div>
-					)}
-
-					<div className="space-y-8">
-						{/* Name and Age */}
-						<div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-							<div className="space-y-3 md:col-span-2">
-								<label className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary/70">
-									CODΞNAMΞ / NAMΞ
-								</label>
-								<input
-									type="text"
-									value={name}
-									onChange={(e) => setName(e.target.value)}
-									placeholder="Enter your name..."
-									disabled={isCreating}
-									className="w-full border-b border-border bg-transparent px-0 py-3 font-body text-lg text-foreground transition-all focus:border-primary focus:outline-none"
-								/>
-							</div>
-							<div className="space-y-3">
-								<label className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary/70">
-									AGΞ (MIN. 18)
-								</label>
-								<input
-									type="number"
-									min="18"
-									value={age}
-									onChange={(e) => setAge(e.target.value)}
-									placeholder="Enter your age..."
-									disabled={isCreating}
-									className="w-full border-b border-border bg-transparent px-0 py-3 font-body text-lg text-foreground transition-all focus:border-primary focus:outline-none"
-								/>
-							</div>
-						</div>
-
-						{/* Gender */}
-						<div className="space-y-4">
-							<label className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary/70">
-								GΞNDΞR IDΞNTITY
-							</label>
-							<div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-								{activeGenders.map((opt) => (
-									<button
-										key={opt}
-										onClick={() => setGender(opt)}
-										disabled={isCreating}
-										className={cn(
-											"border px-3 py-4 font-mono text-[10px] tracking-widest transition-all",
-											gender === opt
-												? "border-primary bg-primary/10 text-primary shadow-[0_0_15px_rgba(182,141,64,0.15)]"
-												: "border-border text-muted-foreground hover:border-primary/40",
-										)}
-									>
-										{opt.toUpperCase()}
-									</button>
-								))}
-							</div>
-						</div>
-
-						{/* Occupation */}
-						<div className="space-y-4">
-							<label className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary/70">
-								PROFΞSSIONAL BACKGROUND
-							</label>
-							<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-								{activeOccupations.map((opt) => (
-									<button
-										key={opt.id}
-										onClick={() => setOccupation(opt.name)}
-										disabled={isCreating}
-										className={cn(
-											"flex flex-col space-y-2 border p-5 text-left transition-all",
-											occupation === opt.name
-												? "border-primary bg-primary/5 shadow-[0_0_20px_rgba(182,141,64,0.1)]"
-												: "border-border hover:border-primary/30",
-										)}
-									>
-										<span
-											className={cn(
-												"font-heading text-sm tracking-widest",
-												occupation === opt.name
-													? "text-primary"
-													: "text-foreground",
-											)}
-										>
-											{opt.name.toUpperCase()}
-										</span>
-										<span className="font-body text-[11px] leading-relaxed text-muted-foreground">
-											{opt.desc}
-										</span>
-									</button>
-								))}
-							</div>
-						</div>
-					</div>
-
-					{/* Actions */}
-					<div className="flex flex-col gap-4 pt-6 sm:flex-row">
-						<button
-							onClick={() => navigate("/")}
+				<div className="grid gap-8 sm:grid-cols-[minmax(0,1fr)_auto]">
+					<Field id="name" label="Name" error={liveErrors.name}>
+						<input
+							id="name"
+							type="text"
+							autoComplete="off"
+							maxLength={40}
+							value={name}
+							onChange={(e) => setName(e.target.value)}
+							placeholder="Mara Voss"
 							disabled={isCreating}
-							className="flex-1 border border-border px-6 py-4 font-mono text-[10px] tracking-[0.2em] text-muted-foreground transition-all hover:bg-muted/10 hover:text-foreground"
-						>
-							ABORT
-						</button>
-						<button
-							onClick={handleStart}
-							disabled={isCreating || !isFormValid}
-							className={cn(
-								"flex-[2] border px-6 py-4 font-heading text-xs tracking-[0.25em] transition-all",
-								isFormValid
-									? "border-primary bg-primary/10 text-primary shadow-[0_0_15px_rgba(182,141,64,0.2)] hover:bg-primary/20"
-									: "cursor-not-allowed border-border text-muted-foreground opacity-30",
-							)}
-						>
-							{isCreating ? "INITIALIZING Dossier..." : "INITIALIZΞ SYSTΞM"}
-						</button>
-					</div>
-				</motion.div>
-			</div>
-		</div>
+							aria-invalid={Boolean(liveErrors.name) || undefined}
+							aria-describedby={liveErrors.name ? "name-error" : undefined}
+							className={inputClass}
+						/>
+					</Field>
+					<Field id="age" label="Age" error={liveErrors.age}>
+						<Stepper
+							id="age"
+							value={age}
+							onChange={setAge}
+							min={PLAYER_AGE.MIN}
+							max={PLAYER_AGE.MAX}
+							unit="age"
+							invalid={Boolean(liveErrors.age)}
+							disabled={isCreating}
+						/>
+					</Field>
+				</div>
+
+				<Field label="Gender" error={liveErrors.gender}>
+					<ChoiceGroup
+						label="Gender"
+						choices={genders}
+						value={gender}
+						onChange={setGender}
+						invalid={Boolean(liveErrors.gender)}
+						disabled={isCreating}
+					/>
+				</Field>
+
+				<Field label="Background" error={liveErrors.occupation}>
+					<ChoiceGroup
+						label="Background"
+						variant="cards"
+						choices={occupations}
+						value={occupation}
+						onChange={setOccupation}
+						invalid={Boolean(liveErrors.occupation)}
+						disabled={isCreating}
+					/>
+				</Field>
+
+				<div className="flex flex-col gap-3 border-t pt-6">
+					{serverError && (
+						<p role="alert" className="text-label text-ember">
+							Couldn't start the game: {serverError}
+						</p>
+					)}
+					<Button
+						type="submit"
+						variant="primary"
+						loading={isCreating}
+						className="sm:self-end sm:px-8"
+					>
+						{isCreating ? "Opening the door…" : "Begin the story"}
+					</Button>
+				</div>
+			</form>
+		</main>
 	);
 }
