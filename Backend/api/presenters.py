@@ -11,6 +11,7 @@ from api.schemas import (
     NPCInfo,
     ObjectInfo,
     PlayerInfo,
+    SessionInfo,
     TrustThreshold,
 )
 
@@ -26,6 +27,17 @@ EMOTION_LABELS = {
     "hostile": "Hostile",
     "playful": "Playful",
 }
+
+
+def build_session_info(session: Any) -> SessionInfo:
+    return SessionInfo(
+        session_id=session.session_id,
+        player_name=session.world.player.name,
+        turn=session.world.turn,
+        active_npc_id=session.active_npc_id,
+        current_location_id=session.world.player.current_location_id,
+        created_at=session.created_at,
+    )
 
 
 def build_object_info(obj: Any) -> ObjectInfo:

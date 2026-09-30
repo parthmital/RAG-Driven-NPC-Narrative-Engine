@@ -3,19 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useGameStore } from "@/stores/gameStore";
 import type { NPC } from "@/types/game";
-
-const EMOTION_LABELS: Record<string, { label: string; color: string }> = {
-	neutral: { label: "Composed", color: "text-muted-foreground" },
-	suspicious: { label: "Suspicious", color: "text-destructive" },
-	fearful: { label: "Fearful", color: "text-accent-foreground" },
-	angry: { label: "Hostile", color: "text-destructive" },
-	melancholic: { label: "Melancholic", color: "text-muted-foreground" },
-	guarded: { label: "Guarded", color: "text-muted-foreground" },
-	trusting: { label: "Trusting", color: "text-primary" },
-	desperate: { label: "Desperate", color: "text-destructive" },
-	hostile: { label: "Hostile", color: "text-destructive" },
-	playful: { label: "Playful", color: "text-primary" },
-};
+import { EMOTION_STYLES } from "@/components/game/emotionStyles";
 
 export default function NpcsPage() {
 	const { npcs } = useGameStore();
@@ -47,7 +35,7 @@ export default function NpcsPage() {
 				<div className="flex-1 overflow-y-auto">
 					{npcList.map((npc) => {
 						const emotion =
-							EMOTION_LABELS[npc.emotionalState] ?? EMOTION_LABELS.neutral;
+							EMOTION_STYLES[npc.emotionalState] ?? EMOTION_STYLES.neutral;
 
 						return (
 							<button
@@ -76,7 +64,7 @@ export default function NpcsPage() {
 									<div
 										className="trust-gradient h-full transition-all duration-500"
 										style={{
-											width: `${((npc.trust + 100) / 200) * 100}%`,
+											width: `${npc.trustPercent}%`,
 										}}
 									/>
 								</div>
@@ -151,7 +139,7 @@ export default function NpcsPage() {
 										className="trust-gradient h-full"
 										initial={{ width: 0 }}
 										animate={{
-											width: `${((selected.trust + 100) / 200) * 100}%`,
+											width: `${selected.trustPercent}%`,
 										}}
 										transition={{
 											duration: 0.8,

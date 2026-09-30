@@ -7,25 +7,23 @@ import time
 from contextlib import asynccontextmanager
 
 import config
-from api.routes import router as game_router, set_session_manager, ws_router
-from api.session_manager import SessionManager
+from api.routes import router as game_router, ws_router
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from session.manager import SessionManager
 
 log = logging.getLogger(__name__)
-
-session_manager = SessionManager()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown lifecycle."""
     log.info("NPC Engine API starting...")
-    set_session_manager(session_manager)
+    session_manager: SessionManager = app.state.session_manager
 
     try:
-        await session_manager._ensure_init()
+        await session_manager.initialise()
         log.info("Shared resources preloaded successfully.")
     except Exception as exc:
         log.error("Preloading failed during startup: %s", exc, exc_info=True)
@@ -43,6 +41,7 @@ def create_app() -> FastAPI:
         version="0.1.0",
         lifespan=lifespan,
     )
+    app.state.session_manager = SessionManager()
 
     app.add_middleware(
         CORSMiddleware,
@@ -79,6 +78,6 @@ def create_app() -> FastAPI:
 
     @app.get("/health")
     async def root_health():
-        return {"status": "ok", "ready": session_manager.is_ready}
+        return {"status": "ok", "ready": app.state.session_manager.is_ready}
 
     return app

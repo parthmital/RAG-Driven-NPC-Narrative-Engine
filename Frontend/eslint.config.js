@@ -26,4 +26,46 @@ export default tseslint.config(
 			"@typescript-eslint/no-unused-vars": "off",
 		},
 	},
+	// Architecture boundaries: see ARCHITECTURE.md.
+	...[
+		{
+			files: ["src/contracts/**", "src/types/**", "src/config/**"],
+			patterns: [
+				"react",
+				"@/stores/*",
+				"@/services/*",
+				"@/pages/*",
+				"@/components/*",
+				"@/hooks/*",
+				"@/lib/*",
+			],
+		},
+		{
+			files: ["src/services/**"],
+			patterns: ["react", "@/stores/*", "@/pages/*", "@/components/*"],
+		},
+		{
+			files: ["src/stores/**"],
+			patterns: ["@/pages/*", "@/components/*", "@/hooks/*"],
+		},
+		{
+			files: ["src/components/**", "src/hooks/**", "src/lib/**"],
+			patterns: ["@/pages/*"],
+		},
+	].map(({ files, patterns }) => ({
+		files,
+		rules: {
+			"no-restricted-imports": [
+				"error",
+				{
+					patterns: [
+						{
+							group: patterns,
+							message: "Import breaks the layer rules in ARCHITECTURE.md.",
+						},
+					],
+				},
+			],
+		},
+	})),
 );

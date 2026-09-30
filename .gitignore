@@ -73,6 +73,7 @@ cache/
 # Environment files
 .env
 .env.*
+!.env.example
 
 # Coverage reports
 coverage/

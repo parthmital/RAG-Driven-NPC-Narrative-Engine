@@ -3,24 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useGameStore } from "@/stores/gameStore";
 import { cn } from "@/lib/utils";
 import type { NPC } from "@/types/game";
-
-/** Convert snake_case IDs to Title Case display names */
-function toTitleCase(s: string): string {
-	return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-const EMOTION_COLORS: Record<string, string> = {
-	neutral: "text-muted-foreground",
-	suspicious: "text-destructive",
-	fearful: "text-accent-foreground",
-	angry: "text-destructive",
-	melancholic: "text-muted-foreground",
-	guarded: "text-muted-foreground",
-	trusting: "text-primary",
-	desperate: "text-destructive",
-	hostile: "text-destructive",
-	playful: "text-primary",
-};
+import { toTitleCase } from "@/lib/format";
+import { EMOTION_STYLES } from "@/components/game/emotionStyles";
 
 type SidebarSection = "location" | "player" | "npcs" | "inventory" | "journal";
 
@@ -69,7 +53,7 @@ function SectionHeader({
 }
 
 function MiniTrustBar({ npc }: { npc: NPC }) {
-	const pct = ((npc.trust + 100) / 200) * 100;
+	const pct = npc.trustPercent;
 	return (
 		<div className="mt-1.5 space-y-0.5">
 			<div className="flex justify-between font-mono text-[10px] text-muted-foreground/50">
@@ -243,7 +227,7 @@ function NPCsSection() {
 				const isActive = activeNPC?.id === npc.id;
 				const isExpanded = expandedId === npc.id;
 				const emotionColor =
-					EMOTION_COLORS[npc.emotionalState] || "text-muted-foreground";
+					EMOTION_STYLES[npc.emotionalState]?.color || "text-muted-foreground";
 
 				return (
 					<div key={npc.id} className="px-3 py-2">

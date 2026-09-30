@@ -1,22 +1,12 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useGameStore } from "@/stores/gameStore";
-import { apiClient, type SaveInfo } from "@/services/api";
+import { useSavedSessions } from "@/hooks/useSavedSessions";
 
 export default function MainMenu() {
 	const navigate = useNavigate();
 	const { sessionId, metadata } = useGameStore();
-	const [saves, setSaves] = useState<SaveInfo[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-
-	useEffect(() => {
-		apiClient
-			.listSessions()
-			.then(setSaves)
-			.catch(console.error)
-			.finally(() => setIsLoading(false));
-	}, []);
+	const { saves, isLoading } = useSavedSessions();
 
 	const hasSaves = saves.length > 0;
 

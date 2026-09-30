@@ -22,13 +22,17 @@ class GroqClient:
         self.model = model
         self.client = Groq(api_key=api_key, timeout=timeout)
 
+    def _complete(self, prompt: str, max_tokens: int, **kwargs):
+        return self.client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model=self.model,
+            max_tokens=max_tokens,
+            **kwargs,
+        )
+
     def ping(self) -> bool:
         try:
-            self.client.chat.completions.create(
-                messages=[{"role": "user", "content": "ping"}],
-                model=self.model,
-                max_tokens=1,
-            )
+            self._complete("ping", max_tokens=1)
             return True
         except Exception as exc:
             log.error("Groq unreachable or error: %s", exc)
@@ -51,12 +55,7 @@ class GroqClient:
                 if stream:
                     return self._stream_generate(prompt, max_tokens, temperature)
 
-                response = self.client.chat.completions.create(
-                    messages=[{"role": "user", "content": prompt}],
-                    model=self.model,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                )
+                response = self._complete(prompt, max_tokens, temperature=temperature)
                 return response.choices[0].message.content or ""
             except Exception as exc:
                 exc_str = str(exc).lower()
@@ -90,12 +89,8 @@ class GroqClient:
     def _stream_generate(self, prompt: str, max_tokens: int, temperature: float) -> str:
         """Stream tokens from Groq and return the full text."""
         full_text = []
-        stream = self.client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model=self.model,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            stream=True,
+        stream = self._complete(
+            prompt, max_tokens, temperature=temperature, stream=True
         )
 
         for chunk in stream:
@@ -132,16 +127,11 @@ class GroqClient:
                     continue
             return None
 
-        match = _JSON_FENCE.search(raw)
-        if match:
-            result = _try_parse(match.group(1))
-            if result:
-                return result
-
-        match = _JSON_RAW.search(raw)
-        if match:
-            result = _try_parse(match.group(1))
-            if result:
-                return result
+        for pattern in (_JSON_FENCE, _JSON_RAW):
+            match = pattern.search(raw)
+            if match:
+                result = _try_parse(match.group(1))
+                if result:
+                    return result
 
         return _try_parse(raw)

@@ -4,11 +4,7 @@ import { cn } from "@/lib/utils";
 import { useGameStore } from "@/stores/gameStore";
 import { apiClient, type LocationInfo, type NPCInfo } from "@/services/api";
 import { toast } from "sonner";
-
-/** Convert snake_case IDs to Title Case display names */
-function toTitleCase(s: string): string {
-	return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
+import { toTitleCase } from "@/lib/format";
 
 export default function WorldPage() {
 	const { currentLocation, sessionId } = useGameStore();

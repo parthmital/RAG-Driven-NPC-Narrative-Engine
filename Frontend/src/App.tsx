@@ -1,7 +1,4 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { GameLayout } from "./components/layout/GameLayout";
 import { PauseMenu } from "./components/game/PauseMenu";
@@ -18,8 +15,6 @@ import { useEffect, useState, useCallback } from "react";
 import { useGameStore } from "@/stores/gameStore";
 import { apiClient } from "@/services/api";
 import { motion } from "framer-motion";
-
-const queryClient = new QueryClient();
 
 function BootGate({ children }: { children: React.ReactNode }) {
 	const [ready, setReady] = useState(false);
@@ -95,29 +90,26 @@ const App = () => {
 	}, [fetchMetadata]);
 
 	return (
-		<QueryClientProvider client={queryClient}>
-			<TooltipProvider>
-				<Toaster />
-				<Sonner />
-				<BootGate>
-					<BrowserRouter>
-						<PauseMenu />
-						<Routes>
-							<Route path="/" element={<MainMenu />} />
-							<Route path="/new-game" element={<NewGame />} />
-							<Route element={<GameLayout />}>
-								<Route path="/game" element={<GamePage />} />
-								<Route path="/world" element={<WorldPage />} />
-								<Route path="/npcs" element={<NpcsPage />} />
-								<Route path="/journal" element={<JournalPage />} />
-								<Route path="/session" element={<SessionPage />} />
-							</Route>
-							<Route path="*" element={<NotFound />} />
-						</Routes>
-					</BrowserRouter>
-				</BootGate>
-			</TooltipProvider>
-		</QueryClientProvider>
+		<>
+			<Toaster />
+			<BootGate>
+				<BrowserRouter>
+					<PauseMenu />
+					<Routes>
+						<Route path="/" element={<MainMenu />} />
+						<Route path="/new-game" element={<NewGame />} />
+						<Route element={<GameLayout />}>
+							<Route path="/game" element={<GamePage />} />
+							<Route path="/world" element={<WorldPage />} />
+							<Route path="/npcs" element={<NpcsPage />} />
+							<Route path="/journal" element={<JournalPage />} />
+							<Route path="/session" element={<SessionPage />} />
+						</Route>
+						<Route path="*" element={<NotFound />} />
+					</Routes>
+				</BrowserRouter>
+			</BootGate>
+		</>
 	);
 };
 

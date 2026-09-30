@@ -5,12 +5,13 @@ from pathlib import Path
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
 DISALLOWED_IMPORTS = {
-    "schemas": {"api", "core", "game", "graph", "llm", "memory"},
-    "core": {"api", "game", "graph", "llm", "memory"},
-    "game": {"api", "graph", "llm", "memory"},
-    "memory": {"api", "game", "graph", "llm"},
-    "llm": {"api", "game", "graph"},
-    "graph": {"api"},
+    "schemas": {"api", "core", "game", "graph", "llm", "memory", "session"},
+    "core": {"api", "game", "graph", "llm", "memory", "session"},
+    "game": {"api", "graph", "llm", "memory", "session"},
+    "memory": {"api", "game", "graph", "llm", "session"},
+    "llm": {"api", "game", "graph", "session"},
+    "graph": {"api", "session"},
+    "session": {"api"},
 }
 
 

@@ -43,33 +43,26 @@
 
 Run these commands from the repository root.
 
-1. Configure local environment variables.
+1. Start the full local application.
 
-   ```powershell
-   $env:GROQ_API_KEY = "gsk_replace_with_your_key"
-   $env:SESSION_SECRET = "replace-with-a-long-random-local-secret"
-   ```
-
-   `GROQ_API_KEY` is needed for LLM gameplay. `SESSION_SECRET` has a generated fallback in code, but a fixed value is better for repeatable local runs.
-
-2. Start the full local application.
-
-   ```powershell
+   ```bash
    npm run dev
    ```
 
-   This runs frontend `npm install`, creates `.venv`, installs backend requirements into that `.venv`, starts backend and frontend in separate PowerShell windows, waits for both services, and then opens `http://localhost:8080`.
+   The first run installs Node dependencies, creates `.venv` with the backend requirements, and copies `Backend/.env.example` to `Backend/.env`. It then starts the backend and frontend in separate titled windows on Windows, or with prefixed output in the same terminal on macOS and Linux. Once both services respond, it opens `http://localhost:8080`.
 
-Expected result: the backend is ready on `http://127.0.0.1:8000/health`, the Vite frontend is ready on `http://localhost:8080`, and pressing `Ctrl+C` in the original terminal stops both services and closes the spawned terminals.
+2. Set `GROQ_API_KEY` in `Backend/.env`; LLM gameplay needs it. Restart `npm run dev` after editing it.
+
+Expected result: the backend is ready on `http://127.0.0.1:8000/health`, the Vite frontend is ready on `http://localhost:8080`, and pressing `Ctrl+C` in the original terminal stops both services and closes their windows.
 
 Common quick start errors:
 
 | Problem                                     | Likely cause                                          | Resolution                                                                |
 | ------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------- |
-| `npm run dev` cannot launch PowerShell      | Windows PowerShell is unavailable or blocked          | Run from a normal Windows terminal with `powershell.exe` on `PATH`        |
+| `Port 8000 is busy` or `Port 8080 is busy`  | Another process or an earlier run holds the port      | Stop that process, then rerun `npm run dev`                               |
 | First backend startup is slow               | ML packages or the embedding model are being cached   | Wait for setup to finish. Files are cached under `.cache` for later runs  |
 | Frontend stays on the loading screen        | Backend `/health` is not ready                        | Check the backend terminal output and open `http://127.0.0.1:8000/health` |
-| Action submission fails                     | Missing or invalid `GROQ_API_KEY`                     | Set `GROQ_API_KEY` before starting the backend                            |
+| Action submission fails                     | Missing or invalid `GROQ_API_KEY`                     | Set `GROQ_API_KEY` in `Backend/.env` and restart                          |
 | Character creation returns validation error | `age` is below `18` or required text fields are empty | Use a non empty name, gender, occupation, and age `18` or higher          |
 
 ## Project overview
@@ -97,7 +90,7 @@ This project addresses that by combining:
 - Let NPCs respond through an LLM while keeping world updates constrained by code.
 - Preserve sessions on disk with snapshots, dialogue history, event logs, and memory files.
 - Provide a React UI for gameplay, world navigation, NPC relationship tracking, journal entries, and save loading.
-- Keep local development runnable with PowerShell, npm, Python, and Docker files.
+- Keep local development runnable with one cross-platform `npm run dev`, plus Docker files.
 
 ## Key features
 
@@ -148,10 +141,10 @@ Main source files:
 | Area                      | Source files                                                                                                   |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | Backend app factory       | [Backend/api/app.py](Backend/api/app.py)                                                                       |
-| REST and WebSocket routes | [Backend/api/routes.py](Backend/api/routes.py)                                                                 |
+| REST and WebSocket routes | [Backend/api/routes/](Backend/api/routes/)                                                                     |
 | API schemas               | [Backend/api/schemas.py](Backend/api/schemas.py)                                                               |
 | API presenters            | [Backend/api/presenters.py](Backend/api/presenters.py)                                                         |
-| Session lifecycle         | [Backend/api/session_manager.py](Backend/api/session_manager.py)                                               |
+| Session lifecycle         | [Backend/session/manager.py](Backend/session/manager.py)                                                       |
 | LangGraph pipeline        | [Backend/graph/definition.py](Backend/graph/definition.py)                                                     |
 | Groq client               | [Backend/llm/groq_client.py](Backend/llm/groq_client.py)                                                       |
 | Prompt builder            | [Backend/llm/prompt_builder.py](Backend/llm/prompt_builder.py)                                                 |
@@ -165,7 +158,7 @@ Main source files:
 
 ## Architecture documentation
 
-The production architecture guide is [docs/architecture.md](docs/architecture.md). It defines dependency rules, data flows, extension points, failure handling, security considerations, operational guidance, and validation commands.
+The production architecture guide is [ARCHITECTURE.md](ARCHITECTURE.md). It defines dependency rules, data flows, extension points, failure handling, security considerations, operational guidance, and validation commands.
 
 ## Application workflow
 
@@ -200,7 +193,6 @@ Versions are taken from repository files and local verification output.
 | Tailwind CSS          | `^3.4.17`                                               | Styling                         | `Frontend/src/index.css`, `Frontend/tailwind.config.ts`     | Provides utility classes and theme tokens                                              |
 | Zustand               | `^5.0.11`                                               | Client state                    | `Frontend/src/stores`                                       | Stores session, game, and UI state                                                     |
 | React Router DOM      | `^6.30.1`                                               | Frontend routing                | `Frontend/src/App.tsx`                                      | Defines menu, game, world, NPC, journal, session, and 404 routes                       |
-| TanStack Query        | `^5.83.0`                                               | Server state provider           | `Frontend/src/App.tsx`                                      | Provides query client context                                                          |
 | Framer Motion         | `^12.34.3`                                              | UI animation                    | Frontend pages and components                               | Animates loading, menu, and page elements                                              |
 | nginx                 | `nginx:alpine`                                          | Static frontend server          | `Frontend/Dockerfile`, `Frontend/nginx.conf`                | Serves built frontend and proxies API and WebSocket routes in Docker                   |
 | Docker Compose        | Compose file version `3.8`                              | Multi service local deployment  | `docker-compose.yml`                                        | Builds and connects backend and frontend containers                                    |
@@ -212,10 +204,11 @@ LLM-Game/
 |-- Backend/
 |   |-- api/
 |   |   |-- app.py              # FastAPI factory, CORS, lifecycle, root health
+|   |   |-- dependencies.py     # Session manager and session lookup dependencies
 |   |   |-- presenters.py       # Maps internal world state to API responses
-|   |   |-- routes.py           # REST and WebSocket routes
-|   |   |-- schemas.py          # API request and response models
-|   |   `-- session_manager.py  # Session creation, loading, saving, shutdown
+|   |   |-- realtime.py         # WebSocket message construction and broadcast
+|   |   |-- routes/             # sessions, gameplay, world, and websocket routes
+|   |   `-- schemas.py          # API request and response models
 |   |-- core/
 |   |   |-- event_store.py      # SQLite append only event store
 |   |   |-- reducer.py          # Applies events to world state
@@ -233,15 +226,22 @@ LLM-Game/
 |   |   |-- embedder.py         # Sentence transformer embedder and cache
 |   |   |-- faiss_index.py      # FAISS memory index
 |   |   `-- short_term.py       # Recent turn buffer
+|   |-- session/
+|   |   |-- dialogue.py         # Display dialogue history entries
+|   |   |-- game_session.py     # Per session runtime state
+|   |   |-- manager.py          # Session creation, loading, saving, turns, shutdown
+|   |   `-- save_files.py       # Snapshot and dialogue file layout on disk
 |   |-- schemas/
 |   |   |-- events.py           # Event enum and payload helper models
 |   |   |-- llm_output.py       # LLM JSON output schema
 |   |   `-- world_state.py      # World state models
 |   |-- tests/
+|   |   |-- test_api.py          # HTTP and WebSocket API tests with stubbed ML and LLM
 |   |   `-- test_architecture.py # Import boundary and graph side effect tests
 |   |-- config.py               # Backend configuration and environment loading
 |   |-- Dockerfile              # Backend container image
-|   |-- requirements.txt        # Backend dependencies
+|   |-- requirements.txt        # Backend runtime dependencies
+|   |-- requirements-dev.txt    # Runtime plus development tools (black)
 |   `-- server.py               # Uvicorn entry point
 |-- Frontend/
 |   |-- public/                 # Static favicon and Open Graph image
@@ -249,6 +249,8 @@ LLM-Game/
 |   |   |-- components/         # Game, layout, and UI components
 |   |   |-- config/             # Frontend constants
 |   |   |-- contracts/          # Backend DTO contracts
+|   |   |-- hooks/              # Shared React hooks
+|   |   |-- lib/                # Class name merging and display formatting
 |   |   |-- pages/              # Route pages
 |   |   |-- services/           # HTTP client, WebSocket service, compatibility facade
 |   |   |-- stores/             # Zustand stores
@@ -265,22 +267,19 @@ LLM-Game/
 |   `-- vitest.config.ts        # Vitest config
 |-- docker-compose.yml          # Backend and frontend services
 |-- docs/
-|   `-- architecture.md         # Architecture, rules, operations, and validation guide
-|-- package.json                # Root npm scripts for local dev and frontend build aliases
+|   `-- research_article.md     # Research write-up
 |-- scripts/
-|   |-- dev.ps1                 # Root local setup and service orchestration
-|   |-- dev-service.ps1         # Backend or frontend service window wrapper
-|   |-- setup.ps1               # Idempotent repo-local dependency setup
-|   `-- tooling-env.ps1         # Repo-local cache and tool environment helpers
-|-- check.ps1                   # Full local validation script
-|-- start.ps1                   # Compatibility wrapper around scripts/dev.ps1
+|   |-- lib/workspace.mjs       # Repo-local environment, runtime checks, idempotent setup
+|   |-- dev.mjs                 # `npm run dev` launcher and service supervisor
+|   `-- check.mjs               # `npm run check` validation runner
+|-- ARCHITECTURE.md             # Module map, dependency rules, decisions, growth signals
+|-- package.json                # Root npm scripts and the clone detector
 `-- README.md                   # Project documentation
 ```
 
 ## Prerequisites
 
-- Windows PowerShell for `npm run dev`, `start.ps1`, and separate service terminals.
-- Python `3.11` or newer. Local verification used `3.11.9`.
+- Python `3.10` or newer on `PATH` (`python`, `python3`, or the `py` launcher). Docker and local verification use `3.11`.
 - Node.js `^20.19.0 || >=22.12.0`. The frontend Docker build uses `node:22-alpine`; local verification used Node `24.15.0` and npm `11.12.1`.
 - npm with support for `npm install`.
 - Groq API key for LLM backed gameplay.
@@ -290,29 +289,22 @@ LLM-Game/
 
 No separate install step is required for the normal local workflow.
 
-```powershell
+```bash
 npm run dev
 ```
 
-The root dev command performs the complete idempotent setup:
+The root dev command performs the complete idempotent setup through [scripts/lib/workspace.mjs](scripts/lib/workspace.mjs):
 
-- Creates `.venv` in the repository root when missing.
-- Installs `Backend\requirements.txt` only through `.venv\Scripts\python.exe`.
-- Runs `npm install` in `Frontend`.
-- Uses repo-local cache paths including `.cache\npm`, `.cache\pip`, `.cache\huggingface`, `.cache\torch`, and `.cache\pycache`.
-- Uses `.codex-local\tmp` for runtime stop and failure signal files.
-
-To run only setup without starting services:
-
-```powershell
-.\scripts\setup.ps1
-```
+- Runs `npm ci` at the root and in `Frontend`.
+- Creates `.venv` in the repository root when missing and installs `Backend/requirements-dev.txt` through the `.venv` interpreter only.
+- Copies `Backend/.env.example` to `Backend/.env` when missing and warns while `GROQ_API_KEY` is unset.
+- Records lockfile hashes in the Git-ignored `.cache/setup-stamp.json`. Later runs skip installs unless a lockfile or requirements file changed or an environment is broken.
+- Uses repo-local caches: `.cache/npm`, `.cache/pip`, `.cache/huggingface`, `.cache/torch`, and `.cache/pycache`.
 
 Notes:
 
 - The first run can take time because PyTorch, FAISS, and the sentence-transformers model are large.
-- Repeated runs are safe. Existing installed packages and local caches are reused.
-- `.\start.ps1` is still available and delegates to the same workflow.
+- `npm run check` performs the same setup before validating.
 
 ## Environment configuration
 
@@ -342,15 +334,15 @@ There is no manual database setup and no migration command in the repository.
 
 The backend creates local data on demand under `Backend/data`. This directory is ignored by git. For each session, the session manager creates:
 
-| File                 | Purpose                      | Source                           |
-| -------------------- | ---------------------------- | -------------------------------- |
-| `events.db`          | SQLite event log             | `Backend/core/event_store.py`    |
-| `faiss.index`        | FAISS vector index           | `Backend/memory/faiss_index.py`  |
-| `faiss_meta.json`    | Metadata for FAISS entries   | `Backend/memory/faiss_index.py`  |
-| `snapshot.json`      | Manual save snapshot         | `Backend/core/snapshot.py`       |
-| `snapshot_auto.json` | Auto save snapshot           | `Backend/core/snapshot.py`       |
-| `dialogue.json`      | Manual save dialogue history | `Backend/api/session_manager.py` |
-| `dialogue_auto.json` | Auto save dialogue history   | `Backend/api/session_manager.py` |
+| File                 | Purpose                      | Source                          |
+| -------------------- | ---------------------------- | ------------------------------- |
+| `events.db`          | SQLite event log             | `Backend/core/event_store.py`   |
+| `faiss.index`        | FAISS vector index           | `Backend/memory/faiss_index.py` |
+| `faiss_meta.json`    | Metadata for FAISS entries   | `Backend/memory/faiss_index.py` |
+| `snapshot.json`      | Manual save snapshot         | `Backend/core/snapshot.py`      |
+| `snapshot_auto.json` | Auto save snapshot           | `Backend/core/snapshot.py`      |
+| `dialogue.json`      | Manual save dialogue history | `Backend/session/save_files.py` |
+| `dialogue_auto.json` | Auto save dialogue history   | `Backend/session/save_files.py` |
 
 The embedding cache is stored at `Backend/data/embed_cache.db`.
 
@@ -358,54 +350,36 @@ The embedding cache is stored at `Backend/data/embed_cache.db`.
 
 ### Run with root npm
 
-```powershell
+```bash
 npm run dev
 ```
 
-What it does:
+What it does ([scripts/dev.mjs](scripts/dev.mjs)):
 
-- Runs idempotent setup through [scripts/setup.ps1](scripts/setup.ps1).
-- Starts the backend from `Backend` using `..\.venv\Scripts\python.exe -u server.py`.
-- Starts the frontend from `Frontend` using `npm run dev`.
-- Opens backend and frontend in separate PowerShell windows.
-- Polls `http://127.0.0.1:8000/health` and `http://localhost:8080` for readiness.
-- Opens `http://localhost:8080` only after both services are ready.
-- Keeps the original terminal open as the process owner.
-
-Windows behaviour:
-
-- Press `Ctrl+C` in the original `npm run dev` terminal to stop both service processes and close the spawned terminal windows.
-- If a previous run was interrupted, stale stop files under `.codex-local\tmp` are removed automatically on the next run.
-- If ports `8000` or `8080` are occupied by this repository's previous service processes, they are stopped. If another application owns a port, startup fails instead of killing it.
+- Runs the idempotent setup described above.
+- Fails fast if Node, Python, or ports `8000` and `8080` are unavailable.
+- Starts the backend (`.venv` Python, `Backend/server.py`) and the frontend (Vite in `Frontend`).
+- On Windows, each service runs in its own titled window. On macOS and Linux, output is prefixed with `[backend]` or `[frontend]` in the main terminal.
+- Polls `http://127.0.0.1:8000/health` and `http://localhost:8080`, then opens the browser once. The browser is skipped when `CI` is set.
+- If either service exits, reports it and stops everything.
+- `Ctrl+C` in the main terminal kills both process trees and closes their windows.
 
 ### Run manually in two terminals
 
-Manual runs are mainly useful for debugging. Run setup first:
-
-```powershell
-.\scripts\setup.ps1
-```
+Manual runs are mainly useful for debugging. Run `npm run dev` once first so setup is complete.
 
 Terminal 1, backend:
 
-```powershell
-. .\scripts\tooling-env.ps1
-Set-RepoLocalToolingEnvironment -RootPath (Get-Location) | Out-Null
-$env:GROQ_API_KEY = "gsk_replace_with_your_key"
-$env:SESSION_SECRET = "replace-with-a-long-random-local-secret"
-Push-Location Backend
-..\.venv\Scripts\python.exe -u server.py
+```bash
+cd Backend
+../.venv/Scripts/python.exe -u server.py   # macOS/Linux: ../.venv/bin/python
 ```
-
-Expected result: backend logs show the API starting on `http://0.0.0.0:8000`.
 
 Terminal 2, frontend:
 
-```powershell
-. .\scripts\tooling-env.ps1
-Set-RepoLocalToolingEnvironment -RootPath (Get-Location) | Out-Null
-Push-Location Frontend
-npm --cache ..\.cache\npm run dev
+```bash
+cd Frontend
+npm run dev
 ```
 
 Expected result: Vite serves the frontend on `http://localhost:8080` and proxies `/api`, `/health`, and `/ws` to the backend.
@@ -414,25 +388,22 @@ Expected result: Vite serves the frontend on `http://localhost:8080` and proxies
 
 Root:
 
-| Command                     | Where to run    | Purpose                                                                                             | Verification status                                                                   |
-| --------------------------- | --------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `npm run dev`               | Repository root | Runs complete setup, starts both services in separate windows, and opens the browser                | Passed                                                                                |
-| `npm run build`             | Repository root | Runs the existing frontend production build command                                                 | Source verified                                                                       |
-| `npm run build:dev`         | Repository root | Runs the existing frontend development build command                                                | Source verified                                                                       |
-| `npm run preview`           | Repository root | Runs the existing frontend preview command                                                          | Source verified                                                                       |
-| `npm run check`             | Repository root | Runs `.\check.ps1`                                                                                  | Source verified                                                                       |
-| `.\check.ps1`               | Repository root | Runs setup, backend syntax, backend tests, frontend format check, typecheck, lint, tests, and build | Passed                                                                                |
-| `.\start.ps1`               | Repository root | Compatibility wrapper around `scripts\dev.ps1`                                                      | Source verified                                                                       |
-| `docker compose up --build` | Repository root | Builds and runs backend plus frontend containers                                                    | Source verified from `docker-compose.yml`; not executed because Docker is unavailable |
+| Command                     | Where to run    | Purpose                                                                                                     | Verification status                                                                   |
+| --------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `npm run dev`               | Repository root | Runs complete setup, starts both services in separate windows, and opens the browser                        | Passed                                                                                |
+| `npm run build`             | Repository root | Runs the existing frontend production build command                                                         | Source verified                                                                       |
+| `npm run build:dev`         | Repository root | Runs the existing frontend development build command                                                        | Source verified                                                                       |
+| `npm run preview`           | Repository root | Runs the existing frontend preview command                                                                  | Source verified                                                                       |
+| `npm run check`             | Repository root | Runs setup, clone detection, black, backend tests, frontend format check, typecheck, lint, tests, and build | Passed                                                                                |
+| `docker compose up --build` | Repository root | Builds and runs backend plus frontend containers                                                            | Source verified from `docker-compose.yml`; not executed because Docker is unavailable |
 
 Backend:
 
-| Command                                                            | Where to run    | Purpose                                                         | Verification status                 |
-| ------------------------------------------------------------------ | --------------- | --------------------------------------------------------------- | ----------------------------------- |
-| `.\scripts\setup.ps1`                                              | Repository root | Creates `.venv` and installs backend plus frontend dependencies | Passed                              |
-| `.\.venv\Scripts\python.exe -m compileall Backend`                 | Repository root | Checks backend Python syntax                                    | Passed                              |
-| `.\.venv\Scripts\python.exe -m unittest discover -s Backend\tests` | Repository root | Runs backend architecture tests                                 | Passed                              |
-| `.\.venv\Scripts\python.exe -u Backend\server.py`                  | Repository root | Starts FastAPI with Uvicorn                                     | Passed during workflow verification |
+| Command                                                     | Where to run    | Purpose                                 | Verification status                 |
+| ----------------------------------------------------------- | --------------- | --------------------------------------- | ----------------------------------- |
+| `..\.venv\Scripts\python.exe -m black --check .`            | `Backend`       | Checks backend formatting               | Passed                              |
+| `..\.venv\Scripts\python.exe -m unittest discover -s tests` | `Backend`       | Runs backend API and architecture tests | Passed                              |
+| `.\.venv\Scripts\python.exe -u Backend\server.py`           | Repository root | Starts FastAPI with Uvicorn             | Passed during workflow verification |
 
 Frontend scripts from [Frontend/package.json](Frontend/package.json):
 
@@ -449,7 +420,7 @@ Frontend scripts from [Frontend/package.json](Frontend/package.json):
 | `npm run typecheck`    | `Frontend`   | Runs TypeScript without emitting                    | Passed                                                  |
 | `npm run format`       | `Frontend`   | Formats frontend files                              | Source verified                                         |
 | `npm run format:check` | `Frontend`   | Checks frontend formatting                          | Source verified                                         |
-| `npm run check`        | `Frontend`   | Runs format check, typecheck, lint, test, and build | Passed through `.\check.ps1`                            |
+| `npm run check`        | `Frontend`   | Runs format check, typecheck, lint, test, and build | Passed through root `npm run check`                     |
 
 ## API documentation
 
@@ -607,7 +578,7 @@ Validation is implemented in three layers:
 | Layer                       | Source                      | Behaviour                                                                                                                                                        |
 | --------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | API request validation      | `Backend/api/schemas.py`    | Pydantic validates body fields, minimum lengths, age, and action length                                                                                          |
-| Route level checks          | `Backend/api/routes.py`     | Checks active sessions, NPC availability, location connectivity, object ownership, and clue existence                                                            |
+| Route level checks          | `Backend/api/routes/`       | Checks active sessions, NPC availability, location connectivity, object ownership, and clue existence                                                            |
 | LLM world update validation | `Backend/game/validator.py` | Rejects unknown event types, non canonical entities, invalid movement, impossible inventory actions, excessive relationship deltas, and invalid currency changes |
 
 The LLM is instructed to return a strict JSON object. The backend parses this JSON and validates it before applying world changes.
@@ -640,29 +611,28 @@ No external log collector or metrics exporter is configured in the repository.
 
 Verification run in this workspace:
 
-| Check                    | Command                                                            | Result                                                               |
-| ------------------------ | ------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| Python version           | `python --version`                                                 | Passed, `Python 3.11.9`                                              |
-| Node version             | `node --version`                                                   | Passed, `v24.15.0`                                                   |
-| npm version              | `npm --version`                                                    | Passed, `11.12.1`                                                    |
-| Repo-local setup         | `.\scripts\setup.ps1`                                              | Passed                                                               |
-| Frontend install         | `npm install` in `Frontend`                                        | Passed through root setup                                            |
-| Dependency audit         | `npm audit` in `Frontend`                                          | Passed, `0` vulnerabilities                                          |
-| Backend syntax           | `.\.venv\Scripts\python.exe -m compileall Backend`                 | Passed                                                               |
-| Backend tests            | `.\.venv\Scripts\python.exe -m unittest discover -s Backend\tests` | Passed, `2` tests                                                    |
-| Frontend format check    | `npm run format:check` in `Frontend`                               | Passed                                                               |
-| Frontend typecheck       | `npm run typecheck` in `Frontend`                                  | Passed                                                               |
-| Frontend lint            | `npm run lint` in `Frontend`                                       | Passed                                                               |
-| Frontend tests           | `npm run test` in `Frontend`                                       | Passed, `4` tests                                                    |
-| Frontend build           | `npm run build` in `Frontend`                                      | Passed                                                               |
-| Full local dev workflow  | `npm run dev -- -ReadyTimeoutSeconds 120`                          | Passed, browser opened after readiness and `Ctrl+C` stopped services |
-| Full validation workflow | `.\check.ps1`                                                      | Passed                                                               |
-| Docker Compose config    | `docker compose config`                                            | Not run because Docker is unavailable                                |
+| Check                    | Command                                             | Result                                                             |
+| ------------------------ | --------------------------------------------------- | ------------------------------------------------------------------ |
+| Python version           | `python --version`                                  | Passed, `Python 3.11.9`                                            |
+| Node version             | `node --version`                                    | Passed, `v24.15.0`                                                 |
+| npm version              | `npm --version`                                     | Passed, `11.12.1`                                                  |
+| Frontend install         | `npm install` in `Frontend`                         | Passed through root setup                                          |
+| Dependency audit         | `npm audit` in `Frontend`                           | Passed, `0` vulnerabilities                                        |
+| Backend format           | `python -m black --check .` in `Backend`            | Passed                                                             |
+| Backend tests            | `python -m unittest discover -s tests` in `Backend` | Passed, `7` tests                                                  |
+| Frontend format check    | `npm run format:check` in `Frontend`                | Passed                                                             |
+| Frontend typecheck       | `npm run typecheck` in `Frontend`                   | Passed                                                             |
+| Frontend lint            | `npm run lint` in `Frontend`                        | Passed                                                             |
+| Frontend tests           | `npm run test` in `Frontend`                        | Passed, `7` tests                                                  |
+| Frontend build           | `npm run build` in `Frontend`                       | Passed                                                             |
+| Full local dev workflow  | `CI=1 npm run dev` on Windows 11                    | Passed: ready, busy port fails fast, crash stops all, no leftovers |
+| Full validation workflow | `npm run check`                                     | Passed                                                             |
+| Docker Compose config    | `docker compose config`                             | Not run because Docker is unavailable                              |
 
 Test coverage:
 
 ```text
-Not measured. Current tests cover backend architecture boundaries and frontend HTTP client behaviour.
+Not measured. Current tests cover backend architecture boundaries, the HTTP and WebSocket API with stubbed ML and LLM, the frontend HTTP client, and frontend dialogue mapping.
 ```
 
 ## Build process
@@ -791,7 +761,7 @@ Available runtime checks:
 
 Maintenance tasks:
 
-- Run `.\check.ps1` before submitting changes.
+- Run `npm run check` before submitting changes.
 - Run `npm audit` after frontend dependency changes.
 - Rotate any leaked local secrets immediately if they were ever committed.
 - Back up `Backend/data` if local save files matter.
@@ -807,45 +777,45 @@ Maintenance tasks:
 | WebSocket endpoints                     | `1`                                       | Same command                                                       | `/ws/game/{session_id}`                                                         |
 | React route paths                       | `8`                                       | `rg "Route path=" Frontend\src\App.tsx`                            | Includes wildcard 404 route                                                     |
 | Frontend pages                          | `8`                                       | `rg --files Frontend\src\pages`                                    | Page component files                                                            |
-| Frontend components                     | `10`                                      | `rg --files Frontend\src\components`                               | Game, layout, and UI components                                                 |
+| Frontend components                     | `8`                                       | `rg --files Frontend\src\components`                               | Game, layout, and UI components                                                 |
 | Frontend Zustand stores                 | `2`                                       | `rg --files Frontend\src\stores`                                   | Game and UI stores                                                              |
 | Frontend npm scripts                    | `11`                                      | `Frontend/package.json`                                            | Includes `check`, `typecheck`, format scripts, lint, test, and build            |
-| Backend dependency entries              | `15`                                      | `Backend/requirements.txt`                                         | Non empty dependency lines                                                      |
+| Backend dependency entries              | `14`                                      | `Backend/requirements.txt`                                         | Runtime dependency lines; `black` moved to `requirements-dev.txt`               |
 | World locations                         | `8`                                       | `Backend/game/world_seed.json`                                     | Canonical seed data                                                             |
 | NPCs                                    | `4`                                       | `Backend/game/world_seed.json`                                     | Canonical seed data                                                             |
 | Objects                                 | `4`                                       | `Backend/game/world_seed.json`                                     | Canonical seed data                                                             |
 | World rules                             | `7`                                       | `Backend/game/world_seed.json`                                     | Canonical seed data                                                             |
 | Gender options                          | `4`                                       | `Backend/game/world_seed.json`                                     | Character creation metadata                                                     |
 | Occupation options                      | `5`                                       | `Backend/game/world_seed.json`                                     | Character creation metadata                                                     |
-| Test files                              | `2`                                       | `rg --files Backend\tests Frontend\src`                            | Backend architecture tests and frontend HTTP client tests                       |
+| Test files                              | `4`                                       | `rg --files Backend\tests Frontend\src -g '*test*'`                | Backend API and architecture tests, frontend HTTP client and mapper tests       |
 | Test coverage percentage                | `Not measured in the current repository.` | Not available                                                      | No coverage tooling output is present                                           |
 | Default backend port                    | `8000`                                    | `Backend/config.py`, `docker-compose.yml`                          | Local and Docker                                                                |
-| Default frontend port                   | `8080`                                    | `Frontend/vite.config.ts`, `docker-compose.yml`, `scripts/dev.ps1` | Local Vite and Docker host port                                                 |
+| Default frontend port                   | `8080`                                    | `Frontend/vite.config.ts`, `docker-compose.yml`, `scripts/dev.mjs` | Local Vite and Docker host port                                                 |
 | Build time                              | `895ms`                                   | `npm run build`                                                    | Local verification result                                                       |
-| JS bundle gzip size                     | `151.32 kB`                               | `npm run build`                                                    | Local verification result                                                       |
-| CSS bundle gzip size                    | `6.53 kB`                                 | `npm run build`                                                    | Local verification result                                                       |
+| JS bundle gzip size                     | `123.70 kB`                               | `npm run build`                                                    | Local verification result                                                       |
+| CSS bundle gzip size                    | `5.53 kB`                                 | `npm run build`                                                    | Local verification result                                                       |
 
 ## Troubleshooting
 
 | Problem                                  | Likely cause                                         | Diagnostic command                                                    | Resolution                                                                          |
 | ---------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `npm run dev` cannot launch services     | PowerShell is unavailable or blocked                 | `powershell.exe -NoProfile -Command "$PSVersionTable.PSVersion"`      | Run from a Windows terminal with `powershell.exe` available                         |
+| `npm run dev` reports a busy port        | Another process or earlier run holds the port        | `netstat -ano`                                                        | Stop that process, then rerun `npm run dev`                                         |
 | First setup run is slow                  | Large ML dependencies or embedding model download    | Check `.cache\pip` and `.cache\huggingface`                           | Let the setup finish. Later runs reuse the repository-local caches                  |
-| Backend import or package error          | Backend dependencies not installed in `.venv`        | `.\.venv\Scripts\python.exe -m pip show fastapi`                      | Run `.\scripts\setup.ps1` from the repository root                                  |
-| Frontend command not found               | Dependencies missing                                 | `Test-Path Frontend\node_modules`                                     | Run `npm run dev` or `.\scripts\setup.ps1` from the repository root                 |
+| Backend import or package error          | Backend dependencies not installed in `.venv`        | `.venv/Scripts/python.exe -m pip show fastapi`                        | Rerun `npm run dev`; setup reinstalls a broken `.venv`                              |
+| Frontend command not found               | Dependencies missing                                 | Check that `Frontend/node_modules` exists                             | Rerun `npm run dev` from the repository root                                        |
 | Frontend loading screen does not proceed | Backend health endpoint not ready                    | `Invoke-RestMethod http://127.0.0.1:8000/health`                      | Start backend and wait for shared resources to load                                 |
-| Groq generation fails                    | Missing or invalid API key                           | `$env:GROQ_API_KEY`                                                   | Set `GROQ_API_KEY` before starting backend                                          |
+| Groq generation fails                    | Missing or invalid API key                           | Check `Backend/.env`                                                  | Set `GROQ_API_KEY` in `Backend/.env` and restart                                    |
 | Session creation returns `422`           | Invalid request body                                 | Check browser network response                                        | Provide all required fields and use age `18` or higher                              |
 | Travel returns `400`                     | Target location is not connected to current location | `Invoke-RestMethod http://127.0.0.1:8000/api/game/state/<session_id>` | Travel only to a location listed in `connected_to`                                  |
-| `.\check.ps1` fails                      | One validation step failed                           | Read the first failed command in the output                           | Fix that command locally, then rerun `.\check.ps1`                                  |
+| `npm run check` fails                    | One validation step failed                           | Read the first failed step in the output                              | Fix that step locally, then rerun `npm run check`                                   |
 | `npm audit` reports findings             | Dependency advisory in the current lockfile          | `cd Frontend; npm audit`                                              | Prefer non breaking updates first, then validate major updates with `npm run check` |
-| Docker command fails                     | Docker not installed or unavailable                  | `docker --version`                                                    | Install Docker Desktop or use the local PowerShell workflow                         |
+| Docker command fails                     | Docker not installed or unavailable                  | `docker --version`                                                    | Install Docker Desktop or use `npm run dev`                                         |
 
 ## Known limitations
 
 - No authentication or authorisation is implemented.
-- Backend tests currently cover architecture boundaries, not full gameplay integration.
-- Frontend tests currently cover the HTTP client, not route level rendering or WebSocket flows.
+- Backend API tests stub the embedder, Groq client, and LangGraph pipeline; real LLM turns are not tested.
+- Frontend tests cover the HTTP client and dialogue mapping, not route level rendering or WebSocket flows.
 - Docker files exist, but Docker could not be executed in the verification environment.
 - `SESSION_SECRET` is loaded but not used elsewhere in the current code.
 - Some performance metrics are not measured, including request throughput, memory usage, and production latency.
@@ -858,8 +828,8 @@ Maintenance tasks:
 3. Update or add tests when changing behaviour.
 4. Run the relevant checks before submitting changes:
 
-   ```powershell
-   .\check.ps1
+   ```bash
+   npm run check
    ```
 
 5. Document new environment variables, endpoints, scripts, and data files in this README.

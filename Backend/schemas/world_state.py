@@ -85,5 +85,5 @@ class WorldState(BaseModel):
     # relationships[npc_id][entity_id] = trust delta (-100..100)
     journal: List[JournalEntry] = Field(default_factory=list)
     clues: Dict[str, Clue] = Field(default_factory=dict)
-    active_npc_id: str = ""
+    active_npc_id: Optional[str] = None
     turn: int = 0

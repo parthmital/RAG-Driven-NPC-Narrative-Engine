@@ -1,13 +1,5 @@
 import { create } from "zustand";
-import type {
-	DialogueMessage,
-	NPC,
-	JournalEntry,
-	Clue,
-	MessageType,
-	EmotionalState,
-	RelationshipTier,
-} from "@/types/game";
+import type { DialogueMessage, NPC, JournalEntry, Clue } from "@/types/game";
 import {
 	apiClient,
 	wsService,
@@ -18,6 +10,17 @@ import {
 	type SaveInfo,
 	type GameMetadataResponse,
 } from "@/services/api";
+import {
+	errorMessage,
+	systemMessage,
+	toClues,
+	toDialogueHistory,
+	toDialogueMessages,
+	toFrontendNPC,
+	toInventory,
+	toJournal,
+	type InventoryItem,
+} from "@/stores/mappers";
 import { GAME_CONSTANTS } from "@/config/constants";
 import { toast } from "sonner";
 
@@ -36,38 +39,26 @@ interface GameState {
 	currentLocationName: string;
 	currentLocationDescription: string;
 	connectedLocations: string[];
-	setLocation: (location: string, name?: string, description?: string) => void;
 
 	// Dialogue
 	dialogueHistory: DialogueMessage[];
 	addMessage: (msg: DialogueMessage) => void;
-	clearHistory: () => void;
 
 	// NPCs
 	activeNPC: NPC | null;
-	setActiveNPC: (npc: NPC | null) => void;
 	npcs: Record<string, NPC>;
-	updateNPC: (id: string, updates: Partial<NPC>) => void;
 
 	// Journal
 	journalEntries: JournalEntry[];
-	addJournalEntry: (entry: JournalEntry) => void;
 
 	// Clues
 	clues: Clue[];
-	addClue: (clue: Clue) => void;
 
 	// Processing
 	isProcessing: boolean;
-	setProcessing: (v: boolean) => void;
 
 	// Inventory & Currency
-	inventory: Array<{
-		id: string;
-		name: string;
-		description: string;
-		properties?: Record<string, unknown>;
-	}>;
+	inventory: InventoryItem[];
 	currency: number;
 
 	// Relationships
@@ -124,29 +115,6 @@ interface GameState {
 	dropObject: (objectId: string) => Promise<void>;
 }
 
-/** Convert backend NPCInfo to frontend NPC type */
-function toFrontendNPC(info: NPCInfo): NPC {
-	return {
-		id: info.id,
-		name: info.name,
-		title: info.title,
-		description: info.description,
-		personality: info.personality,
-		trust: info.trust,
-		maxTrust: info.max_trust,
-		trustThresholds: info.trust_thresholds,
-		emotionalState: info.emotional_state as EmotionalState,
-		hiddenSecrets: 0,
-		revealedSecrets: 0,
-		allegiances: [],
-		relationshipTier: info.relationship_tier as RelationshipTier,
-		suspicion: info.suspicion,
-		emotionalLabel: info.emotional_label,
-		trustPercent: info.trust_percent,
-		locationId: info.location_id,
-	};
-}
-
 export const useGameStore = create<GameState>((set, get) => ({
 	// ... existing state ...
 	sessionId: null,
@@ -178,12 +146,6 @@ export const useGameStore = create<GameState>((set, get) => ({
 	currentLocationName: "",
 	currentLocationDescription: "",
 	connectedLocations: [],
-	setLocation: (location, name, description) =>
-		set({
-			currentLocation: location,
-			currentLocationName: name ?? location,
-			currentLocationDescription: description ?? "",
-		}),
 
 	// Dialogue
 	dialogueHistory: [],
@@ -191,32 +153,19 @@ export const useGameStore = create<GameState>((set, get) => ({
 		set((s) => ({
 			dialogueHistory: [...s.dialogueHistory, msg],
 		})),
-	clearHistory: () => set({ dialogueHistory: [] }),
 
 	// NPCs
 	activeNPC: null,
-	setActiveNPC: (npc) => set({ activeNPC: npc }),
 	npcs: {},
-	updateNPC: (id, updates) =>
-		set((s) => ({
-			npcs: {
-				...s.npcs,
-				[id]: { ...s.npcs[id], ...updates } as NPC,
-			},
-		})),
 
 	// Journal
 	journalEntries: [],
-	addJournalEntry: (entry) =>
-		set((s) => ({ journalEntries: [...s.journalEntries, entry] })),
 
 	// Clues
 	clues: [],
-	addClue: (clue) => set((s) => ({ clues: [...s.clues, clue] })),
 
 	// Processing
 	isProcessing: false,
-	setProcessing: (v) => set({ isProcessing: v }),
 
 	// Inventory & Currency
 	inventory: [],
@@ -294,20 +243,10 @@ export const useGameStore = create<GameState>((set, get) => ({
 					const sign = diff > 0 ? "+" : "";
 					const msg = `Currency changed: ${sign}$${diff} (Now $${newCurrency})`;
 					toast.info("Wallet Updated", { description: msg });
-					get().addMessage({
-						id: `currency-${Date.now()}`,
-						type: "system",
-						content: msg,
-						timestamp: Date.now(),
-					});
+					get().addMessage(systemMessage(msg, `currency-${Date.now()}`));
 				}
 
-				updates.inventory = state.player.inventory.map((o) => ({
-					id: o.id,
-					name: o.name,
-					description: o.description,
-					properties: o.properties as Record<string, unknown> | undefined,
-				}));
+				updates.inventory = toInventory(state.player.inventory);
 				updates.moralAlignment = state.player.moral_alignment;
 				updates.currency = newCurrency;
 			}
@@ -323,35 +262,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 				// We don't clear NPCs when moving to a location with no NPCs
 			}
 
-			// Journal Entries — always sync from backend
-			updates.journalEntries = (state.journal || []).map((j) => ({
-				id: j.id,
-				timestamp: j.timestamp,
-				content: j.content,
-				tags: j.tags || [],
-			}));
-
-			// Clues — always sync from backend
-			updates.clues = (state.clues || []).map((c) => ({
-				id: c.id,
-				title: c.title,
-				description: c.description,
-				linkedClues: c.linked_clues,
-				npcId: c.npc_id,
-				tension: c.tension,
-				discovered: c.discovered,
-			}));
-
-			// Dialogue History — sync from backend
+			// Journal, clues, and dialogue always sync from backend
+			updates.journalEntries = toJournal(state.journal);
+			updates.clues = toClues(state.clues);
 			if (state.dialogue_history) {
-				updates.dialogueHistory = state.dialogue_history.map((m) => ({
-					id: m.id,
-					type: m.type as MessageType,
-					speaker: m.speaker,
-					content: m.content,
-					timestamp: m.timestamp,
-					trustChange: m.trustChange,
-				}));
+				updates.dialogueHistory = toDialogueHistory(state.dialogue_history);
 			}
 
 			set(updates as GameState);
@@ -400,64 +315,10 @@ export const useGameStore = create<GameState>((set, get) => ({
 					timestamp: Date.now(),
 				});
 			} else {
-				// NPC response
-				const {
-					narration,
-					npc_dialogue,
-					npc_id,
-					npc_name,
-					trust_change,
-					turn,
-				} = result;
-
-				// Special case: Narrator NPC - combine fields for a single bubble
-				if (npc_id === "narrator") {
-					const text1 = (narration || "").trim();
-					const text2 = (npc_dialogue || "").trim();
-					let combined = "";
-
-					if (text1 && text2) {
-						combined = `${text1}\n\n${text2}`;
-					} else {
-						combined = text1 || text2;
-					}
-
-					if (combined) {
-						get().addMessage({
-							id: `nar-npc-${Date.now()}`,
-							type: "narration",
-							speaker: "Narrator",
-							content: combined,
-							timestamp: Date.now(),
-						});
-					}
-				} else {
-					// 1. Add Narration if exists
-					if (narration && narration.trim()) {
-						get().addMessage({
-							id: `nar-path-${Date.now()}`,
-							type: "narration",
-							speaker: "Narrator",
-							content: narration.trim(),
-							timestamp: Date.now(),
-						});
-					}
-
-					// 2. Add NPC Dialogue if exists
-					if (npc_dialogue && npc_dialogue.trim()) {
-						get().addMessage({
-							id: `npc-path-${Date.now() + 1}`,
-							type: "npc",
-							speaker: npc_name,
-							content: npc_dialogue.trim(),
-							timestamp: Date.now() + 1,
-							trustChange: trust_change || undefined,
-						});
-					}
-				}
+				toDialogueMessages(result).forEach(get().addMessage);
 
 				// Update turn
-				set({ turn: turn });
+				set({ turn: result.turn });
 
 				// Refresh full state (location, NPCs, journal, inventory may have changed)
 				await get().refreshState();
@@ -465,12 +326,12 @@ export const useGameStore = create<GameState>((set, get) => ({
 		} catch (error) {
 			console.error("[GameStore] Action error:", error);
 			if (!content.startsWith("/move")) {
-				get().addMessage({
-					id: (Date.now() + 2).toString(),
-					type: "system",
-					content: `Error: ${error instanceof Error ? error.message : "Failed to process action"}`,
-					timestamp: Date.now(),
-				});
+				get().addMessage(
+					systemMessage(
+						`Error: ${errorMessage(error, "Failed to process action")}`,
+						(Date.now() + 2).toString(),
+					),
+				);
 			}
 			throw error;
 		} finally {
@@ -489,25 +350,16 @@ export const useGameStore = create<GameState>((set, get) => ({
 			toast.success("Moved", {
 				description: msg,
 			});
-			get().addMessage({
-				id: `move-${Date.now()}`,
-				type: "system",
-				content: msg,
-				timestamp: Date.now(),
-			});
+			get().addMessage(systemMessage(msg, `move-${Date.now()}`));
 		} catch (error) {
 			console.error("[GameStore] Failed to move player:", error);
-			const errMsg =
-				error instanceof Error ? error.message : "Cannot travel there.";
+			const errMsg = errorMessage(error, "Cannot travel there.");
 			toast.error("Travel Failed", {
 				description: errMsg,
 			});
-			get().addMessage({
-				id: `err-${Date.now()}`,
-				type: "system",
-				content: `Travel Failed: ${errMsg}`,
-				timestamp: Date.now(),
-			});
+			get().addMessage(
+				systemMessage(`Travel Failed: ${errMsg}`, `err-${Date.now()}`),
+			);
 			throw error;
 		}
 	},
@@ -534,12 +386,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 			const npc = toFrontendNPC(npcInfo);
 			set({ activeNPC: npc });
 
-			get().addMessage({
-				id: Date.now().toString(),
-				type: "system",
-				content: `Now talking to: ${npc.name}`,
-				timestamp: Date.now(),
-			});
+			get().addMessage(systemMessage(`Now talking to: ${npc.name}`));
 		} catch (error) {
 			console.error("[GameStore] Switch NPC error:", error);
 		}
@@ -550,12 +397,9 @@ export const useGameStore = create<GameState>((set, get) => ({
 		if (!sessionId) return;
 		try {
 			await apiClient.saveSession(sessionId);
-			get().addMessage({
-				id: Date.now().toString(),
-				type: "system",
-				content: "Game state persisted to secure archive.",
-				timestamp: Date.now(),
-			});
+			get().addMessage(
+				systemMessage("Game state persisted to secure archive."),
+			);
 			// Return true so callers know the save succeeded
 			return true;
 		} catch (error) {
@@ -645,17 +489,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 			toast.success("Picked Up", {
 				description: `You picked up ${itemName}.`,
 			});
-			get().addMessage({
-				id: Date.now().toString(),
-				type: "system",
-				content: `Picked up ${itemName}.`,
-				timestamp: Date.now(),
-			});
+			get().addMessage(systemMessage(`Picked up ${itemName}.`));
 		} catch (error) {
 			console.error("[GameStore] Pickup error:", error);
 			toast.error("Pickup Failed", {
-				description:
-					error instanceof Error ? error.message : "Could not pick up item.",
+				description: errorMessage(error, "Could not pick up item."),
 			});
 			throw error;
 		}
@@ -673,17 +511,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 			toast.success("Dropped", {
 				description: `You dropped ${itemName}.`,
 			});
-			get().addMessage({
-				id: Date.now().toString(),
-				type: "system",
-				content: `Dropped ${itemName}.`,
-				timestamp: Date.now(),
-			});
+			get().addMessage(systemMessage(`Dropped ${itemName}.`));
 		} catch (error) {
 			console.error("[GameStore] Drop error:", error);
 			toast.error("Drop Failed", {
-				description:
-					error instanceof Error ? error.message : "Could not drop item.",
+				description: errorMessage(error, "Could not drop item."),
 			});
 			throw error;
 		}

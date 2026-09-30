@@ -2,11 +2,18 @@
 	"name": "llm-game",
 	"private": true,
 	"version": "0.0.0",
+	"type": "module",
+	"engines": {
+		"node": "^20.19.0 || >=22.12.0"
+	},
 	"scripts": {
-		"dev": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\dev.ps1",
+		"dev": "node scripts/dev.mjs",
+		"check": "node scripts/check.mjs",
 		"build": "npm --prefix Frontend run build",
 		"build:dev": "npm --prefix Frontend run build:dev",
-		"preview": "npm --prefix Frontend run preview",
-		"check": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\check.ps1"
+		"preview": "npm --prefix Frontend run preview"
+	},
+	"devDependencies": {
+		"jscpd": "^4.3.0"
 	}
 }

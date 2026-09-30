@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
+from schemas.world_state import WorldMetadata as GameMetadataResponse  # noqa: F401
 
 
 class CreateSessionRequest(BaseModel):
@@ -145,13 +146,6 @@ class HealthResponse(BaseModel):
     llm_reachable: bool = False
     active_sessions: int = 0
     ready: bool = False
-
-
-class GameMetadataResponse(BaseModel):
-    title: str = "LLM Game"
-    description: str = ""
-    initial_narrator_message: str = ""
-    character_options: Dict[str, Any] = Field(default_factory=dict)
 
 
 class WSOutMessage(BaseModel):
