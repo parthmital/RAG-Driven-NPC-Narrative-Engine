@@ -59,5 +59,17 @@ class GenerateRetryTests(unittest.TestCase):
         self.assertEqual(3, call.call_count)
 
 
+class ExtractJsonTests(unittest.TestCase):
+    def test_returns_object(self):
+        self.assertEqual({"a": 1}, GroqClient.extract_json('Sure: {"a": 1}'))
+
+    def test_repairs_truncated_object(self):
+        self.assertEqual({"a": "b"}, GroqClient.extract_json('{"a": "b'))
+
+    def test_non_object_json_is_rejected(self):
+        for raw in ('"Hello there', "[1, 2]", "42", '"quoted reply"'):
+            self.assertIsNone(GroqClient.extract_json(raw), raw)
+
+
 if __name__ == "__main__":
     unittest.main()

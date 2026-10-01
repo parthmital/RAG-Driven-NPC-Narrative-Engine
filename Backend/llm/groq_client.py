@@ -112,12 +112,8 @@ class GroqClient:
 
         def _try_parse(text: str) -> Optional[dict]:
             text = text.strip()
-            try:
-                return json.loads(text)
-            except json.JSONDecodeError:
-                pass
-
             attempts = [
+                text,
                 text + '"',
                 text + "}",
                 text + '"}',
@@ -126,9 +122,11 @@ class GroqClient:
             ]
             for candidate in attempts:
                 try:
-                    return json.loads(candidate)
+                    parsed = json.loads(candidate)
                 except json.JSONDecodeError:
                     continue
+                # a JSON string, number or list is not an LLM output object
+                return parsed if isinstance(parsed, dict) else None
             return None
 
         for pattern in (_JSON_FENCE, _JSON_RAW):
