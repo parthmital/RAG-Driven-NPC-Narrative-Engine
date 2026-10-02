@@ -1,0 +1,10 @@
+index,mean
+turns,200.0
+events,367.2143
+full_fold,1.0
+snapshot_suffix,1.0
+restart_full,1.0
+restart_snapshot,1.0
+backend_load_after_crash,0.0
+backend_crash_turns_lost,8.0
+backend_load_autosaved,1.0

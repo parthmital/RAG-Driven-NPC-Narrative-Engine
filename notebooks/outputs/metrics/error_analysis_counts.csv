@@ -1,0 +1,8 @@
+metric,category,A1,A2,A3,A4,A5,A6,B0,B1,B1x2,B2,B3,F1,F2,F3,F4
+desync,desynchronisation (proxy),0,0,0,0,24,108,0,0,0,0,0,15,101,20,102
+recall,confused with distractor,132,0,1,7,0,0,26,89,78,1,50,0,0,0,6
+recall,hit but ignored,11,63,74,54,0,0,106,27,47,70,142,0,0,0,57
+recall,retrieval miss,377,0,6,0,0,0,0,315,202,5,11,0,0,0,0
+recall,schema failure,3,7,6,7,0,0,7,4,2,19,9,0,0,0,6
+violation,oracle-detected violation (barrier),0,0,0,0,0,0,13,13,0,13,14,0,0,0,16
+violation,validator gap,0,0,0,0,0,0,13,13,0,13,15,0,0,0,17

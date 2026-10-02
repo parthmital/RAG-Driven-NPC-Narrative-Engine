@@ -1,0 +1,9 @@
+Ablation,"Recall, age 20+ (%)",MRR@6,Committed violations per 100 transitions,Local compute P50 (ms),Recovery at turn 160 (ms),Replay consistency (%)
+Full system (F4),"87.7 [84.2, 91.0]","0.898 [0.878, 0.917]","probes 9.6 [5.5, 14.1]; live 14.0 [4.2, 27.3]",41.1,0.5 (snapshot) vs 145.9 (full replay),"100.0 [100.0, 100.0]"
+A1 No long-term memory,"0.0 [0.0, 0.0]",n/a,same as full system (memory-only change),n/a,n/a,as full system
+A2 No short-term buffer,"89.5 [85.8, 92.9]","0.898 [0.878, 0.917]",same as full system (memory-only change),n/a,n/a,as full system
+A3 No scoping,"81.8 [77.7, 85.9]","0.705 [0.682, 0.727]",same as full system (memory-only change),n/a,n/a,as full system
+A4 No fallback,"88.6 [85.5, 91.6]","0.950 [0.934, 0.964]",same as full system (memory-only change),n/a,n/a,as full system
+A5 No validation barrier,as full system (control-only change),as full system,"probes 13.1 [9.3, 17.1]; live 11.4 [6.3, 16.5]",43.3,0.5 (snapshot) vs 145.9 (full replay),"100.0 [100.0, 100.0]"
+A6 No event sourcing,as full system,as full system,"live 351.4 [122.6, 675.0]",10.4,no log to recover from,not replayable
+A7 No snapshots,as full system,as full system,as full system,n/a,145.9,"100 (full fold, CPU replay sessions)"

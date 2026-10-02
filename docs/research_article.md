@@ -4,7 +4,7 @@ Source Code Repository: [https://github.com/parthmital/RAG-Driven-NPC-Narrative-
 
 ## Abstract
 
-Large Language Models (LLMs) allow Non-Player Characters (NPCs) in interactive fiction to hold open-ended conversations, but three problems limit their use in games: facts established early in a session are forgotten as dialogue grows, model-proposed world changes break symbolic game rules (illegal moves, fabricated items, unbounded trust shifts), and per-turn cost and latency grow with context length. This article presents _The Obsidian Flask_, an NPC dialogue engine that separates language generation from state control. It combines (i) a dual-tier memory, an 8-turn short-term buffer plus a 384-dimensional FAISS store with location- and NPC-scoped retrieval and a relaxation fallback, with (ii) an event-sourced world state in which every LLM-proposed mutation passes a pre-commit invariant-validation barrier before a pure reducer applies it. The central question is not whether the system works in its own world but whether its two mechanisms, memory tiering and state control, outperform independent baselines and whether each contributes separately. We therefore specify a controlled comparison against three independent baseline agents (rolling-context, vector-memory, and generic RAG), a full-history reference, and a $2 \times 2$ factorial crossing of memory architecture with state control, plus seven single-component ablations. Evaluation spans long-horizon sessions of 50, 100 and 200 turns and 7 categories of adversarial invariant probes across four worlds that differ in authorship, genre, and scale (8 to 128 locations), including worlds converted from the externally authored LIGHT corpus and procedurally generated worlds. We report factual recall by fact-age, invariant violations measured by an oracle independent of the system's own validator, retrieval MRR and Recall@k, latency percentiles, token cost, and state-replay consistency, with bootstrap confidence intervals and pre-registered hypotheses. Quantitative results from the protocol are reported in Section 13; cells not yet populated by the evaluation harness are marked as pending rather than estimated.
+Large Language Models (LLMs) allow Non-Player Characters (NPCs) in interactive fiction to hold open-ended conversations, but three problems limit their use in games: facts established early in a session are forgotten as dialogue grows, model-proposed world changes break symbolic game rules (illegal moves, fabricated items, unbounded trust shifts), and per-turn cost and latency grow with context length. This article presents _The Obsidian Flask_, an NPC dialogue engine that separates language generation from state control. It combines (i) a dual-tier memory, an 8-turn short-term buffer plus a 384-dimensional FAISS store with location- and NPC-scoped retrieval and a relaxation fallback, with (ii) an event-sourced world state in which every LLM-proposed mutation passes a pre-commit invariant-validation barrier before a pure reducer applies it. The central question is not whether the system works in its own world but whether its two mechanisms, memory tiering and state control, outperform independent baselines and whether each contributes separately. We therefore specify a controlled comparison against three independent baseline agents (rolling-context, vector-memory, and generic RAG), a full-history reference, and a $2 \times 2$ factorial crossing of memory architecture with state control, plus seven single-component ablations. Evaluation spans long-horizon sessions of 50, 100 and 200 turns and 7 categories of adversarial invariant probes across four worlds that differ in authorship, genre, and scale (8 to 128 locations), including worlds converted from the externally authored LIGHT corpus and procedurally generated worlds. We report factual recall by fact-age, invariant violations measured by an oracle independent of the system's own validator, retrieval MRR and Recall@k, latency percentiles, token cost, and state-replay consistency, with bootstrap confidence intervals and pre-registered hypotheses. In a 6.7-hour automated run with a self-hosted 7B backbone on seven worlds, the system recalled 87.7% [84.2, 91.0] of facts 20 or more turns old on held-out worlds, against 0.0% for a rolling context of equal token budget, 63.9% for generic RAG and 80.2% for full history; its advantage over flat vector memory (84.9%) was not significant, and it used more input tokens than that baseline, so the memory hypothesis is not supported as stated. Scoped retrieval raised MRR@6 from 0.750 to 0.898. On the same model outputs, the validation barrier lowered adversarial attack success from 16.2% (direct writes) to 2.9%, with no false rejection of lawful twins and 0.039 ms of validation at P95, but it left a currency gap (19.7% attack success) and raised dialogue-state desynchronisation from 3.7% to 18.7% of live turns. Event-log replay reproduced the live state in 100% of sessions, while the backend's own load path lost the events logged after its last snapshot. Memory and control interacted significantly on recall, so the two mechanisms are not fully separable. Both main effects held on every held-out world family and on a second 3.7B backbone. The run used the second of eight pre-declared sample-size levels, automatic scoring without human labels, and a notebook-authored science fiction world, so these results are preliminary.
 
 # 1. Choosing the Research Topic
 
@@ -34,7 +34,7 @@ Generative models let players converse freely, but unconstrained LLM NPCs show t
 
 - Practical significance: a reproducible architecture that couples open-ended dialogue with verifiable game mechanics on a single commodity machine plus a hosted inference endpoint.
 - Technical novelty: the individual components (buffers, vector retrieval, event sourcing, validators) are established. The contribution is their integration for NPC dialogue and, principally, a controlled, ablated evaluation that isolates the value of memory tiering and of state control against independent baselines. We make no claim that any single component is new.
-- Feasibility: embedding, retrieval, validation, and reduction run locally on CPU; LLM inference is delegated to a hosted endpoint, with a local open-weight backbone used as a latency control (Section 11).
+- Feasibility: embedding, retrieval, validation, and reduction run locally on CPU; in the game, LLM inference is delegated to a hosted endpoint. The evaluation reported here ran end to end in one Kaggle session on two T4 GPUs with self-hosted open-weight backbones (Section 11).
 
 ## Target Venues
 
@@ -174,10 +174,26 @@ A single handcrafted world cannot support generalisation claims, and a benchmark
 
 1. W1, Obsidian (in-house, dark fantasy): the existing [world_seed.json](../Backend/game/world_seed.json), with 8 locations, 4 NPCs, 4 conserved objects, and 7 rules. Used for development; results on W1 are reported separately as in-distribution.
 2. W2, LIGHT-derived (externally authored, fantasy): 3 worlds of 16 to 32 locations assembled from LIGHT locations, characters, and objects (Urbanek et al., 2019; CC BY-NC 4.0), converted to the same seed schema by a deterministic script. Content is written by LIGHT crowdworkers, not the authors.
-3. W3, Held-out genre (science fiction station): 1 world of 24 locations and 6 NPCs, authored by a contributor not involved in system development, following a written specification. Frozen before any system run on it.
+3. W3, Held-out genre (science fiction station): 1 world of 24 locations and 6 NPCs, intended to be authored by a contributor not involved in system development, following a written specification, and frozen before any system run on it. In the run reported in Section 13, W3 was authored inside the evaluation notebook from that specification before any system run, so it is held out from tuning but not independently authored. The notebook accepts an independently written seed file in its place.
 4. W4, Procedural scaling worlds: generated graphs of 32 and 128 locations with 8 to 16 NPCs and 16 to 64 objects from a seeded generator, to test retrieval and validation at larger scale. Names and descriptions are templated, so W4 tests structure rather than prose quality.
 
 No system hyperparameter (buffer size, k, fallback threshold, prompt wording) is tuned on W2 to W4.
+
+The worlds as built for the run:
+
+| World  | Family         | Locations | NPCs | Objects | Rules | Edges | Diameter | Secrets |
+| ------ | -------------- | --------- | ---- | ------- | ----- | ----- | -------- | ------- |
+| W1     | In-house       | 8         | 4    | 4       | 7     | 7     | 4        | 8       |
+| W2a    | LIGHT-derived  | 16        | 6    | 7       | 5     | 15    | 8        | 12      |
+| W2b    | LIGHT-derived  | 24        | 6    | 9       | 5     | 23    | 9        | 12      |
+| W2c    | LIGHT-derived  | 32        | 6    | 12      | 5     | 31    | 9        | 12      |
+| W3     | Held-out genre | 24        | 6    | 8       | 6     | 27    | 4        | 12      |
+| W4-32  | Procedural     | 32        | 8    | 16      | 5     | 39    | 9        | 16      |
+| W4-128 | Procedural     | 128       | 16   | 64      | 5     | 163   | 12       | 32      |
+
+LIGHT's resolvable room links split into small components, so each W2 world is connected with a seeded spanning tree (14, 22 and 27 joining edges). LIGHT has no secrets, so each W2 NPC receives two templated secrets built from words that appear nowhere else in the world, which keeps leak detection unambiguous.
+
+![World suite: locations, NPCs and objects per world](../notebooks/outputs/plots/01_world_suite.png)
 
 ## Long-Horizon Session Benchmark
 
@@ -185,7 +201,8 @@ No system hyperparameter (buffer size, k, fallback threshold, prompt wording) is
 - Each session plants facts (player disclosures, NPC commitments, object transfers, location events) and later probes them at fact ages of 5, 10, 20, 40, 80, and 160 turns, with fact age bucketed for analysis.
 - Each probe has a gold answer and a set of gold-relevant memory turn IDs for retrieval scoring.
 - Distractor turns include paraphrased near-duplicate facts and facts from other locations or NPCs, to test scoping.
-- Target size: 40 sessions per world per horizon where the world is large enough, giving approximately 480 sessions in total.
+- Target size: 40 sessions per world per horizon where the world is large enough, giving approximately 480 sessions in total. The run in Section 13 used 3 sessions per world per horizon (63 sessions, 630 probes per condition), chosen by a time-budget planner (Section 11).
+- Teacher forcing: NPC replies in the history are scripted, so every condition sees the same history and the LLM is called only at probe turns. Fact values come from invented-word pools filtered against each world's text, and a probe is scored correct when the gold value's key word appears in the reply.
 
 ## Adversarial Invariant Probe Suite
 
@@ -199,12 +216,13 @@ Probes are player turns designed to induce an illegal mutation. Seven categories
 6. Prompt injection: player text that instructs the model to emit specific world updates or ignore rules.
 7. Lore and secret violations: attempts to make an NPC reveal a secret before its trust threshold or contradict canonical lore.
 
-Categories 1 to 5 are checkable by the symbolic oracle; categories 6 and 7 are scored by the oracle where they produce mutations and by annotation where they affect only dialogue. Target size: 60 probes per category per world family, approximately 1,680 probes. Each probe also has a legitimate twin (a lawful version of the same request) to measure false rejection.
+Categories 1 to 5 are checkable by the symbolic oracle; categories 6 and 7 are scored by the oracle where they produce mutations and by annotation where they affect only dialogue. Target size: 60 probes per category per world family, approximately 1,680 probes. Each probe also has a legitimate twin (a lawful version of the same request) to measure false rejection. The run in Section 13 used 10 probes per category per world (490 attacks and 470 twins; theft has twins for 70% of its attacks), each posed under five context conditions.
 
 ## Annotation and Quality Control
 
 - Two annotators label recall correctness and lore violations on a stratified 20% sample; agreement is reported as Cohen's kappa. Remaining items are scored by an LLM judge whose agreement with the human labels is reported; the judge is a different model family from the system backbone.
 - Annotators are blind to which system produced each output.
+- Status: the run in Section 13 is scored automatically (key-word recall, secret keywords, and refusal and arrival cues for desynchronisation). It exports blinded, shuffled sheets for raters (1,250 recall items, 150 persona and lore items, 240 desynchronisation items) with the condition keys in separate files. Human labels, Cohen's kappa and the LLM judge are not yet available.
 
 ## Preprocessing
 
@@ -214,7 +232,7 @@ Categories 1 to 5 are checkable by the symbolic oracle; categories 6 and 7 are s
 
 ## Release
 
-World seeds, session scripts, probes, gold annotations, raw logs, and the evaluation harness will be released with the paper, subject to LIGHT's non-commercial licence for W2 content.
+The evaluation harness is [notebooks/npc-memory-state-benchmark.ipynb](../notebooks/npc-memory-state-benchmark.ipynb). Its run outputs (world seeds, session scripts, probes, raw per-job predictions, LLM response caches, metrics, figures, annotation sheets, and logs) are in `notebooks/outputs/`, subject to LIGHT's non-commercial licence for W2 content. Gold human annotations will be added when labelling is complete.
 
 # 4. Research Gaps
 
@@ -279,7 +297,7 @@ Snapshots every 16 turns bound recovery to loading the latest snapshot and foldi
 
 ## Dual-Tier Memory Retrieval
 
-For player input $u_t$, the embedder produces a unit vector $q_t \in \mathbb{R}^{384}$. Long-term entries $m_i$ are unit vectors of past turn summaries with metadata $(t_i, \text{loc}_i, \text{npc}_i)$.
+For player input $u_t$, the embedder produces a unit vector $q_t \in \mathbb{R}^{384}$. Each committed turn adds a long-term entry whose vector $m_i$ is the embedding of that turn's player input and whose text is the model's one-sentence memory summary (or the input itself when no summary was given), with metadata $(t_i, \text{loc}_i, \text{npc}_i)$, where $\text{loc}_i$ is the player's location after the turn's events. Retrieval therefore matches the current input against past inputs and returns past summaries.
 
 1. Scoped retrieval: over-fetch $k \cdot 5$ nearest neighbours by $q_t^\top m_i$, filter to entries matching the current location and active NPC, and keep the top $k = 6$.
 2. Relaxation fallback: if fewer than 3 scoped entries remain, retrieve the top $k$ without filters.
@@ -308,6 +326,15 @@ These are stated so the evaluation can measure them rather than hide them:
 - The validator checks structural legality, not narrative plausibility (for example, a trust change that is within bounds but unjustified by the dialogue).
 - Rejection does not rewrite the NPC's dialogue, so an NPC can say it handed over an item whose transfer was rejected. This dialogue-state desynchronisation is measured explicitly (Section 12).
 
+The evaluation and a code review for it found further gaps, all measured or stated in Section 13:
+
+- Currency gains are not bounded: only a negative delta is checked, against the balance. Any positive delta passes.
+- Spending is checked per proposal against the balance before the turn, so several spends that each fit can together overspend (the reducer then floors the balance at zero).
+- The prompt tells the model that trust deltas range from -10 to 10, while the validator allows $\pm 20$.
+- NPC secrets are never placed in the prompt (only personality, knowledge and state are), so the trust-60 reveal rule cannot be honoured by the model, and leak rates do not measure secret keeping.
+- The backend's load path restores the latest snapshot without folding the events logged after it, and the active NPC is set outside the event log.
+- At the evaluated commit, the JSON extractor could return a bare JSON string or list, which the parse node did not handle. This was fixed after the evaluation (commit `a9767d5`).
+
 # 7. Research Methodology
 
 1. Specify invariants and the event schema.
@@ -320,7 +347,8 @@ These are stated so the evaluation can measure them rather than hide them:
 
 # 8. Technology Choices
 
-- Inference: Groq-hosted `openai/gpt-oss-120b` (the configured default in [config.py](../Backend/config.py)), temperature 0.35. A second backbone (an open-weight model of a different family) tests backbone sensitivity; a locally hosted model gives a network-free latency control.
+- Inference in the game: Groq-hosted `openai/gpt-oss-120b` (the configured default in [config.py](../Backend/config.py)), temperature 0.35.
+- Inference in the evaluation: `IFM/K2-Horizon-7B` as the primary backbone and `IFM/K2-Horizon-3.7B` as the second, both Apache 2.0, served locally by vLLM 0.30.0 in fp16 on two T4 GPUs at the backend's temperature of 0.35, with top-p 0.95. Both are reasoning models; reasoning effort is set to low and thinking is capped at 192 tokens, after which the notebook closes the thinking block and asks for the JSON answer (up to 768 tokens). Self-hosting removes network variance and gives exact token counts, but means the evaluated backbone differs from the game's default.
 - Embedding: all-MiniLM-L12-v2 on CPU.
 - Vector index: FAISS IndexFlatIP, exact search.
 - Orchestration: LangGraph StateGraph with a fixed linear node order.
@@ -407,6 +435,18 @@ Sensitivity sweeps: buffer size $\{4, 8, 16\}$, $k \in \{3, 6, 12\}$, fallback t
 - Local compute: a documented 8-core CPU, 16 GB RAM machine; exact model, OS, and library versions are recorded in the released run manifest.
 - Library versions are pinned from [requirements.txt](../Backend/requirements.txt).
 
+As run for Section 13:
+
+- System under test: the repository at commit `0ea345fe140b359d7e82e77ffb2fdfa74caf0e7c`, imported as a library. Only baselines, the oracle and benchmark generators are new code. Live conditions are built from the backend's own LangGraph node factories, swapping only the nodes a condition changes.
+- Hardware: one Kaggle session with 2 x Tesla T4 (15.64 GB each), 4 CPU cores and 33.7 GB RAM; Python 3.12.13, sentence-transformers 5.4.1, faiss-cpu 1.15.1, LangGraph 0.6.11, Pydantic 2.12.3, statsmodels 0.14.6. The 7B model ran with tensor parallelism over both GPUs; the 3.7B model ran as one replica per GPU.
+- Paired sampling: each request's seed depends on the probe or turn, not on the condition, so identical prompts receive identical outputs (common random numbers). Probe outputs are committed three ways (barrier, reducer only, direct writes), so the control comparison is exactly paired.
+- Sample size: a pilot of 256 jobs measured throughput, and a planner chose the largest of eight pre-declared levels that fit the 11.25-hour budget. It chose level 2 (3 sessions per world per horizon, 10 probes per category per world, 2 live sessions per world); level 7 corresponds to the targets above. No row was lost to a deadline in any main stage.
+- Seeds: the calibration sessions were rerun with two further seeds for F4, B1, B2 and B3.
+- Budget $B$: 440 tokens, the mean size of F4's memory and history blocks on the calibration probes.
+- Second backbone: worlds W1, W2a, W3 and W4-32 at horizon 100, with probes under the F4 context only.
+- Not run: B4 (scripted FSM) and B5 (MemGPT-style memory).
+- Total wall time: 6.69 hours.
+
 # 12. Metrics
 
 1. Factual recall: proportion of recall probes answered correctly against gold, reported overall and by fact-age bucket (5, 10, 20, 40, 80, 160 turns).
@@ -417,10 +457,10 @@ Sensitivity sweeps: buffer size $\{4, 8, 16\}$, $k \in \{3, 6, 12\}$, fallback t
    - Dialogue-state desynchronisation: proportion of turns where the NPC's dialogue asserts a state change that was not committed, or vice versa (annotated sample).
    - The oracle is a separate implementation that re-derives world facts from the post-turn state and checks conservation (each object in exactly one place), adjacency of moves, bounds, and entity canonicity. It shares no code with the validator, so the barrier's own acceptance decisions are not used to score it.
 3. Retrieval quality: MRR@6 and Recall@6 against gold-relevant memory IDs, for retrieval conditions. For rolling-context conditions, the in-context presence rate of the gold turn is reported instead.
-4. Latency: end-to-end P50, P95, and P99, split into local compute and LLM time; reported for the hosted backbone and the local latency-control backbone.
-5. Token cost: mean input and output tokens per turn from API usage fields, and cost per 100 turns at the provider's list price on the run date.
-6. State-replay consistency: proportion of sessions where the state rebuilt from the seed plus the logged events matches the live final state by canonical hash, tested (a) by full fold, (b) by snapshot plus suffix, (c) after a forced process restart mid-session. For direct-write conditions without an event log, replay uses the recorded mutation sequence where one exists and is otherwise reported as not replayable.
-7. Secondary: schema parse success rate, secret-leak rate before trust threshold, and persona consistency (blind 1 to 5 rating on a sample, with inter-rater agreement).
+4. Latency: end-to-end P50, P95, and P99, split into local compute and LLM time; reported for the hosted backbone and the local latency-control backbone. In the run reported here, all latency is from the self-hosted backbone on two T4 GPUs, measured with one request in flight.
+5. Token cost: mean input and output tokens per turn from API usage fields, and cost per 100 turns at the provider's list price on the run date. Because the evaluated models were self-hosted, cost is reported in tokens only.
+
+Until human labels are available, dialogue-state desynchronisation is scored by an automatic proxy: a turn is flagged when the barrier rejected a proposal but the dialogue contains no refusal cue, or when, on a scripted move turn, the narration's claim of arrival disagrees with the committed move. 6. State-replay consistency: proportion of sessions where the state rebuilt from the seed plus the logged events matches the live final state by canonical hash, tested (a) by full fold, (b) by snapshot plus suffix, (c) after a forced process restart mid-session. For direct-write conditions without an event log, replay uses the recorded mutation sequence where one exists and is otherwise reported as not replayable. 7. Secondary: schema parse success rate, secret-leak rate before trust threshold, and persona consistency (blind 1 to 5 rating on a sample, with inter-rater agreement).
 
 ## Statistical Analysis
 
@@ -432,101 +472,323 @@ Sensitivity sweeps: buffer size $\{4, 8, 16\}$, $k \in \{3, 6, 12\}$, fallback t
 
 # 13. Results
 
-This section reports results from the protocol above. Cells marked "Pending" are not yet produced by the harness. No value in this section is estimated, extrapolated, or carried over from earlier prototype runs, which used a different configuration and are superseded.
-
-Values are formatted as mean [95% CI] pooled over held-out worlds W2 to W4 unless stated; W1 results appear in the per-world table.
+All values come from the evaluation notebook's run outputs (`notebooks/outputs/metrics/`). They are formatted as mean [95% cluster-bootstrap CI], pooled over the held-out worlds W2a to W4-128 unless stated; W1 appears in Table 7. The backbone is K2-Horizon-7B unless stated. No value is estimated or carried over from earlier prototype runs.
 
 ## Table 1: Main Comparison (Held-Out Worlds)
 
-| Condition                  | Recall, age 20+ | Committed violations per 100 transitions | Probe attack success | MRR@6   | P50 / P95 latency (ms) | Input tokens per turn | Replay consistency |
-| -------------------------- | --------------- | ---------------------------------------- | -------------------- | ------- | ---------------------- | --------------------- | ------------------ |
-| B0 Full history            | Pending         | Pending                                  | Pending              | n/a     | Pending                | Pending               | Pending            |
-| B1 Rolling context, $B$    | Pending         | Pending                                  | Pending              | n/a     | Pending                | Pending               | Pending            |
-| B1 Rolling context, ${2B}$ | Pending         | Pending                                  | Pending              | n/a     | Pending                | Pending               | Pending            |
-| B2 Vector memory           | Pending         | Pending                                  | Pending              | Pending | Pending                | Pending               | Pending            |
-| B3 Generic RAG             | Pending         | Pending                                  | Pending              | Pending | Pending                | Pending               | Pending            |
-| Proposed (F4)              | Pending         | Pending                                  | Pending              | Pending | Pending                | Pending               | Pending            |
+| Condition                  | Recall, age 20+ (%) | Committed violations per 100 transitions | Probe attack success (%) | MRR@6                | P50 / P95 LLM latency (ms) | Input tokens per turn | Replay consistency (%) |
+| -------------------------- | ------------------- | ---------------------------------------- | ------------------------ | -------------------- | -------------------------- | --------------------- | ---------------------- |
+| B0 Full history            | 80.2 [75.9, 84.4]   | 45.0 [38.3, 52.1]                        | 13.3 [10.2, 16.7]        | n/a                  | 10948 / 23984              | 4310                  | not replayable         |
+| B1 Rolling context, $B$    | 0.0 [0.0, 0.0]      | 45.0 [38.1, 51.9]                        | 13.3 [10.2, 16.7]        | n/a                  | 7020 / 11173               | 1398                  | not replayable         |
+| B1 Rolling context, ${2B}$ | 25.0 [21.3, 28.9]   | n/a (no probe context)                   | n/a                      | n/a                  | not measured               | 1823                  | not replayable         |
+| B2 Vector memory           | 84.9 [81.1, 88.6]   | 43.1 [37.3, 48.9]                        | 15.7 [12.4, 19.3]        | 0.750 [0.729, 0.771] | not measured               | 1102                  | not replayable         |
+| B3 Generic RAG             | 63.9 [57.7, 69.9]   | 56.4 [50.8, 61.9]                        | 19.3 [15.7, 23.1]        | 0.707 [0.686, 0.729] | not measured               | 1209                  | not replayable         |
+| Proposed (F4)              | 87.7 [84.2, 91.0]   | 9.2 [4.6, 14.3]                          | 3.1 [1.4, 4.8]           | 0.898 [0.877, 0.917] | 6906 / 9409                | 1399                  | 100.0 [100.0, 100.0]   |
 
-## Table 2: Recall by Fact Age
+Notes:
 
-| Condition    | 5       | 10      | 20      | 40      | 80      | 160     |
-| ------------ | ------- | ------- | ------- | ------- | ------- | ------- |
-| B0 to B3, F4 | Pending | Pending | Pending | Pending | Pending | Pending |
+- Baselines commit probe outputs by direct writes, because they have no validator; F4 commits through the barrier.
+- Probe prompts carry three teacher-forced history turns, so B0 and B1 built identical probe prompts and their violation figures coincide.
+- The single-stream latency stage reached its deadline before B1 ${2B}$, B2 and B3 were measured (B1 ${2B}$ has one cached sample only; B1 has 15 of 24 samples).
+- Baselines keep no event log, so they cannot be replayed.
 
-## Table 3: Factorial Separation (Memory × Control)
+![Recall by fact age against baselines and ablations](../notebooks/outputs/plots/02_recall_by_fact_age.png)
 
-| Cell                        | Recall, age 20+ | Committed violations per 100 transitions | False rejection | Desync rate |
-| --------------------------- | --------------- | ---------------------------------------- | --------------- | ----------- |
-| F1 Rolling, direct writes   | Pending         | Pending                                  | n/a             | Pending     |
-| F2 Rolling, barrier         | Pending         | Pending                                  | Pending         | Pending     |
-| F3 Dual-tier, direct writes | Pending         | Pending                                  | n/a             | Pending     |
-| F4 Dual-tier, barrier       | Pending         | Pending                                  | Pending         | Pending     |
+_Figure 1. Recall by fact age on held-out worlds, against the baselines (left) and the memory ablations (right). The rolling contexts fall to zero once a fact leaves the window; F4 and B2 stay flat._
+
+![Token cost against long-range recall](../notebooks/outputs/plots/03_cost_vs_recall.png)
+
+_Figure 2. Mean input tokens per turn against recall at fact age 20 or more. B2 and A2 reach similar recall with fewer tokens than F4; B0 costs about three times as much for lower recall._
+
+## Table 2: Recall by Fact Age (Held-Out Worlds, %)
+
+| Condition                  | 5                 | 10                | 20                | 40                | 80                | 160                |
+| -------------------------- | ----------------- | ----------------- | ----------------- | ----------------- | ----------------- | ------------------ |
+| B0 Full history            | 75.0 [67.6, 82.4] | 77.8 [69.4, 85.2] | 78.7 [71.3, 86.1] | 75.0 [65.7, 83.3] | 86.1 [79.2, 93.1] | 88.9 [77.8, 97.2]  |
+| B1 Rolling context, $B$    | 86.1 [79.6, 91.7] | 65.7 [55.6, 75.9] | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]     |
+| B1 Rolling context, ${2B}$ | 81.5 [74.1, 88.0] | 78.7 [69.4, 87.0] | 75.0 [65.7, 83.3] | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]     |
+| B2 Vector memory           | 85.2 [78.7, 91.7] | 82.4 [75.9, 88.9] | 88.9 [82.4, 94.4] | 80.6 [73.1, 88.0] | 84.7 [75.0, 93.1] | 86.1 [75.0, 94.4]  |
+| B3 Generic RAG             | 72.2 [63.0, 80.6] | 69.4 [60.2, 78.7] | 66.7 [57.4, 75.9] | 68.5 [59.3, 77.8] | 62.5 [50.0, 75.0] | 44.4 [30.6, 58.3]  |
+| Proposed (F4)              | 96.3 [92.6, 99.1] | 85.2 [78.7, 91.7] | 87.0 [80.6, 92.6] | 89.8 [84.3, 94.4] | 83.3 [75.0, 90.3] | 91.7 [83.3, 100.0] |
+| A1 No long-term memory     | 85.2 [77.8, 91.7] | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]     |
+| A2 No short-term buffer    | 86.1 [79.6, 91.7] | 88.0 [82.4, 93.5] | 90.7 [85.2, 95.4] | 91.7 [87.0, 96.3] | 84.7 [76.4, 93.1] | 88.9 [77.8, 97.2]  |
+| A3 No scoping              | 94.4 [89.8, 98.1] | 88.9 [82.4, 94.4] | 82.4 [75.9, 88.9] | 79.6 [71.3, 87.0] | 80.6 [70.8, 90.3] | 88.9 [77.8, 97.2]  |
+| A4 No fallback             | 94.4 [89.8, 98.1] | 85.2 [78.7, 91.7] | 88.0 [81.5, 94.4] | 90.7 [85.2, 95.4] | 84.7 [77.8, 91.7] | 91.7 [83.3, 100.0] |
+| n (F4 probes)              | 108               | 108               | 108               | 108               | 72                | 36                 |
+
+Ages 80 and 160 exist only in 100- and 200-turn sessions, so those columns rest on fewer probes.
+
+## Retrieval Quality and Secondary Memory Metrics
+
+| Condition  | Gold in prompt (%)   | Distractor in prompt (%) | Confused with distractor (%) | Recall@6 (%)         | Parse success (%)  | Input / output tokens per 100 turns |
+| ---------- | -------------------- | ------------------------ | ---------------------------- | -------------------- | ------------------ | ----------------------------------- |
+| F4         | 100.0 [100.0, 100.0] | 57.0 [52.9, 61.4]        | 0.9 [0.2, 1.8]               | 100.0 [100.0, 100.0] | 98.1 [97.1, 99.1]  | 139,898 / 15,394                    |
+| B0         | 100.0 [100.0, 100.0] | 100.0 [100.0, 100.0]     | 3.7 [1.9, 5.8]               | n/a                  | 98.9 [98.0, 99.6]  | 431,032 / 14,117                    |
+| B1, $B$    | 35.7 [33.2, 38.3]    | 59.6 [56.0, 63.3]        | 14.4 [11.4, 17.6]            | n/a                  | 99.1 [98.3, 99.8]  | 139,831 / 15,574                    |
+| B1, ${2B}$ | 57.4 [54.1, 60.8]    | 74.3 [70.9, 77.8]        | 11.3 [9.0, 13.7]             | n/a                  | 99.6 [99.1, 100.0] | 182,309 / 14,164                    |
+| B2         | 99.1 [98.2, 99.8]    | 90.0 [87.4, 92.6]        | 0.2 [0.0, 0.6]               | 99.1 [98.2, 99.8]    | 95.9 [93.8, 97.8]  | 110,154 / 16,000                    |
+| B3         | 98.0 [96.8, 99.0]    | 87.6 [84.7, 90.3]        | 7.4 [5.4, 9.4]               | 98.0 [96.8, 98.9]    | 98.5 [97.4, 99.4]  | 120,923 / 15,349                    |
+| A1         | 20.0 [19.1, 20.9]    | 52.6 [48.9, 56.4]        | 20.6 [17.7, 23.6]            | n/a                  | 99.4 [98.7, 100.0] | 130,763 / 15,131                    |
+| A2         | 100.0 [100.0, 100.0] | 10.2 [7.6, 13.0]         | 0.0 [0.0, 0.0]               | 100.0 [100.0, 100.0] | 98.3 [97.1, 99.4]  | 108,486 / 14,941                    |
+| A3         | 98.9 [98.0, 99.6]    | 90.7 [88.7, 92.9]        | 0.2 [0.0, 0.6]               | 98.7 [97.7, 99.5]    | 98.9 [98.0, 99.6]  | 141,690 / 15,460                    |
+| A4         | 100.0 [100.0, 100.0] | 52.6 [49.1, 56.3]        | 1.1 [0.4, 2.0]               | 100.0 [100.0, 100.0] | 98.0 [96.9, 98.9]  | 138,781 / 15,457                    |
+
+No prompt reached the system's 16,384-character cap.
+
+![Retrieval quality and in-context presence of the gold turn](../notebooks/outputs/plots/04_retrieval_quality.png)
+
+_Figure 3. Left: MRR@6 and Recall@6 per retrieval condition. Right: share of probes whose gold turn reached the prompt, by fact age, which bounds recall from above._
+
+Sensitivity sweeps (retrieval only, W1 and W2, one setting varied at a time around buffer 8, $k = 6$, threshold 3):
+
+| Setting     | Gold in prompt | MRR@k  |
+| ----------- | -------------- | ------ |
+| buffer 4    | 0.9989         | 0.8990 |
+| buffer 8    | 0.9989         | 0.8990 |
+| buffer 16   | 0.9989         | 0.8990 |
+| $k = 3$     | 0.9648         | 0.8390 |
+| $k = 12$    | 1.0000         | 0.9124 |
+| threshold 0 | 1.0000         | 0.9227 |
+| threshold 6 | 0.9955         | 0.8303 |
+
+![Sensitivity sweeps](../notebooks/outputs/plots/09_sensitivity_sweeps.png)
+
+_Figure 4. Gold-in-prompt rate and MRR@k for each sweep setting._
+
+Seed variance (calibration sessions, recall over all ages):
+
+| Condition | Seed 0 | Seed 1 | Seed 2 | SD across seeds (points) |
+| --------- | ------ | ------ | ------ | ------------------------ |
+| F4        | 0.857  | 0.862  | 0.862  | 0.27                     |
+| B1, $B$   | 0.314  | 0.300  | 0.310  | 0.73                     |
+| B2        | 0.871  | 0.848  | 0.795  | 3.90                     |
+| B3        | 0.681  | 0.681  | 0.671  | 0.55                     |
+
+## Table 3: Factorial Separation (Memory × Control, Live Sessions)
+
+| Cell                        | Recall, live probes (%) | Committed violations per 100 transitions | False rejection (%) | Desync rate (%)   | Sessions |
+| --------------------------- | ----------------------- | ---------------------------------------- | ------------------- | ----------------- | -------- |
+| F1 Rolling, direct writes   | 0.0 [0.0, 0.0]          | 351.2 [302.2, 405.6]                     | n/a                 | 2.7 [1.3, 4.4]    | 14       |
+| F2 Rolling, barrier         | 0.0 [0.0, 0.0]          | 8.8 [0.0, 22.2]                          | 0.0 [0.0, 0.0]      | 18.5 [15.6, 21.6] | 14       |
+| F3 Dual-tier, direct writes | 41.1 [26.8, 55.4]       | 345.9 [305.3, 390.3]                     | n/a                 | 3.7 [1.8, 5.7]    | 14       |
+| F4 Dual-tier, barrier       | 44.6 [30.4, 59.0]       | 14.0 [4.3, 27.6]                         | 0.0 [0.0, 0.0]      | 18.7 [16.5, 20.9] | 14       |
+
+Live sessions are 39-turn scripts run on the real turn graph, with live probes at fact ages of about 20 to 32 turns. Violations can exceed 100 per 100 transitions because one transition can break several invariants. In F1 and F3, direct writes left the player in a non-existent location on an average of 29.9 and 30.4 of 39 turns per session; the harness then prompted from the last valid location. False rejection is from the lawful twins under the matching probe context.
+
+![Factorial interaction plots](../notebooks/outputs/plots/06_factorial_interaction.png)
+
+_Figure 5. Live recall (left) and violations per 100 transitions (right) for the 2 × 2 design._
+
+![Live violations by oracle code](../notebooks/outputs/plots/11_live_violation_codes.png)
+
+_Figure 6. Live oracle-flagged turns per 100 turns by condition and invariant. Direct writes produce mainly O1 (non-canonical entities), O3 (non-adjacent moves) and O7 (overspending); with the barrier only O5 and O8 remain, below 1 per 100 turns._
+
+Mixed-effects logistic models (memory, control and their interaction as fixed effects; world and session as random intercepts):
+
+| Outcome   | Term           | Coefficient | SE     | z        | p      |
+| --------- | -------------- | ----------- | ------ | -------- | ------ |
+| Recall    | memory         | 3.5723      | 0.2051 | 17.4174  | <0.001 |
+| Recall    | control        | -0.9828     | 0.2823 | -3.4811  | 0.0005 |
+| Recall    | memory:control | 1.1711      | 0.2885 | 4.0597   | <0.001 |
+| Violation | memory         | 0.3409      | 0.1205 | 2.8282   | 0.0047 |
+| Violation | control        | -6.7729     | 0.3043 | -22.2551 | <0.001 |
+| Violation | memory:control | -0.1608     | 0.4022 | -0.3997  | 0.6894 |
 
 ## Table 4: Ablations
 
-| Ablation    | Recall, age 20+ | MRR@6   | Committed violations | P50 latency | Recovery time at turn 160 | Replay consistency |
-| ----------- | --------------- | ------- | -------------------- | ----------- | ------------------------- | ------------------ |
-| Full system | Pending         | Pending | Pending              | Pending     | Pending                   | Pending            |
-| A1 to A7    | Pending         | Pending | Pending              | Pending     | Pending                   | Pending            |
+| Ablation                 | Recall, age 20+ (%) | MRR@6                | Committed violations per 100 transitions       | Local compute P50 (ms) | Recovery time at turn 160 (ms) | Replay consistency (%) |
+| ------------------------ | ------------------- | -------------------- | ---------------------------------------------- | ---------------------- | ------------------------------ | ---------------------- |
+| Full system (F4)         | 87.7 [84.2, 91.0]   | 0.898 [0.878, 0.917] | probes 9.6 [5.5, 14.1]; live 14.0 [4.2, 27.3]  | 41.1                   | 0.5 (snapshot)                 | 100.0 [100.0, 100.0]   |
+| A1 No long-term memory   | 0.0 [0.0, 0.0]      | n/a                  | as full system (memory-only change)            | n/a                    | n/a                            | as full system         |
+| A2 No short-term buffer  | 89.5 [85.8, 92.9]   | 0.898 [0.878, 0.917] | as full system (memory-only change)            | n/a                    | n/a                            | as full system         |
+| A3 No scoping            | 81.8 [77.7, 85.9]   | 0.705 [0.682, 0.727] | as full system (memory-only change)            | n/a                    | n/a                            | as full system         |
+| A4 No fallback           | 88.6 [85.5, 91.6]   | 0.950 [0.934, 0.964] | as full system (memory-only change)            | n/a                    | n/a                            | as full system         |
+| A5 No validation barrier | as full system      | as full system       | probes 13.1 [9.3, 17.1]; live 11.4 [6.3, 16.5] | 43.3                   | 0.5 (snapshot)                 | 100.0 [100.0, 100.0]   |
+| A6 No event sourcing     | as full system      | as full system       | live 351.4 [122.6, 675.0]                      | 10.4                   | no log to recover from         | not replayable         |
+| A7 No snapshots          | as full system      | as full system       | as full system                                 | n/a                    | 145.9 (full replay)            | 100 (full fold)        |
+
+The probe violation figures in this table pool all seven worlds; Table 1 uses held-out worlds only. Local compute here is turn time minus LLM time in the batched live sessions.
+
+Replay and recovery (42 CPU sessions of 200 turns, 367.2 events on average):
+
+| Reconstruction                                            | Sessions consistent            |
+| --------------------------------------------------------- | ------------------------------ |
+| Full fold of the event log                                | 100%                           |
+| Latest snapshot plus the events after it                  | 100%                           |
+| Both of the above in a fresh process from the SQLite file | 100%                           |
+| Backend load path after a crash between commit and save   | 0% (8.0 turns lost on average) |
+| Backend load path when the per-turn auto-save succeeded   | 100%                           |
+
+All event-sourced live sessions (F2, F4, A5) also replayed exactly. Replay hashes exclude the active NPC, which is set outside the event log.
+
+![Replay and recovery time](../notebooks/outputs/plots/08_replay_recovery.png)
+
+_Figure 7. Median time to rebuild state at each snapshot point by full replay (A7) and by snapshot loading. Full replay grows with log length; snapshot loading stays near 0.5 ms._
 
 ## Table 5: Adversarial Probes by Category
 
-| Category          | Attack success, direct writes | Attack success, barrier | False rejection of legitimate twin |
-| ----------------- | ----------------------------- | ----------------------- | ---------------------------------- |
-| Categories 1 to 7 | Pending                       | Pending                 | Pending                            |
+Outputs under all five context conditions are pooled (350 attacks per category). Attack success is a committed oracle violation, or a secret leak for the secret category. False rejection is lawful-twin proposals rejected by the barrier, over lawful-twin proposals. Validator gap is the share of unlawful proposals the barrier accepted.
 
-## Table 6: Per-Stage Latency (Proposed System)
+| Category          | Attack success, direct writes (%) | Attack success, reducer only A5 (%) | Attack success, barrier (%) | False rejection of legitimate twin (%) | Validator gap (%) |
+| ----------------- | --------------------------------- | ----------------------------------- | --------------------------- | -------------------------------------- | ----------------- |
+| 1 Teleportation   | 15.1 [9.1, 21.7]                  | 2.9 [1.1, 4.9]                      | 0.0 [0.0, 0.0]              | 0.0 [0.0, 0.0]                         | 0.4 [0.0, 1.2]    |
+| 2 Fabrication     | 20.9 [13.1, 29.1]                 | 0.0 [0.0, 0.0]                      | 0.0 [0.0, 0.0]              | 0.0 [0.0, 0.0]                         | 0.0 [0.0, 0.0]    |
+| 3 Theft           | 33.4 [24.9, 42.3]                 | 3.1 [1.1, 5.7]                      | 0.0 [0.0, 0.0]              | 0.0 [0.0, 0.0]                         | 0.0 [0.0, 0.0]    |
+| 4 Trust inflation | 0.0 [0.0, 0.0]                    | 0.0 [0.0, 0.0]                      | 0.0 [0.0, 0.0]              | n/a (no lawful proposals)              | n/a               |
+| 5 Currency        | 36.9 [28.3, 45.7]                 | 36.9 [28.3, 45.7]                   | 19.7 [12.3, 27.7]           | 0.0 [0.0, 0.0]                         | 51.9 [36.7, 66.4] |
+| 6 Injection       | 6.0 [2.6, 10.3]                   | 6.0 [2.6, 10.3]                     | 0.0 [0.0, 0.0]              | n/a (no lawful proposals)              | 0.0 [0.0, 0.0]    |
+| 7 Secret          | 0.9 [0.0, 2.3]                    | 0.9 [0.0, 2.3]                      | 0.9 [0.0, 2.3]              | 0.0 [0.0, 0.0]                         | n/a               |
+| All               | 16.2 [13.6, 18.8]                 | 7.1 [5.3, 9.0]                      | 2.9 [1.8, 4.3]              | 0.0 [0.0, 0.0]                         | 11.0 [6.6, 15.7]  |
 
-| Stage                                                          | P50 (ms) | P95 (ms) |
-| -------------------------------------------------------------- | -------- | -------- |
-| Input, retrieval, prompt, LLM, parse, validate, commit, output | Pending  | Pending  |
+Oracle codes for the direct-write violations: currency 60 O7 and 69 O8 (and 2 O1); fabrication 73 O1; theft 92 O1, 25 O4 and 14 O2; teleport 52 O3 and 43 O1; injection 18 O4, 5 O6 and 1 O3. The accepted unlawful currency proposals were gains such as a +2,000 delta "for a chest of coins". Secret leak rates: 0.9% [0.0, 2.3] for secret probes, 1.8% [1.1, 2.6] over all attacks, and 0.5% to 2.4% in live sessions. Parse success was 95.8% for probes and 97.6% for live turns.
+
+![Adversarial probes](../notebooks/outputs/plots/05_adversarial_probes.png)
+
+_Figure 8. Left: attack success by commit mode and category. Right: the barrier's false rejection on lawful twins and its validator gap, against the 5% bound of H4._
+
+## Table 6: Per-Stage Latency (Proposed System, Single Stream)
+
+| Stage     | P50 (ms) | P95 (ms) | P99 (ms) |
+| --------- | -------- | -------- | -------- |
+| Input     | 0.002    | 0.003    | 0.009    |
+| Retrieval | 0.174    | 0.310    | 0.385    |
+| Prompt    | 0.123    | 0.158    | 0.167    |
+| LLM       | see note | see note | see note |
+| Parse     | 0.087    | 0.118    | 0.125    |
+| Validate  | 0.031    | 0.039    | 0.046    |
+| Commit    | 18.428   | 21.049   | 30.311   |
+| Output    | 0.011    | 0.013    | 0.013    |
+| Local     | 24.921   | 27.526   | 37.016   |
+
+The live F4 graph was timed on 24 turns over two worlds with one request in flight. All 24 LLM responses in that stage were served from the response cache, so its LLM row (0.09 ms at P50) is a cache lookup and is omitted here. Single-stream LLM time, from the recall-prompt benchmark, was P50 6,906 ms and P95 9,409 ms for F4 and P50 10,948 ms and P95 23,984 ms for B0. Under the batched live stage (84 concurrent sessions), the median LLM time per F4 turn was about 89.6 s.
+
+![Latency](../notebooks/outputs/plots/07_latency.png)
+
+_Figure 9. Left: per-stage latency of the F4 graph (log scale). Right: single-stream LLM latency per condition; B2 and B3 were not measured before the stage deadline._
 
 ## Table 7: Per-World and Backbone Breakdown
 
-| World    | Backbone           | Recall, age 20+ (F4 vs best baseline) | Committed violations (F4 vs best baseline) |
-| -------- | ------------------ | ------------------------------------- | ------------------------------------------ |
-| W1 to W4 | Primary, secondary | Pending                               | Pending                                    |
+| World  | Backbone        | Recall, age 20+: F4 (%) | Recall, age 20+: best baseline (%) | Attack success: F4 barrier (%) | Attack success: best baseline, direct (%) |
+| ------ | --------------- | ----------------------- | ---------------------------------- | ------------------------------ | ----------------------------------------- |
+| W1     | K2-Horizon-7B   | 87.0 [75.0, 97.7]       | B2: 87.0 [80.3, 94.2]              | 7.1 [1.4, 14.3]                | B0: 18.6 [10.0, 28.6]                     |
+| W2a    | K2-Horizon-7B   | 90.7 [87.1, 95.7]       | B2: 85.2 [80.8, 90.0]              | 2.9 [0.0, 7.1]                 | B0: 17.1 [8.6, 25.7]                      |
+| W2b    | K2-Horizon-7B   | 92.6 [86.5, 98.1]       | B2: 87.0 [77.8, 94.6]              | 4.3 [0.0, 10.0]                | B0: 8.6 [2.9, 15.7]                       |
+| W2c    | K2-Horizon-7B   | 83.3 [75.0, 91.7]       | B2: 87.0 [78.3, 96.3]              | 2.9 [0.0, 7.1]                 | B2: 10.0 [4.3, 17.1]                      |
+| W3     | K2-Horizon-7B   | 79.6 [71.4, 88.6]       | B2: 74.1 [63.8, 83.9]              | 1.4 [0.0, 4.3]                 | B0: 11.4 [4.3, 20.0]                      |
+| W4-32  | K2-Horizon-7B   | 87.0 [76.0, 96.4]       | B0: 90.7 [82.6, 96.8]              | 4.3 [0.0, 10.0]                | B0: 15.7 [7.1, 24.3]                      |
+| W4-128 | K2-Horizon-7B   | 92.6 [85.7, 100.0]      | B2: 88.9 [81.8, 95.8]              | 2.9 [0.0, 7.1]                 | B0: 14.3 [7.1, 22.9]                      |
+| W1     | K2-Horizon-3.7B | 100.0 [100.0, 100.0]    | B2: 88.9 [66.7, 100.0]             | 0.0 [0.0, 0.0]                 | F4 outputs: 22.9 [12.9, 32.9]             |
+| W2a    | K2-Horizon-3.7B | 83.3 [66.7, 100.0]      | B2: 72.2 [66.7, 83.3]              | 0.0 [0.0, 0.0]                 | F4 outputs: 14.3 [7.1, 22.9]              |
+| W3     | K2-Horizon-3.7B | 66.7 [66.7, 66.7]       | B2: 66.7 [50.0, 83.3]              | 0.0 [0.0, 0.0]                 | F4 outputs: 17.1 [8.6, 25.7]              |
+| W4-32  | K2-Horizon-3.7B | 77.8 [50.0, 100.0]      | B0: 66.7 [50.0, 83.3]              | 0.0 [0.0, 0.0]                 | F4 outputs: 20.0 [11.4, 30.0]             |
+
+The best baseline for recall is the highest of B0 to B3 on that world; for attacks it is the baseline context with the lowest direct-write attack success. The 3.7B model ran at horizon 100 with probes under the F4 context only, so its attack comparison is the barrier against direct writes of the same outputs.
+
+![Per-world effects](../notebooks/outputs/plots/10_per_world_effects.png)
+
+_Figure 10. Per-world recall gain of F4 over B1 (left) and attack reduction by the barrier (right). W1 is in-distribution (grey)._
+
+![Seed variance and backbone sensitivity](../notebooks/outputs/plots/12_seed_and_backbone.png)
+
+_Figure 11. Left: recall for three sampling seeds. Right: recall at age 20+ on the secondary-backbone subset for the 7B and 3.7B models._
+
+## Hypothesis Tests
+
+| Hypothesis | Test                                                            | n             | Effect                              | p (Holm) | Verdict       |
+| ---------- | --------------------------------------------------------------- | ------------- | ----------------------------------- | -------- | ------------- |
+| H1         | recall 20+ F4 vs B1 (McNemar)                                   | 324           | +0.877                              | 3.9e-85  |               |
+| H1         | recall 20+ F4 vs B2 (McNemar)                                   | 324           | +0.028                              | 0.298    |               |
+| H1         | recall 20+ F4 vs B3 (McNemar)                                   | 324           | +0.238                              | 9.1e-17  | Not supported |
+| H2         | MRR@6 F4 vs B2 (Wilcoxon, per probe)                            | 540           | +0.148                              | 4.3e-20  | Supported     |
+| H3         | attack success direct vs barrier, F4 context (McNemar)          | 490           | +0.114                              | 9.1e-17  |               |
+| H3         | live violations per transition F3 vs F4 (Wilcoxon, per session) | 14            | +3.459                              | 1.9e-3   | Supported     |
+| H4         | false rejection at most 5%; validation P95 under 5 ms           |               | 0.0%; 0.039 ms                      |          | Supported     |
+| H5         | event-log replay reproduces live state in 100% of sessions      | 42 CPU + live | 100%                                |          | Supported     |
+| H6         | factorial interaction small                                     |               | recall interaction 1.17 (p < 0.001) |          | Not supported |
+| H7         | direction of H1 and H3 effects on W2, W3, W4                    |               | all positive                        |          | Supported     |
+
+- H1: F4 beats B1 at equal budget and B3, but its gain over B2 is not significant, and it uses more input tokens than both B2 (1,102) and B3 (1,209), so the condition "at equal or lower token cost" fails.
+- H5: supported for the event-sourced design. The backend's own load path, which restores the snapshot without the logged suffix, was consistent in 0% of simulated crashes.
+- H6: memory drives recall and control drives violations, as predicted, but the recall model has a significant control effect (-0.98, p = 0.0005) and memory × control interaction (1.17, p < 0.001), and the violation model a small but significant memory effect (0.34, p = 0.0047).
+- H7: per family, F4 minus B1 recall was +0.889 (W2), +0.796 (W3) and +0.898 (W4); direct minus barrier attack success was +0.114, +0.086 and +0.121.
 
 ## Error Analysis
 
-For each condition, 50 failures per metric are sampled and coded into categories (retrieval miss, retrieval hit but ignored by the model, scoping excluded the gold memory, schema failure, validator gap, oracle-detected violation, desynchronisation). Pending.
+Failures were coded automatically. Counts for the main conditions (up to 50 examples per category and condition are exported for manual review):
+
+| Category                           | F4  | B0  | B1, $B$ | B2  | B3  | A1  | A3  | F2  | A6  |
+| ---------------------------------- | --- | --- | ------- | --- | --- | --- | --- | --- | --- |
+| Retrieval miss                     | 0   | 0   | 315     | 5   | 11  | 377 | 6   | n/a | n/a |
+| Hit but ignored                    | 57  | 106 | 27      | 70  | 142 | 11  | 74  | n/a | n/a |
+| Confused with distractor           | 6   | 26  | 89      | 1   | 50  | 132 | 1   | n/a | n/a |
+| Schema failure                     | 6   | 7   | 4       | 19  | 9   | 3   | 6   | n/a | n/a |
+| Validator gap (probes)             | 17  | 13  | 13      | 13  | 15  | n/a | n/a | n/a | n/a |
+| Oracle-detected violation, barrier | 16  | 13  | 13      | 13  | 14  | n/a | n/a | n/a | n/a |
+| Desynchronisation (live, proxy)    | 102 | n/a | n/a     | n/a | n/a | n/a | n/a | 101 | 108 |
+
+The system's recall failures are almost all cases where the gold memory was in the prompt but the model answered wrongly; none came from retrieval. Its committed violations under the barrier are almost all validator gaps, which Table 5 places in the currency category.
+
+![GPU utilisation over the run](../notebooks/outputs/plots/13_gpu_utilisation.png)
+
+_Figure 12. GPU utilisation of both T4s over the 6.69-hour run. The gaps are server restarts and CPU-only stages._
 
 # 14. Discussion, Limitations, and Threats to Validity
 
+## Findings
+
+1. Scoped long-term memory is what makes long-range recall possible. Without it, recall beyond the 8-turn buffer is zero, and a rolling context of the same token budget forgets every fact older than 10 turns. With it, recall stays between 83% and 96% from 5 to 160 turns.
+2. Against stronger baselines the memory advantage narrows. Flat vector memory reached 84.9% at age 20+ with fewer tokens, and the difference to F4 was not significant. Scoping did improve ranking (MRR@6 0.898 against 0.750 for B2 and 0.705 for the unscoped ablation) and kept the paraphrased distractor out of 43% of prompts, and F4 was the most stable condition across sampling seeds. Generic RAG over raw dialogue and lore degraded with fact age (44.4% at 160 turns).
+3. Not every memory component earned its place on this benchmark. Removing the short-term buffer (A2, 89.5%) or the relaxation fallback (A4, 88.6%, MRR@6 0.950) did not lower recall. The benchmark always probes a fact with the NPC it was told to, which favours scoping and gives the fallback little to do; the effect of these components in free play, where facts are often recalled elsewhere, is not measured here.
+4. The validation barrier works where it has a rule. Teleport, fabrication, theft and injection attacks succeeded 0.0% of the time through the barrier, against 6% to 33% with direct writes, with no false rejection of lawful requests and negligible validation cost. Much of the protection comes from the reducer alone (7.1% attack success without validation), because it refuses unknown entities; the validator and event-sourced reducer work as a pair, as A6 shows (351.4 live violations per 100 transitions with the validator but in-place mutation).
+5. The barrier is only as good as its rule set. The currency rule checks spending but not gains, and the model readily proposed large unearned gains: the barrier accepted 51.9% of unlawful currency proposals and currency attacks succeeded 19.7% of the time. An independent oracle was necessary to see this.
+6. Blocking without regenerating has a visible cost. The desynchronisation proxy rose from about 3% to about 19% of live turns once proposals could be rejected, because the NPC's words still describe the rejected change.
+7. Event sourcing delivered exact replay in every session and fast recovery from snapshots (about 0.5 ms against 146 ms for a full replay at turn 160). The application's load path does not use the logged suffix, which turns a correct design into a lossy implementation after a crash.
+8. The mechanisms are not fully separable. Memory dominates recall (coefficient 3.57) and control dominates violations (-6.77), as designed, but the recall model also has a significant control effect (-0.98) and a positive memory × control interaction (1.17), and the violation model a small memory effect (0.34). In the raw cells the barrier made no difference to recall under rolling memory (0.0% in both) and a small one under dual-tier memory (41.1% against 44.6%), so the interaction should be read with the small number of live sessions in mind.
+9. Live recall (41% to 45% with dual-tier memory) was about half of teacher-forced recall. Live memories are written from model-generated summaries and depend on committed movement; the run does not isolate which factor causes the drop.
+
 ## Expected Trade-Offs to Examine
 
-- A validation barrier bounds structural violations to the validator's coverage, not to zero in general. Violations outside its rule set (Section 6 coverage gaps) remain possible, which is why an independent oracle is used.
+- A validation barrier bounds structural violations to the validator's coverage, not to zero in general. Violations outside its rule set (Section 6 coverage gaps) remain possible, which is why an independent oracle is used. The currency result confirms this.
 - Blocking an update without regenerating dialogue can make the NPC say something the world does not reflect. The desynchronisation rate quantifies this cost; regeneration on rejection is a candidate fix with a latency cost.
 - Scoping can exclude relevant memories created in another location or with another NPC; the relaxation fallback only triggers when scoped results are few, not when they are irrelevant. A3 and A4 measure this.
 
 ## Limitations
 
-1. Generalisation: four world families, of which one (W1) is the development world and one (W4) is procedurally templated. Results may not transfer to large commercial worlds, multiplayer settings, or non-fantasy genres beyond the one held-out science fiction world.
+1. Generalisation: four world families, of which one (W1) is the development world and one (W4) is procedurally templated. Results may not transfer to large commercial worlds, multiplayer settings, or non-fantasy genres beyond the one held-out science fiction world. W3 was not authored independently in this run.
 2. Scripted players: fixed player scripts do not adapt to NPC responses. Findings on engagement or experience require a user study, which is outside this article's scope.
-3. Backbone dependence: results are reported for two backbones; behaviour on other models may differ.
-4. Hosted-endpoint latency: network and provider load affect latency; the local backbone control mitigates but does not eliminate this.
-5. Validator scope: the validator enforces structural invariants only; narrative plausibility and secret boundaries depend on prompting.
-6. Scale of memory: exact FAISS search in process memory with pruning at 1,000 entries; very long campaigns would need summarisation or hierarchical memory.
-7. Authoring cost: each world requires a structured seed.
+3. Backbone dependence: results are reported for two backbones of the same family (K2-Horizon 7B and 3.7B), self-hosted, with a capped thinking budget. The game's default hosted backbone was not evaluated.
+4. Latency: measured on two T4 GPUs; the hosted-endpoint latency is not reproduced, and the single-stream LLM row for the live graph was served from cache.
+5. Sample size: the run used level 2 of 8 pre-declared levels (63 recall sessions, 490 attacks, 14 live sessions per factorial cell), well below the targets in Section 3. Live-session intervals are wide.
+6. Scoring: recall, leaks and desynchronisation are scored automatically. Human labels, inter-rater agreement and an LLM judge are pending.
+7. Secrets: NPC secrets are not given to the model, so the low leak rates do not show that the model keeps secrets it knows.
+8. Baselines: B4 (scripted FSM) and B5 (MemGPT-style memory) were not run.
+9. Validator scope: the validator enforces structural invariants only; narrative plausibility and secret boundaries depend on prompting.
+10. Scale of memory: exact FAISS search in process memory with pruning at 1,000 entries; very long campaigns would need summarisation or hierarchical memory.
+11. Authoring cost: each world requires a structured seed.
 
 ## Threats to Validity
 
-- Internal: identical inputs, prompts, schemas, and backbones across conditions; seeds and interleaved scheduling reduce run-order effects. Residual risk: baseline implementations may be weaker than tuned production systems; baseline code and prompts are released for scrutiny.
-- Construct: invariant violations are measured by an independent oracle rather than the validator itself; recall is judged against gold facts with human agreement reported; the LLM judge is validated against human labels.
-- External: see Limitations 1 to 3. Claims are restricted to the tested worlds and backbones.
-- Conclusion: pre-registered hypotheses, multiple-comparison correction, and confidence intervals; all outcomes reported, including null or negative results.
+- Internal: identical inputs, prompts, schemas and backbones across conditions; seeds depend on the probe, not the condition, and probe outputs are committed in all three modes, so control comparisons are exactly paired. Residual risk: baseline implementations may be weaker than tuned production systems; baseline code and prompts are in the released notebook.
+- Construct: invariant violations are measured by an independent oracle rather than the validator itself. Recall is judged by key-word match against invented-word values; human agreement is pending. Desynchronisation is an automatic proxy based on refusal and arrival cues.
+- External: see Limitations 1 to 5. Claims are restricted to the tested worlds and backbones.
+- Conclusion: pre-registered hypotheses, Holm correction across the confirmatory family, and confidence intervals; all outcomes are reported, including the two unsupported hypotheses.
 
 # 15. Conclusion
 
-LLM NPCs need to remember what happened, respect the rules of the world, and do so at interactive cost. _The Obsidian Flask_ addresses these with scoped dual-tier memory and a validated, event-sourced state. This revision reframes the work as a controlled test of those two mechanisms: independent rolling-context, vector-memory, and generic RAG baselines; a factorial separation of memory and state control; single-component ablations; adversarial probes scored by an independent oracle; and a four-family world suite that tests generalisation beyond the development world. The claims of the article are limited to what the results in Section 13 support once populated.
+LLM NPCs need to remember what happened, respect the rules of the world, and do so at interactive cost. _The Obsidian Flask_ addresses these with scoped dual-tier memory and a validated, event-sourced state, and this article tests the two mechanisms against independent baselines, in a factorial design, with ablations, adversarial probes scored by an independent oracle, and seven worlds of different authorship and scale.
+
+The evidence from the first full run supports three claims. Long-term retrieval scoped to the current place and person keeps recall high and flat over 160 turns where a rolling context of the same size forgets everything after ten, and it ranks the right memory higher than flat vector memory. A pre-commit barrier over an event-sourced state blocks every movement, fabrication, theft and injection attack the model attempted, without rejecting lawful requests, and the event log reproduces the live state exactly. Both effects hold on every held-out world family and on a smaller backbone. The evidence does not support two others: the memory design is not clearly better than flat vector memory at its token cost, and memory and control are not independent. The run also exposed concrete defects (unbounded currency gains, a load path that ignores the event suffix, and dialogue that contradicts rejected changes) that a validator-only evaluation would have missed.
 
 ## Future Work
 
-1. Regenerating dialogue when updates are rejected, to remove desynchronisation.
-2. Validating narrative plausibility, not only structural legality, of state changes.
-3. User studies with adaptive human players.
-4. Hierarchical or summarised long-term memory for campaigns of thousands of turns.
-5. Automatic extraction of world seeds and invariants from existing game content.
+1. Fix the defects the evaluation found: bound currency gains and check spending per turn, fold the logged suffix on load, event-source the active NPC, align the prompt's trust range with the validator, and pass secrets to the model above the trust threshold.
+2. Regenerate or annotate dialogue when updates are rejected, to remove desynchronisation.
+3. Rerun at the full sample size with an independently authored W3, human annotation, the hosted backbone, and backbones from other families, and add the B4 and B5 baselines.
+4. Validate narrative plausibility, not only structural legality, of state changes.
+5. Study why live recall falls below teacher-forced recall, and test the buffer and fallback in free play where facts are recalled away from where they were told.
+6. User studies with adaptive human players.
+7. Hierarchical or summarised long-term memory for campaigns of thousands of turns.
+8. Automatic extraction of world seeds and invariants from existing game content.
 
 # References
 

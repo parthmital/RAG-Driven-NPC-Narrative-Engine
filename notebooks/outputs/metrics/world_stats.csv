@@ -1,0 +1,8 @@
+world,family,authorship,locations,npcs,objects,rules,edges,mean_degree,diameter,connected,secrets,secret_keywords,light_join_edges
+W1,W1 in-house,system authors (in-distribution),8,4,4,7,7,1.75,4,True,8,16,0
+W2a,W2 LIGHT-derived,LIGHT crowdworkers (external),16,6,7,5,15,1.88,8,True,12,24,14
+W2b,W2 LIGHT-derived,LIGHT crowdworkers (external),24,6,9,5,23,1.92,9,True,12,24,22
+W2c,W2 LIGHT-derived,LIGHT crowdworkers (external),32,6,12,5,31,1.94,9,True,12,24,27
+W3,W3 held-out genre,notebook author (not independent; see caveat),24,6,8,6,27,2.25,4,True,12,24,0
+W4-32,W4 procedural,seeded generator,32,8,16,5,39,2.44,9,True,16,31,0
+W4-128,W4 procedural,seeded generator,128,16,64,5,163,2.55,12,True,32,64,0

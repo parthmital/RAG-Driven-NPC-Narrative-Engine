@@ -1,0 +1,536 @@
+{
+	"created_utc": "2026-10-02T02:03:34Z",
+	"repo": "https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine.git",
+	"commit": "0ea345fe140b359d7e82e77ffb2fdfa74caf0e7c",
+	"hardware": {
+		"gpus": [
+			{
+				"gpu": 0,
+				"name": "Tesla T4",
+				"vram_gb": 15.64,
+				"capability": "7.5"
+			},
+			{
+				"gpu": 1,
+				"name": "Tesla T4",
+				"vram_gb": 15.64,
+				"capability": "7.5"
+			}
+		],
+		"driver": "580.178.04",
+		"cpu_count": 4,
+		"ram_total_gb": 33.7,
+		"ram_available_gb": 32.0,
+		"disk_working_free_gb": 20.9,
+		"disk_tmp_free_gb": 1201.7,
+		"torch_kernel": "2.10.0+cu128",
+		"python": "3.12.13"
+	},
+	"packages": {
+		"torch": "2.10.0+cu128",
+		"sentence-transformers": "5.4.1",
+		"faiss-cpu": "1.15.1",
+		"langgraph": "0.6.11",
+		"pydantic": "2.12.3",
+		"numpy": "2.0.2",
+		"pandas": "2.3.3",
+		"scipy": "1.16.3",
+		"statsmodels": "0.14.6",
+		"tokenizers": "0.22.2",
+		"huggingface-hub": "1.11.0"
+	},
+	"vllm_env": "0.30.0 2.13.0+cu132",
+	"config": {
+		"REPO_URL": "https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine.git",
+		"REPO_COMMIT": "0ea345fe140b359d7e82e77ffb2fdfa74caf0e7c",
+		"PRIMARY_MODEL": "IFM/K2-Horizon-7B",
+		"SECONDARY_MODEL": "IFM/K2-Horizon-3.7B",
+		"RUN_SECONDARY": true,
+		"VLLM_VERSION": "0.30.0",
+		"MAX_MODEL_LEN": 16384,
+		"GPU_MEM_UTIL": 0.88,
+		"MAX_NUM_SEQS": 64,
+		"REASONING_EFFORT": "low",
+		"THINK_BUDGET": 192,
+		"ANSWER_MAX_TOKENS": 768,
+		"TOP_P": 0.95,
+		"CONCURRENCY": 64,
+		"SERVER_START_TIMEOUT_S": 2100,
+		"SEED": 20261001,
+		"HORIZONS": [50, 100, 200],
+		"FACT_AGES": [5, 10, 20, 40, 80, 160],
+		"PROBES_PER_AGE": 2,
+		"LIVE_TURNS": 40,
+		"LIVE_FACT_AGES": [20, 24, 28, 32],
+		"LIVE_ATTACKS": 6,
+		"LIVE_TRADES": 2,
+		"PROBE_HISTORY_TURNS": 3,
+		"LADDER": [
+			{
+				"n_rec": 1,
+				"n_probe": 4,
+				"n_live": 1
+			},
+			{
+				"n_rec": 2,
+				"n_probe": 6,
+				"n_live": 1
+			},
+			{
+				"n_rec": 3,
+				"n_probe": 10,
+				"n_live": 2
+			},
+			{
+				"n_rec": 4,
+				"n_probe": 14,
+				"n_live": 2
+			},
+			{
+				"n_rec": 6,
+				"n_probe": 20,
+				"n_live": 3
+			},
+			{
+				"n_rec": 10,
+				"n_probe": 30,
+				"n_live": 4
+			},
+			{
+				"n_rec": 20,
+				"n_probe": 45,
+				"n_live": 6
+			},
+			{
+				"n_rec": 40,
+				"n_probe": 60,
+				"n_live": 10
+			}
+		],
+		"SWEEP_SESSIONS": 10,
+		"REPLAY_SESSIONS": 6,
+		"LATENCY_TURNS": 12,
+		"SEED_VARIANCE_REPS": [1, 2],
+		"SECONDARY_WORLDS": ["W1", "W2a", "W3", "W4-32"],
+		"SECONDARY_HORIZON": 100,
+		"ORACLE_TRUST_STEP": 20,
+		"ORACLE_CURRENCY_GAIN_CAP": 50,
+		"LIGHT_URL": "https://dl.fbaipublicfiles.com/parlai/light/light-environment.pkl",
+		"LIGHT_WORLDS": [
+			["W2a", ["Town", "Bazaar", "Tavern", "Port", "Farm", "Countryside"], 16],
+			[
+				"W2b",
+				[
+					"Forest",
+					"Swamp",
+					"Cave",
+					"Jungle",
+					"Mountain",
+					"Trail",
+					"Lake",
+					"Shore"
+				],
+				24
+			],
+			[
+				"W2c",
+				[
+					"Inside Castle",
+					"Outside Castle",
+					"Inside Tower",
+					"Outside Tower",
+					"Inside Palace",
+					"Outside Palace",
+					"Inside Church",
+					"Outside Church",
+					"Inside Temple",
+					"Outside Temple",
+					"Graveyard",
+					"Dungeon"
+				],
+				32
+			]
+		],
+		"LIGHT_NPCS": 6,
+		"LIGHT_OBJECTS": 12,
+		"PROCEDURAL_WORLDS": [
+			["W4-32", 32, 8, 16],
+			["W4-128", 128, 16, 64]
+		],
+		"N_BOOT": 10000,
+		"ALPHA": 0.05,
+		"TIME_BUDGET_HOURS": 11.25,
+		"ANALYSIS_RESERVE_MIN": 30,
+		"SECONDARY_RESERVE_MIN": 80,
+		"LATENCY_RESERVE_MIN": 15,
+		"SAFETY_MIN": 15,
+		"COST_PROMPT_WEIGHT": 0.12,
+		"WORK": "/kaggle/working",
+		"SCRATCH": "/tmp/npcbench",
+		"INPUT": "/kaggle/input"
+	},
+	"backend_constants": {
+		"MAX_SHORT_TERM_TURNS": 8,
+		"TOP_K_RETRIEVAL": 6,
+		"FAISS_OVERFETCH_FACTOR": 5,
+		"RETRIEVAL_MIN_CANDIDATES": 3,
+		"SNAPSHOT_INTERVAL": 16,
+		"MAX_CONTEXT_CHARS": 16384,
+		"TEMPERATURE": 0.35,
+		"EMBEDDING_MODEL": "sentence-transformers/all-MiniLM-L12-v2",
+		"EMBEDDING_DIM": 384,
+		"MEMORY_PRUNE_THRESHOLD": 1000
+	},
+	"budget_b_tokens": 440,
+	"ladder_level": 2,
+	"plan": {
+		"level": 2,
+		"available_h": 8.46515500538879,
+		"s_per_unit": 0.004409593295241921,
+		"s_per_unit_wall": 0.004981401553572585,
+		"chars_per_token": 4.07395103037642,
+		"mean_output_tokens": {
+			"recall": 152.81203007518798,
+			"probe": 187.65853658536585
+		},
+		"median_llm_ms": 89163.31326299996,
+		"pilot_wall_s": 423.31950402259827,
+		"pilot_jobs": 256,
+		"pilot_probe_jobs": 123,
+		"cached_jobs_discounted": 316
+	},
+	"plan_table": [
+		{
+			"level": 0,
+			"n_rec": 1,
+			"n_probe": 4,
+			"n_live": 1,
+			"recall_h": 0.8357196849105425,
+			"probe_h": 0.6972823350916301,
+			"live_h": 0.9907034806999996,
+			"seedvar_h": 0.6613819601647671,
+			"total_h": 3.66285057999698
+		},
+		{
+			"level": 1,
+			"n_rec": 2,
+			"n_probe": 6,
+			"n_live": 1,
+			"recall_h": 1.733774667324265,
+			"probe_h": 1.078476476597558,
+			"live_h": 0.9907034806999996,
+			"seedvar_h": 0.6613819601647671,
+			"total_h": 5.133987072504579
+		},
+		{
+			"level": 2,
+			"n_rec": 3,
+			"n_probe": 10,
+			"n_live": 2,
+			"recall_h": 2.6318296497379867,
+			"probe_h": 1.8408647596094145,
+			"live_h": 1.9814069613999992,
+			"seedvar_h": 0.6613819601647671,
+			"total_h": 8.182805830548991
+		},
+		{
+			"level": 3,
+			"n_rec": 4,
+			"n_probe": 14,
+			"n_live": 2,
+			"recall_h": 3.5298846321517097,
+			"probe_h": 2.603253042621271,
+			"live_h": 1.9814069613999992,
+			"seedvar_h": 0.6613819601647671,
+			"total_h": 10.092315585788409
+		},
+		{
+			"level": 4,
+			"n_rec": 6,
+			"n_probe": 20,
+			"n_live": 3,
+			"recall_h": 5.325994596979154,
+			"probe_h": 3.746835467139055,
+			"live_h": 1.9841458804943015,
+			"seedvar_h": 0.6613819601647671,
+			"total_h": 13.476111590493868
+		},
+		{
+			"level": 5,
+			"n_rec": 10,
+			"n_probe": 30,
+			"n_live": 4,
+			"recall_h": 8.918214526634044,
+			"probe_h": 5.6528061746686955,
+			"live_h": 2.9721104420999986,
+			"seedvar_h": 0.6613819601647671,
+			"total_h": 20.93519006910263
+		},
+		{
+			"level": 6,
+			"n_rec": 20,
+			"n_probe": 45,
+			"n_live": 6,
+			"recall_h": 17.88685547919639,
+			"probe_h": 8.511762235963156,
+			"live_h": 3.968291760988603,
+			"seedvar_h": 0.6613819601647671,
+			"total_h": 35.68253515175985
+		},
+		{
+			"level": 7,
+			"n_rec": 40,
+			"n_probe": 60,
+			"n_live": 10,
+			"recall_h": 35.84001587975425,
+			"probe_h": 11.370718297257618,
+			"live_h": 6.934924364899997,
+			"seedvar_h": 0.6613819601647671,
+			"total_h": 63.02809657738812
+		}
+	],
+	"servers": "stopped (see logs/vllm_*.log)",
+	"sanity_check": {
+		"passed": true,
+		"answer": "\n{\"answer\": 42}"
+	},
+	"selftest": {
+		"recall_rows": 80,
+		"probe_rows": 70,
+		"mock_attack_success_direct": 0.5285714285714286,
+		"mock_attack_success_barrier": 0.2,
+		"live_sessions": 6,
+		"replay": {
+			"sid": "W1-H200-000",
+			"world": "W1",
+			"turns": 200,
+			"events": 352,
+			"live_hash": "874db7e50bba1b66",
+			"full_fold": true,
+			"snapshot_suffix": true,
+			"restart_full": true,
+			"restart_snapshot": true,
+			"backend_load_after_crash": false,
+			"backend_crash_turns_lost": 8,
+			"backend_load_autosaved": true
+		},
+		"live_violations_by_cond": {
+			"A5": 0.44,
+			"A6": 0.22,
+			"F1": 1.0,
+			"F2": 0.22,
+			"F3": 1.0,
+			"F4": 0.22
+		}
+	},
+	"stage_minutes": {
+		"kernel packages": 0.17,
+		"clone repository": 0.02,
+		"LIGHT worlds": 0.03,
+		"generate recall sessions": 0.05,
+		"generate adversarial probes": 0.41,
+		"embeddings (GPU)": 2.96,
+		"budget B calibration": 0.02,
+		"self-test (mock LLM)": 0.21,
+		"replay and recovery (CPU)": 9.42,
+		"sensitivity sweeps (CPU)": 0.06,
+		"wait for vLLM install and primary weights": 0.0,
+		"start primary server": 4.44,
+		"pilot": 7.56,
+		"recall (primary)": 154.78,
+		"adversarial probes (primary)": 52.53,
+		"live sessions (primary)": 96.76,
+		"seed variance": 23.94,
+		"latency benchmark (single stream)": 10.03,
+		"secondary backbone": 35.67
+	},
+	"engine_stats": {
+		"primary": {
+			"generated": 14448,
+			"cached": 1953,
+			"skipped": 80
+		},
+		"secondary": {
+			"generated": 1270
+		}
+	},
+	"embedder_cpu_misses": 1018,
+	"worlds": [
+		{
+			"world": "W1",
+			"family": "W1 in-house",
+			"authorship": "system authors (in-distribution)",
+			"locations": 8,
+			"npcs": 4,
+			"objects": 4,
+			"rules": 7,
+			"edges": 7,
+			"mean_degree": 1.75,
+			"diameter": 4,
+			"connected": true,
+			"secrets": 8,
+			"secret_keywords": 16,
+			"light_join_edges": 0
+		},
+		{
+			"world": "W2a",
+			"family": "W2 LIGHT-derived",
+			"authorship": "LIGHT crowdworkers (external)",
+			"locations": 16,
+			"npcs": 6,
+			"objects": 7,
+			"rules": 5,
+			"edges": 15,
+			"mean_degree": 1.88,
+			"diameter": 8,
+			"connected": true,
+			"secrets": 12,
+			"secret_keywords": 24,
+			"light_join_edges": 14
+		},
+		{
+			"world": "W2b",
+			"family": "W2 LIGHT-derived",
+			"authorship": "LIGHT crowdworkers (external)",
+			"locations": 24,
+			"npcs": 6,
+			"objects": 9,
+			"rules": 5,
+			"edges": 23,
+			"mean_degree": 1.92,
+			"diameter": 9,
+			"connected": true,
+			"secrets": 12,
+			"secret_keywords": 24,
+			"light_join_edges": 22
+		},
+		{
+			"world": "W2c",
+			"family": "W2 LIGHT-derived",
+			"authorship": "LIGHT crowdworkers (external)",
+			"locations": 32,
+			"npcs": 6,
+			"objects": 12,
+			"rules": 5,
+			"edges": 31,
+			"mean_degree": 1.94,
+			"diameter": 9,
+			"connected": true,
+			"secrets": 12,
+			"secret_keywords": 24,
+			"light_join_edges": 27
+		},
+		{
+			"world": "W3",
+			"family": "W3 held-out genre",
+			"authorship": "notebook author (not independent; see caveat)",
+			"locations": 24,
+			"npcs": 6,
+			"objects": 8,
+			"rules": 6,
+			"edges": 27,
+			"mean_degree": 2.25,
+			"diameter": 4,
+			"connected": true,
+			"secrets": 12,
+			"secret_keywords": 24,
+			"light_join_edges": 0
+		},
+		{
+			"world": "W4-32",
+			"family": "W4 procedural",
+			"authorship": "seeded generator",
+			"locations": 32,
+			"npcs": 8,
+			"objects": 16,
+			"rules": 5,
+			"edges": 39,
+			"mean_degree": 2.44,
+			"diameter": 9,
+			"connected": true,
+			"secrets": 16,
+			"secret_keywords": 31,
+			"light_join_edges": 0
+		},
+		{
+			"world": "W4-128",
+			"family": "W4 procedural",
+			"authorship": "seeded generator",
+			"locations": 128,
+			"npcs": 16,
+			"objects": 64,
+			"rules": 5,
+			"edges": 163,
+			"mean_degree": 2.55,
+			"diameter": 12,
+			"connected": true,
+			"secrets": 32,
+			"secret_keywords": 64,
+			"light_join_edges": 0
+		}
+	],
+	"w3_provenance": "notebook author (not independent; see caveat)",
+	"secondary": "run on ['W1', 'W2a', 'W3', 'W4-32']",
+	"coverage": [
+		{
+			"stage": "recall (primary)",
+			"rows": 6300,
+			"missing": 0
+		},
+		{
+			"stage": "probes (primary)",
+			"rows": 4800,
+			"missing": 0
+		},
+		{
+			"stage": "live turns (primary)",
+			"rows": 3276,
+			"missing": 0
+		},
+		{
+			"stage": "seed variance",
+			"rows": 1680,
+			"missing": 0
+		},
+		{
+			"stage": "recall (secondary)",
+			"rows": 720,
+			"missing": 0
+		},
+		{
+			"stage": "probes (secondary)",
+			"rows": 550,
+			"missing": 0
+		}
+	],
+	"plots": [
+		"01_world_suite.png",
+		"02_recall_by_fact_age.png",
+		"03_cost_vs_recall.png",
+		"04_retrieval_quality.png",
+		"05_adversarial_probes.png",
+		"06_factorial_interaction.png",
+		"07_latency.png",
+		"08_replay_recovery.png",
+		"09_sensitivity_sweeps.png",
+		"10_per_world_effects.png",
+		"11_live_violation_codes.png",
+		"12_seed_and_backbone.png",
+		"13_gpu_utilisation.png"
+	],
+	"limitations": [
+		"W3 authorship: notebook author (not independent; see caveat). The article requires an independent author; attach w3_world_seed.json to satisfy it.",
+		"Recall, leaks and desynchronisation are scored automatically (key-word match, secret keywords, refusal/arrival cues). Blinded sheets for two human raters are in annotation/; Cohen's kappa and judge agreement need those labels.",
+		"Token cost is reported in tokens only; the models are self-hosted, so no provider list price applies.",
+		"Latency was measured on 2x T4 with vLLM; the article's hosted-endpoint latency is not reproduced.",
+		"Backend recovery defect: SessionManager.load_session (manager.py:171-177) loads the snapshot only and ignores logged events after it. After a crash between commit and auto-save it was consistent in 0% of CPU replay sessions (mean 8.0 turns lost); snapshot plus event suffix was consistent in 100%.",
+		"Backend parse defect at the pinned commit: GroqClient.extract_json can return a bare JSON string or list, which node_json_parsing does not handle. Such outputs count as JSON parse failures in recall and probes; in live sessions the node raised on 3 of 3276 turns, which were recorded as failed turns that commit nothing.",
+		"active_npc_id is set outside the event log (process_action) and is excluded from replay hashes.",
+		"The prompt advertises trust deltas of -10..10 while the validator allows +/-20; the oracle uses the article's +/-20 bound.",
+		"Live sessions address scripted NPCs even when a scripted move was not committed; this divergence is measured as desynchronisation.",
+		"B4 (scripted FSM) and B5 (MemGPT-style memory) were not run.",
+		"Sample size: ladder level 2 of 7 ({'n_rec': 3, 'n_probe': 10, 'n_live': 2}), chosen by the time-budget planner; the article's full targets correspond to level 7.",
+		"Second backbone: run on ['W1', 'W2a', 'W3', 'W4-32']."
+	],
+	"total_hours": 6.69
+}

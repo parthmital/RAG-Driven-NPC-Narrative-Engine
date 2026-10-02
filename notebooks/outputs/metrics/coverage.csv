@@ -1,0 +1,7 @@
+stage,rows,missing
+recall (primary),6300,0
+probes (primary),4800,0
+live turns (primary),3276,0
+seed variance,1680,0
+recall (secondary),720,0
+probes (secondary),550,0

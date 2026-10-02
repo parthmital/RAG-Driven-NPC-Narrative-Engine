@@ -1,0 +1,8 @@
+hypothesis,verdict,evidence
+H1 Memory,not supported (recall) but token-cost condition vs B2/B3 not met,"F4 input tokens 1399 vs B2 1102, B3 1209"
+H2 Retrieval,supported,"per-probe reciprocal rank, Wilcoxon"
+H3 State control,supported,probes McNemar + live Wilcoxon
+H4 Cost of control,supported,"false rejection 0.0 [0.0, 0.0]%; validate P95 0.039 ms"
+H5 Replay,supported,"live event-sourced sessions all consistent: True; CPU replay (full, snapshot, restart) all consistent: True; backend load path after crash consistent in 0% (see limitations)"
+H6 Separability,not supported,"memory->recall coef 3.57 (p=6.08e-68); control->violation coef -6.77 (p=1.01e-109); interaction p recall=4.91e-05, violation=0.689"
+H7 Generalisation,supported,"W2 LIGHT-derived: dRecall=+0.889, dAttack=+0.114; W3 held-out genre: dRecall=+0.796, dAttack=+0.086; W4 procedural: dRecall=+0.898, dAttack=+0.121"

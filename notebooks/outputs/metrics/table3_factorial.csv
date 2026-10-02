@@ -1,0 +1,5 @@
+Cell,"Recall, live probes (%)",Committed violations per 100 transitions,False rejection (%),Desync rate (%),Sessions
+"F1 rolling, direct","0.0 [0.0, 0.0]","351.2 [302.2, 405.6]",n/a,"2.7 [1.3, 4.4]",14
+"F2 rolling, barrier","0.0 [0.0, 0.0]","8.8 [0.0, 22.2]","0.0 [0.0, 0.0]","18.5 [15.6, 21.6]",14
+"F3 dual-tier, direct","41.1 [26.8, 55.4]","345.9 [305.3, 390.3]",n/a,"3.7 [1.8, 5.7]",14
+"F4 dual-tier, barrier","44.6 [30.4, 59.0]","14.0 [4.3, 27.6]","0.0 [0.0, 0.0]","18.7 [16.5, 20.9]",14
