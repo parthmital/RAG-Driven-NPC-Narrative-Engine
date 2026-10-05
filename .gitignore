@@ -40,6 +40,7 @@ MANIFEST
 .Trashes
 ehthumbs.db
 Thumbs.db
+desktop.ini
 
 # Logs
 *.log
@@ -138,3 +139,6 @@ dmypy.json
 
 *.pem
 *.key
+*.crt
+*.p12
+*.pfx

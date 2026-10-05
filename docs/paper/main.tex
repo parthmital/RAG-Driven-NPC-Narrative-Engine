@@ -16,8 +16,16 @@
 \usepackage{algorithm}
 \usepackage[noend]{algpseudocode}
 \usepackage{caption}
-\usepackage{enumitem}
-\usepackage[section]{placeins}
+\usepackage{enumitem}\usepackage[section,below]{placeins}
+\makeatletter
+\setlength{\@fptop}{0pt}
+\setlength{\@fpsep}{\floatsep}
+\setlength{\@fpbot}{0pt plus 1fil}
+\makeatother
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.07}
+\renewcommand{\floatpagefraction}{0.8}
 \usepackage[round,authoryear]{natbib}
 \usepackage{microtype}
 \usepackage{xurl}
@@ -843,14 +851,14 @@ W4-32 & 3.7B & \ci{77.8}{50.0}{100.0} & B0: \ci{66.7}{50.0}{83.3} & \ci{0.0}{0.0
 
 Both main effects held on every held-out world (\cref{tab:perworld,fig:perworld}). By family, F4 minus B1 recall at $a\ge20$ was $+0.889$ (W2), $+0.796$ (W3) and $+0.898$ (W4), and direct-minus-barrier attack success was $+0.114$, $+0.086$ and $+0.121$. F4 did not beat the best baseline on every world: B2 was ahead on W2c and B0 on W4-32, both within overlapping intervals. On the subset where both backbones ran (W1, W2a, W3, W4-32 at horizon 100; 72 F4 probes at $a\ge20$), the 3.7B model kept F4's recall close to the 7B model's (81.9\% against 86.1\%) while every baseline dropped more: B0 from 79.2\% to 61.1\%, B2 from 84.7\% to 73.6\% and B3 from 70.8\% to 48.6\% (\cref{fig:seeds}, right). With the 3.7B model the barrier blocked every attack (0 of 280, against 18.6\% under direct writes of the same outputs) and rejected no lawful twin (0 of 42 lawful proposals).
 
-\begin{figure}[t]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth]{10_per_world_effects.png}
 \caption{Per-world effects with 95\% bootstrap intervals. Left: recall gain of F4 over B1 at fact age 20 or more. Right: reduction in attack success from direct writes to the barrier (F4 context). W1 (grey) is in-distribution; every held-out world favours the system on both effects.}
 \label{fig:perworld}
 \end{figure}
 
-\begin{figure}[t]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth]{12_seed_and_backbone.png}
 \caption{Left: recall over all ages for three sampling seeds on the calibration sessions; F4's three points nearly coincide, while B2 varies by about 8 points. Right: recall at fact age 20 or more on the secondary-backbone subset for K2-Horizon-7B and K2-Horizon-3.7B; F4 degrades least with the smaller model.}
@@ -859,7 +867,7 @@ Both main effects held on every held-out world (\cref{tab:perworld,fig:perworld}
 
 \subsection{Hypothesis tests}\label{sec:hyptests}
 
-\begin{table}[t]
+\begin{table}[!htbp]
 \centering\footnotesize
 \caption{Pre-registered hypotheses. Effects are differences in proportions (McNemar) or mean paired differences (Wilcoxon). $p$ is Holm-corrected over the six confirmatory tests.}
 \label{tab:hyp}
@@ -886,7 +894,7 @@ H7 & H1 and H3 directions on W2, W3, W4 & -- & all positive & -- & supported \\
 %=====================================================================
 \section{Error Analysis}\label{sec:errors}
 
-\begin{table}[t]
+\begin{table}[!htbp]
 \centering\footnotesize
 \setlength{\tabcolsep}{4pt}
 \caption{Automatically coded failures (recall categories on all worlds; up to 50 examples per category and condition are exported to \osrc{annotation/error_samples.csv}).}
