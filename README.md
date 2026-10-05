@@ -2,7 +2,7 @@
 
 The Obsidian Flask is a full stack text adventure game in which non-player characters (NPCs) talk through a large language model (LLM), while the world state stays under the control of code. Each player turn runs through a fixed LangGraph pipeline: it retrieves memories, builds a prompt, calls the LLM, parses a strict JSON reply, checks every proposed world change against the rules, and commits only the lawful changes to an append-only event log.
 
-The repository also contains a full evaluation of the engine's two mechanisms, scoped dual-tier memory and pre-commit state control. The evaluation is a Kaggle notebook with saved outputs, and its write-up is the research article in [docs/research_article.md](docs/research_article.md).
+The repository also contains a full evaluation of the engine's two mechanisms, scoped dual-tier memory and pre-commit state control. The evaluation is a Kaggle notebook with saved outputs, and its write-up is the research article in [docs/research_article.md](docs/research_article.md), with a LaTeX paper version in [docs/paper/main.pdf](docs/paper/main.pdf).
 
 ## Table of contents
 
@@ -79,7 +79,7 @@ Run these commands from the repository root.
    npm run dev
    ```
 
-   The first run installs Node dependencies, creates `.venv` with the backend requirements, and copies `Backend/.env.example` to `Backend/.env`. It then starts the backend and frontend in separate titled windows on Windows, or with prefixed output in the same terminal on macOS and Linux. Once both services respond, it opens `http://localhost:8080`.
+   The first run installs Node dependencies, creates `.venv` with the backend requirements, and copies [`Backend/.env.example`](Backend/.env.example) to `Backend/.env`. It then starts the backend and frontend in separate titled windows on Windows, or with prefixed output in the same terminal on macOS and Linux. Once both services respond, it opens `http://localhost:8080`.
 
 2. Set `GROQ_API_KEY` in `Backend/.env`; LLM gameplay needs it. Restart `npm run dev` after editing it.
 
@@ -112,6 +112,8 @@ Further reading:
 - [ARCHITECTURE.md](ARCHITECTURE.md): module map, dependency rules, data flow, decisions, and operations.
 - [DESIGN.md](DESIGN.md): the frontend design system: palette, type, layout, breakpoints, components, motion, and copy.
 - [docs/research_article.md](docs/research_article.md): the research article, with the full method, results, and discussion.
+- [docs/paper/main.pdf](docs/paper/main.pdf): the same study as a LaTeX paper ([source](docs/paper/main.tex), [bibliography](docs/paper/references.bib)), with a formal model, an updated literature survey, and an audit of the results against the raw run outputs. Rebuild it with `npm run paper`.
+- [RESEARCH.md](RESEARCH.md): sources and search notes for the paper's literature survey.
 
 ## Problem statement
 
@@ -143,7 +145,7 @@ This project keeps the LLM for language and moves memory and state into code:
 
 ## Evaluation at a glance
 
-The notebook ran end to end on Kaggle (2 x Tesla T4) in 6.69 hours, against backend commit `0ea345f`, with `IFM/K2-Horizon-7B` as the main LLM. Values are mean [95% bootstrap confidence interval]. Recall and token figures use the six held-out worlds (W2a to W4-128); probe, live, and replay figures pool all seven worlds. Full tables are in [Evaluation results](#evaluation-results).
+The notebook ran end to end on Kaggle (2 x Tesla T4) in 6.69 hours, against backend commit `0ea345f`, with [`IFM/K2-Horizon-7B`](https://huggingface.co/IFM/K2-Horizon-7B) as the main LLM. Values are mean [95% bootstrap confidence interval]. Recall and token figures use the six held-out worlds (W2a to W4-128); probe, live, and replay figures pool all seven worlds. Full tables are in [Evaluation results](#evaluation-results).
 
 | Question                                                | Result                                                                                                                                                                                                           |
 | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -195,45 +197,46 @@ The module map, dependency rules, the places where new code belongs, and the kno
 
 Game application (versions from repository files):
 
-| Technology            | Version or range                | Purpose                         | Where used                                                  | Why it is needed                                                                       |
-| --------------------- | ------------------------------- | ------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Python                | `3.10` or newer; local `3.11.9` | Backend runtime                 | `Backend`                                                   | Runs FastAPI, LangGraph, persistence, embeddings, and LLM client code                  |
-| Node.js               | `^20.19.0 or >=22.12.0`         | Frontend runtime and build      | `package.json`, `Frontend/package.json`                     | Required by Vite and the React SWC plugin                                              |
-| FastAPI               | `>=0.111,<1.0`                  | HTTP and WebSocket API          | `Backend/api`                                               | Provides route decorators, request validation, CORS middleware, and OpenAPI generation |
-| Pydantic              | `>=2.0,<3.0`                    | Data validation                 | `Backend/api/schemas.py`, `Backend/schemas`                 | Defines API contracts, world state, event, and LLM output models                       |
-| LangGraph             | `>=0.2,<1.0`                    | Turn pipeline orchestration     | `Backend/graph/definition.py`                               | Runs the fixed graph from input to output                                              |
-| Groq SDK              | `>=0.9.0`                       | LLM provider client             | `Backend/llm/groq_client.py`                                | Sends prompts to the configured Groq model (`openai/gpt-oss-120b`)                     |
-| Sentence Transformers | `>=2.7,<4.0`                    | Text embeddings                 | `Backend/memory/embedder.py`                                | Converts player input to 384-dimensional vectors                                       |
-| PyTorch               | `>=2.2,<3.0`                    | ML runtime                      | Backend embeddings                                          | Required by sentence transformers                                                      |
-| FAISS CPU             | `>=1.7,<2.0`                    | Vector search                   | `Backend/memory/faiss_index.py`                             | Exact inner product search over memory vectors                                         |
-| SQLite                | Python standard library         | Event store and embedding cache | `Backend/core/event_store.py`, `Backend/memory/embedder.py` | Stores events and cached vectors without a separate database server                    |
-| React                 | `^18.3.1`                       | UI framework                    | `Frontend/src`                                              | Renders the game interface                                                             |
-| TypeScript            | `^5.8.3`                        | Frontend typing                 | `Frontend/src`, config files                                | Provides typed API client, store, and UI code                                          |
-| Vite                  | `^8.1.5`                        | Dev server and build tool       | `Frontend/vite.config.ts`                                   | Serves the local frontend and builds production assets                                 |
-| Tailwind CSS          | `^3.4.17`                       | Styling                         | `Frontend/src/index.css`, `Frontend/tailwind.config.ts`     | Provides utility classes and theme tokens                                              |
-| Zustand               | `^5.0.11`                       | Client state                    | `Frontend/src/stores`                                       | Stores session, game, and UI state                                                     |
-| React Router DOM      | `^6.30.1`                       | Frontend routing                | `Frontend/src/App.tsx`                                      | Defines menu, game, world, NPC, journal, session, and 404 routes                       |
-| Framer Motion         | `^12.34.3`                      | UI animation                    | `Frontend/src/components/ui/Modal.tsx`                      | Animates the menu dialog and the scene sheet, honouring reduced motion                 |
-| Lucide React          | `^0.462.0`                      | Icons                           | Frontend components                                         | One consistent icon set for navigation, actions, and states                            |
+| Technology            | Version or range                | Purpose                         | Where used                                                                                                               | Why it is needed                                                                                                              |
+| --------------------- | ------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| Python                | `3.10` or newer; local `3.11.9` | Backend runtime                 | `Backend`                                                                                                                | Runs FastAPI, LangGraph, persistence, embeddings, and LLM client code                                                         |
+| Node.js               | `^20.19.0 or >=22.12.0`         | Frontend runtime and build      | `package.json`, [`Frontend/package.json`](Frontend/package.json)                                                         | Required by Vite and the React SWC plugin                                                                                     |
+| FastAPI               | `>=0.111,<1.0`                  | HTTP and WebSocket API          | [`Backend/api`](Backend/api)                                                                                             | Provides route decorators, request validation, CORS middleware, and OpenAPI generation                                        |
+| Pydantic              | `>=2.0,<3.0`                    | Data validation                 | [`Backend/api/schemas.py`](Backend/api/schemas.py), [`Backend/schemas`](Backend/schemas)                                 | Defines API contracts, world state, event, and LLM output models                                                              |
+| LangGraph             | `>=0.2,<1.0`                    | Turn pipeline orchestration     | [`Backend/graph/definition.py`](Backend/graph/definition.py)                                                             | Runs the fixed graph from input to output                                                                                     |
+| Groq SDK              | `>=0.9.0`                       | LLM provider client             | [`Backend/llm/groq_client.py`](Backend/llm/groq_client.py)                                                               | Sends prompts to the configured Groq model ([`openai/gpt-oss-120b`](https://console.groq.com/docs/model/openai/gpt-oss-120b)) |
+| Sentence Transformers | `>=2.7,<4.0`                    | Text embeddings                 | [`Backend/memory/embedder.py`](Backend/memory/embedder.py)                                                               | Converts player input to 384-dimensional vectors                                                                              |
+| PyTorch               | `>=2.2,<3.0`                    | ML runtime                      | Backend embeddings                                                                                                       | Required by sentence transformers                                                                                             |
+| FAISS CPU             | `>=1.7,<2.0`                    | Vector search                   | [`Backend/memory/faiss_index.py`](Backend/memory/faiss_index.py)                                                         | Exact inner product search over memory vectors                                                                                |
+| SQLite                | Python standard library         | Event store and embedding cache | [`Backend/core/event_store.py`](Backend/core/event_store.py), [`Backend/memory/embedder.py`](Backend/memory/embedder.py) | Stores events and cached vectors without a separate database server                                                           |
+| React                 | `^18.3.1`                       | UI framework                    | [`Frontend/src`](Frontend/src)                                                                                           | Renders the game interface                                                                                                    |
+| TypeScript            | `^5.8.3`                        | Frontend typing                 | [`Frontend/src`](Frontend/src), config files                                                                             | Provides typed API client, store, and UI code                                                                                 |
+| Vite                  | `^8.1.5`                        | Dev server and build tool       | [`Frontend/vite.config.ts`](Frontend/vite.config.ts)                                                                     | Serves the local frontend and builds production assets                                                                        |
+| Tailwind CSS          | `^3.4.17`                       | Styling                         | [`Frontend/src/index.css`](Frontend/src/index.css), [`Frontend/tailwind.config.ts`](Frontend/tailwind.config.ts)         | Provides utility classes and theme tokens                                                                                     |
+| Zustand               | `^5.0.11`                       | Client state                    | [`Frontend/src/stores`](Frontend/src/stores)                                                                             | Stores session, game, and UI state                                                                                            |
+| React Router DOM      | `^6.30.1`                       | Frontend routing                | [`Frontend/src/App.tsx`](Frontend/src/App.tsx)                                                                           | Defines menu, game, world, NPC, journal, session, and 404 routes                                                              |
+| Framer Motion         | `^12.34.3`                      | UI animation                    | [`Frontend/src/components/ui/Modal.tsx`](Frontend/src/components/ui/Modal.tsx)                                           | Animates the menu dialog and the scene sheet, honouring reduced motion                                                        |
+| Lucide React          | `^0.462.0`                      | Icons                           | Frontend components                                                                                                      | One consistent icon set for navigation, actions, and states                                                                   |
 
-Evaluation notebook (versions from `notebooks/outputs/metrics/run_manifest.json`):
+Evaluation notebook (versions from [`notebooks/outputs/metrics/run_manifest.json`](notebooks/outputs/metrics/run_manifest.json)):
 
-| Technology                        | Version                                   | Purpose in the notebook                                                                      |
-| --------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Kaggle notebook, Python           | `3.12.13`                                 | Runtime, with 2 x Tesla T4 (15.64 GB each, compute capability 7.5), 4 CPU cores, 33.7 GB RAM |
-| vLLM                              | `0.30.0` (own venv, torch `2.13.0+cu132`) | OpenAI-compatible server for the LLM, in an isolated virtual environment                     |
-| `IFM/K2-Horizon-7B`               | Apache 2.0 weights                        | Primary LLM backbone, fp16, tensor parallel over both GPUs                                   |
-| `IFM/K2-Horizon-3.7B`             | Apache 2.0 weights                        | Second backbone for the sensitivity check, one replica per GPU                               |
-| sentence-transformers, faiss-cpu  | `5.4.1`, `1.15.1`                         | The backend's embedder and vector index                                                      |
-| LangGraph, Pydantic               | `0.6.11`, `2.12.3`                        | The backend's turn graph and schemas                                                         |
-| PyTorch (kernel)                  | `2.10.0+cu128`                            | GPU embedding before the LLM server starts                                                   |
-| NumPy, pandas, SciPy, statsmodels | `2.0.2`, `2.3.3`, `1.16.3`, `0.14.6`      | Metrics, bootstrap intervals, McNemar and Wilcoxon tests, mixed-effects models               |
-| LIGHT environment file            | CC BY-NC 4.0                              | Source of the three externally written worlds W2a to W2c                                     |
+| Technology                                                          | Version                                   | Purpose in the notebook                                                                      |
+| ------------------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Kaggle notebook, Python                                             | `3.12.13`                                 | Runtime, with 2 x Tesla T4 (15.64 GB each, compute capability 7.5), 4 CPU cores, 33.7 GB RAM |
+| vLLM                                                                | `0.30.0` (own venv, torch `2.13.0+cu132`) | OpenAI-compatible server for the LLM, in an isolated virtual environment                     |
+| [`IFM/K2-Horizon-7B`](https://huggingface.co/IFM/K2-Horizon-7B)     | Apache 2.0 weights                        | Primary LLM backbone, fp16, tensor parallel over both GPUs                                   |
+| [`IFM/K2-Horizon-3.7B`](https://huggingface.co/IFM/K2-Horizon-3.7B) | Apache 2.0 weights                        | Second backbone for the sensitivity check, one replica per GPU                               |
+| sentence-transformers, faiss-cpu                                    | `5.4.1`, `1.15.1`                         | The backend's embedder and vector index                                                      |
+| LangGraph, Pydantic                                                 | `0.6.11`, `2.12.3`                        | The backend's turn graph and schemas                                                         |
+| PyTorch (kernel)                                                    | `2.10.0+cu128`                            | GPU embedding before the LLM server starts                                                   |
+| NumPy, pandas, SciPy, statsmodels                                   | `2.0.2`, `2.3.3`, `1.16.3`, `0.14.6`      | Metrics, bootstrap intervals, McNemar and Wilcoxon tests, mixed-effects models               |
+| LIGHT environment file                                              | CC BY-NC 4.0                              | Source of the three externally written worlds W2a to W2c                                     |
 
 ## Repository structure
 
 ```text
 RAG-Driven-NPC-Narrative-Engine/
+|-- .claude/skills/             # Repo-local agent skills: shell pitfalls, paper build, result facts, citations, doc links
 |-- Backend/
 |   |-- api/
 |   |   |-- app.py              # FastAPI factory, CORS, lifecycle, root health
@@ -294,8 +297,10 @@ RAG-Driven-NPC-Narrative-Engine/
 |   |-- vite.config.ts          # Dev server and proxy config
 |   `-- vitest.config.ts        # Vitest config
 |-- docs/
+|   |-- paper/                  # LaTeX paper: main.tex, references.bib, compiled main.pdf
 |   |-- research_article.md     # Research article with the evaluation results
-|   `-- screenshots/            # Game screenshots used in this README
+|   |-- screenshots/            # Game screenshots used in this README
+|   `-- tectonic.exe            # Tectonic 0.15 LaTeX engine (Windows) used by `npm run paper`
 |-- notebooks/
 |   |-- npc-memory-state-benchmark.ipynb  # Kaggle evaluation notebook, with saved outputs
 |   |-- outputs/                # Extracted run outputs (see Evaluation output files)
@@ -303,7 +308,8 @@ RAG-Driven-NPC-Narrative-Engine/
 |-- scripts/
 |   |-- lib/workspace.mjs       # Repo-local environment, runtime checks, idempotent setup
 |   |-- dev.mjs                 # `npm run dev` launcher and service supervisor
-|   `-- check.mjs               # `npm run check` validation runner
+|   |-- check.mjs               # `npm run check` validation runner
+|   `-- paper.mjs               # `npm run paper` LaTeX build with log checks
 |-- ARCHITECTURE.md             # Module map, dependency rules, data flow, operations
 |-- DESIGN.md                   # Frontend design system and UI decisions
 |-- package.json                # Root npm scripts and the clone detector
@@ -328,8 +334,8 @@ npm run dev
 The root dev command performs the complete idempotent setup through [scripts/lib/workspace.mjs](scripts/lib/workspace.mjs):
 
 - Runs `npm ci` at the root and in `Frontend`.
-- Creates `.venv` in the repository root when missing and installs `Backend/requirements-dev.txt` through the `.venv` interpreter only.
-- Copies `Backend/.env.example` to `Backend/.env` when missing and warns while `GROQ_API_KEY` is unset.
+- Creates `.venv` in the repository root when missing and installs [`Backend/requirements-dev.txt`](Backend/requirements-dev.txt) through the `.venv` interpreter only.
+- Copies [`Backend/.env.example`](Backend/.env.example) to `Backend/.env` when missing and warns while `GROQ_API_KEY` is unset.
 - Records lockfile hashes in the Git-ignored `.cache/setup-stamp.json`. Later runs skip installs unless a lockfile or requirements file changed or an environment is broken.
 - Uses repo-local caches: `.cache/npm`, `.cache/pip`, `.cache/huggingface`, `.cache/torch`, and `.cache/pycache`.
 
@@ -339,19 +345,19 @@ The first run can take time because PyTorch, FAISS, and the sentence-transformer
 
 Backend configuration is loaded in [Backend/config.py](Backend/config.py). The backend calls `load_dotenv()`, so a local `.env` file can be used. `.env` files are ignored by `.gitignore`.
 
-| Variable         | Required                         | Purpose                                 | Expected format                     | Safe example                                | Default                               | Security notes                                                                                   |
-| ---------------- | -------------------------------- | --------------------------------------- | ----------------------------------- | ------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `GROQ_API_KEY`   | Required for LLM gameplay        | API key passed to the Groq SDK          | String secret                       | `gsk_replace_with_your_key`                 | Empty string                          | Do not commit. Missing or invalid values break LLM generation.                                   |
-| `API_HOST`       | Optional                         | Backend bind host                       | Host or IP string                   | `0.0.0.0`                                   | `0.0.0.0`                             | Binding to `0.0.0.0` exposes the server on all interfaces.                                       |
-| `API_PORT`       | Optional                         | Backend port                            | Integer string                      | `8000`                                      | `8000`                                | Must match frontend proxy or deployment routing.                                                 |
-| `FRONTEND_URL`   | Optional                         | Default CORS origin                     | URL                                 | `http://localhost:8080`                     | `http://localhost:8080`               | Used as fallback when `CORS_ORIGINS` is absent.                                                  |
-| `CORS_ORIGINS`   | Optional                         | Allowed CORS origins                    | Comma separated URLs                | `http://localhost:8080,http://localhost:80` | Value of `FRONTEND_URL`               | Keep narrow outside local development.                                                           |
-| `SESSION_SECRET` | Optional in code                 | Session secret value loaded into config | String secret                       | `replace-with-random-secret`                | Random hex generated on process start | Loaded but not used elsewhere in the current code.                                               |
-| `DEBUG_ERRORS`   | Optional                         | Exposes internal exception details      | Boolean string                      | `false`                                     | `false`                               | Keep false outside local debugging.                                                              |
-| `LOG_LEVEL`      | Optional                         | Backend log verbosity                   | `debug`, `info`, `warning`, `error` | `info`                                      | `info`                                | `debug` adds per-turn retrieval, prompt, snapshot, and event lines. Invalid values stop startup. |
-| `LOG_FORMAT`     | Optional                         | Backend log line format                 | `text` or `json`                    | `json`                                      | `text`                                | `json` writes one object per line for log shippers. Invalid values stop startup.                 |
-| `VITE_API_URL`   | Optional for frontend dev server | Backend target for Vite proxy           | URL                                 | `http://localhost:8000`                     | `http://localhost:8000`               | Used only by `Frontend/vite.config.ts` during development. The runtime API base is `/api/game`.  |
-| `VITE_DEV_HOST`  | Optional for frontend dev server | Vite bind host                          | Host or IP string                   | `localhost`                                 | `localhost`                           | Set to `0.0.0.0` only when LAN access is intended.                                               |
+| Variable         | Required                         | Purpose                                 | Expected format                     | Safe example                                | Default                               | Security notes                                                                                                             |
+| ---------------- | -------------------------------- | --------------------------------------- | ----------------------------------- | ------------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `GROQ_API_KEY`   | Required for LLM gameplay        | API key passed to the Groq SDK          | String secret                       | `gsk_replace_with_your_key`                 | Empty string                          | Do not commit. Missing or invalid values break LLM generation.                                                             |
+| `API_HOST`       | Optional                         | Backend bind host                       | Host or IP string                   | `0.0.0.0`                                   | `0.0.0.0`                             | Binding to `0.0.0.0` exposes the server on all interfaces.                                                                 |
+| `API_PORT`       | Optional                         | Backend port                            | Integer string                      | `8000`                                      | `8000`                                | Must match frontend proxy or deployment routing.                                                                           |
+| `FRONTEND_URL`   | Optional                         | Default CORS origin                     | URL                                 | `http://localhost:8080`                     | `http://localhost:8080`               | Used as fallback when `CORS_ORIGINS` is absent.                                                                            |
+| `CORS_ORIGINS`   | Optional                         | Allowed CORS origins                    | Comma separated URLs                | `http://localhost:8080,http://localhost:80` | Value of `FRONTEND_URL`               | Keep narrow outside local development.                                                                                     |
+| `SESSION_SECRET` | Optional in code                 | Session secret value loaded into config | String secret                       | `replace-with-random-secret`                | Random hex generated on process start | Loaded but not used elsewhere in the current code.                                                                         |
+| `DEBUG_ERRORS`   | Optional                         | Exposes internal exception details      | Boolean string                      | `false`                                     | `false`                               | Keep false outside local debugging.                                                                                        |
+| `LOG_LEVEL`      | Optional                         | Backend log verbosity                   | `debug`, `info`, `warning`, `error` | `info`                                      | `info`                                | `debug` adds per-turn retrieval, prompt, snapshot, and event lines. Invalid values stop startup.                           |
+| `LOG_FORMAT`     | Optional                         | Backend log line format                 | `text` or `json`                    | `json`                                      | `text`                                | `json` writes one object per line for log shippers. Invalid values stop startup.                                           |
+| `VITE_API_URL`   | Optional for frontend dev server | Backend target for Vite proxy           | URL                                 | `http://localhost:8000`                     | `http://localhost:8000`               | Used only by [`Frontend/vite.config.ts`](Frontend/vite.config.ts) during development. The runtime API base is `/api/game`. |
+| `VITE_DEV_HOST`  | Optional for frontend dev server | Vite bind host                          | Host or IP string                   | `localhost`                                 | `localhost`                           | Set to `0.0.0.0` only when LAN access is intended.                                                                         |
 
 ## Database and local data
 
@@ -359,15 +365,15 @@ There is no manual database setup and no migration command.
 
 The backend creates local data on demand under `Backend/data`, which Git ignores. For each session, the session manager creates:
 
-| File                 | Purpose                      | Source                          |
-| -------------------- | ---------------------------- | ------------------------------- |
-| `events.db`          | SQLite event log             | `Backend/core/event_store.py`   |
-| `faiss.index`        | FAISS vector index           | `Backend/memory/faiss_index.py` |
-| `faiss_meta.json`    | Metadata for FAISS entries   | `Backend/memory/faiss_index.py` |
-| `snapshot.json`      | Manual save snapshot         | `Backend/core/snapshot.py`      |
-| `snapshot_auto.json` | Auto save snapshot           | `Backend/core/snapshot.py`      |
-| `dialogue.json`      | Manual save dialogue history | `Backend/session/save_files.py` |
-| `dialogue_auto.json` | Auto save dialogue history   | `Backend/session/save_files.py` |
+| File                 | Purpose                      | Source                                                           |
+| -------------------- | ---------------------------- | ---------------------------------------------------------------- |
+| `events.db`          | SQLite event log             | [`Backend/core/event_store.py`](Backend/core/event_store.py)     |
+| `faiss.index`        | FAISS vector index           | [`Backend/memory/faiss_index.py`](Backend/memory/faiss_index.py) |
+| `faiss_meta.json`    | Metadata for FAISS entries   | [`Backend/memory/faiss_index.py`](Backend/memory/faiss_index.py) |
+| `snapshot.json`      | Manual save snapshot         | [`Backend/core/snapshot.py`](Backend/core/snapshot.py)           |
+| `snapshot_auto.json` | Auto save snapshot           | [`Backend/core/snapshot.py`](Backend/core/snapshot.py)           |
+| `dialogue.json`      | Manual save dialogue history | [`Backend/session/save_files.py`](Backend/session/save_files.py) |
+| `dialogue_auto.json` | Auto save dialogue history   | [`Backend/session/save_files.py`](Backend/session/save_files.py) |
 
 The embedding cache is stored at `Backend/data/embed_cache.db`.
 
@@ -383,7 +389,7 @@ What it does ([scripts/dev.mjs](scripts/dev.mjs)):
 
 - Runs the idempotent setup described above.
 - Fails fast if Node, Python, or ports `8000` and `8080` are unavailable.
-- Starts the backend (`.venv` Python, `Backend/server.py`) and the frontend (Vite in `Frontend`).
+- Starts the backend (`.venv` Python, [`Backend/server.py`](Backend/server.py)) and the frontend (Vite in `Frontend`).
 - On Windows, each service runs in its own titled window. On macOS and Linux, output is prefixed with `[backend]` or `[frontend]` in the main terminal.
 - Polls `http://127.0.0.1:8000/health` and `http://localhost:8080`, then opens the browser once. The browser is skipped when `CI` is set.
 - If either service exits, reports it and stops everything. `Ctrl+C` in the main terminal kills both process trees.
@@ -412,13 +418,14 @@ Expected result: Vite serves the frontend on `http://localhost:8080` and proxies
 
 Root ([package.json](package.json)):
 
-| Command             | Where to run    | Purpose                                                                                                     |
-| ------------------- | --------------- | ----------------------------------------------------------------------------------------------------------- |
-| `npm run dev`       | Repository root | Runs complete setup, starts both services, and opens the browser                                            |
-| `npm run check`     | Repository root | Runs setup, clone detection, black, backend tests, frontend format check, typecheck, lint, tests, and build |
-| `npm run build`     | Repository root | Runs the frontend production build                                                                          |
-| `npm run build:dev` | Repository root | Runs the frontend development build                                                                         |
-| `npm run preview`   | Repository root | Serves the built frontend locally                                                                           |
+| Command             | Where to run    | Purpose                                                                                                                                                                                                                                                           |
+| ------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`       | Repository root | Runs complete setup, starts both services, and opens the browser                                                                                                                                                                                                  |
+| `npm run check`     | Repository root | Runs setup, clone detection, black, backend tests, frontend format check, typecheck, lint, tests, and build                                                                                                                                                       |
+| `npm run build`     | Repository root | Runs the frontend production build                                                                                                                                                                                                                                |
+| `npm run build:dev` | Repository root | Runs the frontend development build                                                                                                                                                                                                                               |
+| `npm run preview`   | Repository root | Serves the built frontend locally                                                                                                                                                                                                                                 |
+| `npm run paper`     | Repository root | Compiles [docs/paper/main.tex](docs/paper/main.tex) to `docs/paper/main.pdf` with Tectonic (`docs/tectonic.exe` on Windows, `tectonic` on PATH or `$TECTONIC` elsewhere); fails on errors, undefined references or citations, overfull boxes, and BibTeX warnings |
 
 Backend:
 
@@ -569,11 +576,11 @@ No authentication or authorisation is implemented. Any caller who can reach the 
 
 ## Input validation
 
-| Layer                       | Source                      | Behaviour                                                                                                                                       |
-| --------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| API request validation      | `Backend/api/schemas.py`    | Pydantic validates body fields, minimum lengths, age, and action length                                                                         |
-| Route level checks          | `Backend/api/routes/`       | Checks active sessions, NPC availability, location connectivity, object ownership, and clue existence                                           |
-| LLM world update validation | `Backend/game/validator.py` | Rejects unknown event types, non canonical entities, non-adjacent moves, impossible pickups and drops, trust changes above 20, and overspending |
+| Layer                       | Source                                                   | Behaviour                                                                                                                                       |
+| --------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| API request validation      | [`Backend/api/schemas.py`](Backend/api/schemas.py)       | Pydantic validates body fields, minimum lengths, age, and action length                                                                         |
+| Route level checks          | [`Backend/api/routes/`](Backend/api/routes/)             | Checks active sessions, NPC availability, location connectivity, object ownership, and clue existence                                           |
+| LLM world update validation | [`Backend/game/validator.py`](Backend/game/validator.py) | Rejects unknown event types, non canonical entities, non-adjacent moves, impossible pickups and drops, trust changes above 20, and overspending |
 
 The LLM must return a strict JSON object. The backend parses it and validates every proposed change before applying it. The rules, and the gaps the evaluation found in them, are listed in [ARCHITECTURE.md](ARCHITECTURE.md#known-gaps-and-recommended-changes).
 
@@ -581,7 +588,7 @@ The LLM must return a strict JSON object. The backend parses it and validates ev
 
 - FastAPI validation errors return standard `422` responses.
 - Missing sessions and missing entities return route level `404` or `400` errors.
-- The request middleware in `Backend/api/app.py` logs unhandled exceptions with their traceback and request ID, and returns a generic `500` body unless `DEBUG_ERRORS=true`.
+- The request middleware in [`Backend/api/app.py`](Backend/api/app.py) logs unhandled exceptions with their traceback and request ID, and returns a generic `500` body unless `DEBUG_ERRORS=true`.
 - `GroqClient.generate()` retries only transient failures (rate limits, `5xx`, connection errors, and timeouts) with exponential backoff. Other failures, such as an invalid API key, fail at once as `LLMError`. The Groq SDK's own retries are turned off.
 - If the LLM reply is not a JSON object, the parse node uses the raw text as dialogue, commits no world change, and records `JSON parse failed`.
 - When a turn fails, the frontend removes the unanswered line, explains the failure, and puts the player's text back in the message box.
@@ -589,7 +596,7 @@ The LLM must return a strict JSON object. The backend parses it and validates ev
 
 ## Logging
 
-Backend logging is configured once in [Backend/log_config.py](Backend/log_config.py), called from `Backend/server.py` before the app is imported.
+Backend logging is configured once in [Backend/log_config.py](Backend/log_config.py), called from [`Backend/server.py`](Backend/server.py) before the app is imported.
 
 - One handler and one format for the app, Uvicorn, and dependencies. Uvicorn's access log is off; the request middleware writes one line per request instead.
 - Every line carries structured fields. The request ID (`req`) and session ID (`session`) are added from context, including inside the turn pipeline's worker thread.
@@ -624,14 +631,14 @@ Checks run for this revision of the README (2 October 2026, Windows 11, Python 3
 
 What the tests cover:
 
-| File                                       | Tests | Covers                                                                                                    |
-| ------------------------------------------ | ----- | --------------------------------------------------------------------------------------------------------- |
-| `Backend/tests/test_api.py`                | 7     | HTTP and WebSocket API with stubbed ML and LLM                                                            |
-| `Backend/tests/test_architecture.py`       | 2     | Import boundaries between backend layers and graph side effects                                           |
-| `Backend/tests/test_llm_client.py`         | 6     | Groq retry classification, error messages, and `extract_json`, including the rejection of non-object JSON |
-| `Backend/tests/test_logging.py`            | 3     | Log formatters and request and session context                                                            |
-| `Frontend/src/services/httpClient.test.ts` | 4     | The frontend HTTP client                                                                                  |
-| `Frontend/src/stores/mappers.test.ts`      | 3     | Dialogue mapping from DTOs                                                                                |
+| File                                                                                   | Tests | Covers                                                                                                    |
+| -------------------------------------------------------------------------------------- | ----- | --------------------------------------------------------------------------------------------------------- |
+| [`Backend/tests/test_api.py`](Backend/tests/test_api.py)                               | 7     | HTTP and WebSocket API with stubbed ML and LLM                                                            |
+| [`Backend/tests/test_architecture.py`](Backend/tests/test_architecture.py)             | 2     | Import boundaries between backend layers and graph side effects                                           |
+| [`Backend/tests/test_llm_client.py`](Backend/tests/test_llm_client.py)                 | 6     | Groq retry classification, error messages, and `extract_json`, including the rejection of non-object JSON |
+| [`Backend/tests/test_logging.py`](Backend/tests/test_logging.py)                       | 3     | Log formatters and request and session context                                                            |
+| [`Frontend/src/services/httpClient.test.ts`](Frontend/src/services/httpClient.test.ts) | 4     | The frontend HTTP client                                                                                  |
+| [`Frontend/src/stores/mappers.test.ts`](Frontend/src/stores/mappers.test.ts)           | 3     | Dialogue mapping from DTOs                                                                                |
 
 Test coverage percentage: `Not measured in the current repository.`
 
@@ -689,7 +696,7 @@ The notebook is designed for Kaggle and is never executed locally.
 2. In the sidebar, set **Accelerator** to **GPU T4 x2** and turn **Internet** on. Internet is needed to clone the repository, install vLLM, and download the models and the LIGHT file.
 3. Optional inputs: a `w3_world_seed.json` written by someone outside the project, which replaces the notebook-authored W3 world, and `llm_cache_*.jsonl` files from an earlier run, which let an interrupted run resume without repeating LLM calls.
 4. Choose **Save Version**, then **Save & Run All**, so the 12-hour session limit applies.
-5. Download `outputs.zip` from the Output tab and extract it to `notebooks/outputs/`.
+5. Download `outputs.zip` from the Output tab and extract it to [`notebooks/outputs/`](notebooks/outputs/).
 
 The notebook measures its own throughput with a pilot run and picks the largest pre-declared sample size that fits its 11.25-hour budget, so it always finishes and writes its outputs.
 
@@ -703,27 +710,27 @@ States the goal, the system under test, the data sources, the 6-step approach, t
 
 #### Section 1: setup
 
-| Cell group                       | What it does and why                                                                                                                                                                 | Key settings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Saved output                                                                                                                                                                                                                                                 |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1.1 Imports                      | Sets Hugging Face cache and progress-bar variables before any Hugging Face import, imports the scientific stack, and starts the clock that every deadline uses                       | `HF_HOME=/tmp/npcbench/hf-home` keeps weights out of the zip                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `Python 3.12.13 \| numpy 2.0.2 \| pandas 2.3.3`                                                                                                                                                                                                              |
-| 1.2 Configuration                | Puts every tunable in one `SimpleNamespace`                                                                                                                                          | Primary `IFM/K2-Horizon-7B`, secondary `IFM/K2-Horizon-3.7B`, vLLM `0.30.0`, context `16384`, GPU memory `0.88`, 64 concurrent sequences, reasoning effort `low`, thinking budget `192` tokens, answer limit `768` tokens, top-p `0.95`, seed `20261001`, horizons `50, 100, 200`, fact ages `5, 10, 20, 40, 80, 160`, 2 probes per age, 40-turn live sessions, 8-level sample-size ladder, oracle bounds (trust step 20, currency gain cap 50), 10,000 bootstrap resamples, alpha `0.05`, 11.25-hour budget | The configuration printed as JSON                                                                                                                                                                                                                            |
-| 1.3 Folders and monitors         | Creates the output folders, a logger that writes to `logs/run.log`, a `stage()` timer, and a background thread that samples `nvidia-smi` every 15 s                                  | Backend loggers raised to `ERROR`, because rejected adversarial proposals would flood the output                                                                                                                                                                                                                                                                                                                                                                                                             | `Output root /kaggle/working; scratch /tmp/npcbench`                                                                                                                                                                                                         |
-| 1.4 Hardware check               | Detects GPUs, driver, CPU, RAM, and disk; stops early if two GPUs are not visible                                                                                                    | T4 compute capability 7.5 has no bf16, so the run serves in fp16                                                                                                                                                                                                                                                                                                                                                                                                                                             | 2 x Tesla T4, 15.64 GB each; driver `580.178.04`; 4 CPU cores; 33.7 GB RAM (32.0 GB free); 20.9 GB free in `/kaggle/working`; torch `2.10.0+cu128`                                                                                                           |
-| 1.5 Packages and code under test | Installs `faiss-cpu`, `langgraph<1.0`, `groq`, `python-dotenv`, `uv`, and `sentence-transformers`, then clones the repository and checks out the pinned commit                       | Asserts the checked-out hash                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Installs in 0.2 min; `System under test: ...@ 0ea345fe140b359d7e82e77ffb2fdfa74caf0e7c`                                                                                                                                                                      |
-| 1.6 Background jobs              | Starts the vLLM install (in its own `uv` virtual environment) and the 18 GB weight download in background threads                                                                    | `--torch-backend=auto` picks the CUDA build for the driver                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `Background jobs started: ['vllm_install', 'download_primary']`                                                                                                                                                                                              |
-| 1.7 Backend imports              | Imports the real schemas, `EventStore`, reducer, snapshots, validator, prompt builder, `FAISSMemory`, `ShortTermMemory`, `GroqClient.extract_json`, and the LangGraph node factories | Reads the backend's own constants                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `MAX_SHORT_TERM_TURNS 8`, `TOP_K_RETRIEVAL 6`, `FAISS_OVERFETCH_FACTOR 5`, `RETRIEVAL_MIN_CANDIDATES 3`, `SNAPSHOT_INTERVAL 16`, `MAX_CONTEXT_CHARS 16384`, `TEMPERATURE 0.35`, embedder `all-MiniLM-L12-v2` (384 dimensions), `MEMORY_PRUNE_THRESHOLD 1000` |
+| Cell group                       | What it does and why                                                                                                                                                                 | Key settings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Saved output                                                                                                                                                                                                                                                 |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1.1 Imports                      | Sets Hugging Face cache and progress-bar variables before any Hugging Face import, imports the scientific stack, and starts the clock that every deadline uses                       | `HF_HOME=/tmp/npcbench/hf-home` keeps weights out of the zip                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | `Python 3.12.13 \| numpy 2.0.2 \| pandas 2.3.3`                                                                                                                                                                                                              |
+| 1.2 Configuration                | Puts every tunable in one `SimpleNamespace`                                                                                                                                          | Primary [`IFM/K2-Horizon-7B`](https://huggingface.co/IFM/K2-Horizon-7B), secondary [`IFM/K2-Horizon-3.7B`](https://huggingface.co/IFM/K2-Horizon-3.7B), vLLM `0.30.0`, context `16384`, GPU memory `0.88`, 64 concurrent sequences, reasoning effort `low`, thinking budget `192` tokens, answer limit `768` tokens, top-p `0.95`, seed `20261001`, horizons `50, 100, 200`, fact ages `5, 10, 20, 40, 80, 160`, 2 probes per age, 40-turn live sessions, 8-level sample-size ladder, oracle bounds (trust step 20, currency gain cap 50), 10,000 bootstrap resamples, alpha `0.05`, 11.25-hour budget | The configuration printed as JSON                                                                                                                                                                                                                            |
+| 1.3 Folders and monitors         | Creates the output folders, a logger that writes to `logs/run.log`, a `stage()` timer, and a background thread that samples `nvidia-smi` every 15 s                                  | Backend loggers raised to `ERROR`, because rejected adversarial proposals would flood the output                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `Output root /kaggle/working; scratch /tmp/npcbench`                                                                                                                                                                                                         |
+| 1.4 Hardware check               | Detects GPUs, driver, CPU, RAM, and disk; stops early if two GPUs are not visible                                                                                                    | T4 compute capability 7.5 has no bf16, so the run serves in fp16                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | 2 x Tesla T4, 15.64 GB each; driver `580.178.04`; 4 CPU cores; 33.7 GB RAM (32.0 GB free); 20.9 GB free in `/kaggle/working`; torch `2.10.0+cu128`                                                                                                           |
+| 1.5 Packages and code under test | Installs `faiss-cpu`, `langgraph<1.0`, `groq`, `python-dotenv`, `uv`, and `sentence-transformers`, then clones the repository and checks out the pinned commit                       | Asserts the checked-out hash                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Installs in 0.2 min; `System under test: ...@ 0ea345fe140b359d7e82e77ffb2fdfa74caf0e7c`                                                                                                                                                                      |
+| 1.6 Background jobs              | Starts the vLLM install (in its own `uv` virtual environment) and the 18 GB weight download in background threads                                                                    | `--torch-backend=auto` picks the CUDA build for the driver                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `Background jobs started: ['vllm_install', 'download_primary']`                                                                                                                                                                                              |
+| 1.7 Backend imports              | Imports the real schemas, `EventStore`, reducer, snapshots, validator, prompt builder, `FAISSMemory`, `ShortTermMemory`, `GroqClient.extract_json`, and the LangGraph node factories | Reads the backend's own constants                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `MAX_SHORT_TERM_TURNS 8`, `TOP_K_RETRIEVAL 6`, `FAISS_OVERFETCH_FACTOR 5`, `RETRIEVAL_MIN_CANDIDATES 3`, `SNAPSHOT_INTERVAL 16`, `MAX_CONTEXT_CHARS 16384`, `TEMPERATURE 0.35`, embedder `all-MiniLM-L12-v2` (384 dimensions), `MEMORY_PRUNE_THRESHOLD 1000` |
 
 #### Section 2: tokenizer and world suite
 
-| Cell group        | What it does and why                                                                                                                                                                                                                       | Saved output                                                                                                                  |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| 2.1 Tokenizer     | Downloads only `tokenizer.json` and renders the K2-Horizon single-turn chat format itself, so prompts are sent as token ids and token budgets can be computed before the weights arrive                                                    | Special ids `bos 0`, `im_end 250019`, `eos 1`, think close tag `250053`; a sample prompt is 16 tokens                         |
-| 2.2 World wrapper | Wraps each `WorldState` seed with family, authorship, secret keywords (distinctive words from each NPC's secrets that appear nowhere in its public text), adjacency, and all-pairs distances. Loads W1 from `Backend/game/world_seed.json` | W1: 8 locations, 4 NPCs, 4 objects, 7 rules, 7 edges, diameter 4, 8 secrets, 16 secret keywords                               |
-| 2.3 LIGHT worlds  | Converts the LIGHT environment file (661 rooms, 1,755 characters, 3,462 objects) into three worlds by room category, with a seeded spanning tree to connect each world and two templated secrets per NPC                                   | Joining edges added: W2a 14, W2b 22, W2c 27                                                                                   |
-| 2.4 W3 world      | Builds a 24-location orbital research station as a genre-transfer test                                                                                                                                                                     | 24 locations, 6 NPCs, 8 objects, 6 rules, 27 edges. Authorship is recorded as `notebook author (not independent; see caveat)` |
-| 2.5 W4 worlds     | Generates two procedural worlds from a seed: a random spanning tree plus about 30% extra edges, with templated names                                                                                                                       | The world table below                                                                                                         |
+| Cell group        | What it does and why                                                                                                                                                                                                                                                       | Saved output                                                                                                                  |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 2.1 Tokenizer     | Downloads only `tokenizer.json` and renders the K2-Horizon single-turn chat format itself, so prompts are sent as token ids and token budgets can be computed before the weights arrive                                                                                    | Special ids `bos 0`, `im_end 250019`, `eos 1`, think close tag `250053`; a sample prompt is 16 tokens                         |
+| 2.2 World wrapper | Wraps each `WorldState` seed with family, authorship, secret keywords (distinctive words from each NPC's secrets that appear nowhere in its public text), adjacency, and all-pairs distances. Loads W1 from [`Backend/game/world_seed.json`](Backend/game/world_seed.json) | W1: 8 locations, 4 NPCs, 4 objects, 7 rules, 7 edges, diameter 4, 8 secrets, 16 secret keywords                               |
+| 2.3 LIGHT worlds  | Converts the LIGHT environment file (661 rooms, 1,755 characters, 3,462 objects) into three worlds by room category, with a seeded spanning tree to connect each world and two templated secrets per NPC                                                                   | Joining edges added: W2a 14, W2b 22, W2c 27                                                                                   |
+| 2.4 W3 world      | Builds a 24-location orbital research station as a genre-transfer test                                                                                                                                                                                                     | 24 locations, 6 NPCs, 8 objects, 6 rules, 27 edges. Authorship is recorded as `notebook author (not independent; see caveat)` |
+| 2.5 W4 worlds     | Generates two procedural worlds from a seed: a random spanning tree plus about 30% extra edges, with templated names                                                                                                                                                       | The world table below                                                                                                         |
 
-World suite (`metrics/world_stats.csv`):
+World suite ([`metrics/world_stats.csv`](notebooks/outputs/metrics/world_stats.csv)):
 
 | World  | Family            | Authorship                        | Locations | NPCs | Objects | Rules | Edges | Mean degree | Diameter | Secrets | Secret keywords | Joining edges |
 | ------ | ----------------- | --------------------------------- | --------- | ---- | ------- | ----- | ----- | ----------- | -------- | ------- | --------------- | ------------- |
@@ -744,7 +751,7 @@ All seven worlds are connected.
 | 3.1 Fact templates        | Defines 15 fact templates (meeting place, password, debt, and so on), each with a plant phrasing, a paraphrased distractor phrasing, and a probe question. Values come from pools of invented words; any value whose key word appears in a world's text is removed, so the answer cannot come from lore                                                                            | Value pool sizes per world: name 24, place 16, ship 12, colour 12 (11 in W2c), herb 12, password 12, day 7, item 12 |
 | 3.2 Long-horizon sessions | Writes fixed player scripts of 50, 100, and 200 turns. For each fact age below the horizon, two facts are planted with one NPC and probed that many turns later; a paraphrased distractor with a different value is told to a different NPC in between. Replies are scripted (teacher forcing), so every condition sees the same history and the LLM is called only at probe turns | 840 sessions generated at the top ladder level; 560 facts per (horizon, age) cell, except 555 at horizon 50, age 40 |
 | 3.3 Adversarial probes    | Builds 7 attack categories, each with a lawful twin: teleport, fabrication, theft, trust, currency, injection, and secret                                                                                                                                                                                                                                                          | 2,940 probes at the top level. Every category has a twin for every attack except theft (70%)                        |
-| 3.4 Live scripts          | Writes 40-turn scripts for the live turn graph: 4 planted facts with two NPCs, walks between them, 2 lawful trades, 6 attacks, filler talk, and 4 probes at ages of about 20 to 32 turns                                                                                                                                                                                           | Per world: 39 turns, 4 plants, 6 attacks, 6.3 to 8.1 moves, 14.9 to 16.7 fillers, 2 trades, 4 probes                |
+| 3.4 Live scripts          | Writes 40-turn scripts for the live turn graph: 4 planted facts with two NPCs, walks between them, 2 lawful trades, 6 attacks, filler talk, and 4 probes at recorded fact ages of 30 to 34 turns                                                                                                                                                                                   | Per world: 39 turns, 4 plants, 6 attacks, 6.3 to 8.1 moves, 14.9 to 16.7 fillers, 2 trades, 4 probes                |
 | 3.5 Embeddings            | Embeds every text the memory systems will need, once, on GPU 0, before the LLM server takes the GPUs. `CachedEmbedder` subclasses the backend `Embedder` and only replaces its storage                                                                                                                                                                                             | 93,441 unique texts embedded, dimension 384, in 3.0 min                                                             |
 
 Example attacks printed by cell 3.3:
@@ -826,7 +833,7 @@ Defines session-level cluster bootstrap intervals (10,000 resamples; ratios boot
 | 8.8 Seed variance and latency | Re-runs the calibration sessions with 2 more seeds for F4, B1, B2, and B3, then a single-stream latency benchmark                                | 23.9 min and 10.0 min                                                                                                                                                                                                                                                                                                           |
 | 8.9 Second backbone           | Stops the 7B server and serves K2-Horizon-3.7B, one replica per GPU, on W1, W2a, W3, and W4-32 at horizon 100                                    | The first launch on port 8000 failed (`Engine core initialization failed`); the `--enforce-eager` retry was healthy after 100 s, and port 8001 after 110 s. 720 recall and 550 probe jobs in 35.7 min                                                                                                                           |
 
-Ladder plan from the pilot (`metrics/budget_plan.csv`, estimated hours):
+Ladder plan from the pilot ([`metrics/budget_plan.csv`](notebooks/outputs/metrics/budget_plan.csv), estimated hours):
 
 | Level | Sessions per (world, horizon) | Probes per (world, category) | Live sessions per world | Recall | Probes | Live | Seed variance | Total |
 | ----- | ----------------------------- | ---------------------------- | ----------------------- | ------ | ------ | ---- | ------------- | ----- |
@@ -868,15 +875,15 @@ Cells 10.1 to 10.14 draw the 13 figures in `plots/` with one fixed palette, in w
 
 #### Section 11: exports
 
-| Cell group               | What it does                                                                                                                                                                                                                                       | Saved output                                                                |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| 11.1 Annotation sheets   | Exports blinded, shuffled sheets for two human raters, with the condition names kept in separate key files                                                                                                                                         | 1,250 recall items, 150 persona and lore items, 240 desynchronisation items |
-| 11.2 Tables and manifest | Writes `metrics/article_tables.md` (every table, the verdicts, and the run's limitations) and `metrics/run_manifest.json` (commit, hardware, package versions, configuration, plan, server attempts, stage times, cache statistics, W3 provenance) | Rendered markdown                                                           |
-| 11.3 Package             | Zips everything under `/kaggle/working` into `outputs.zip`                                                                                                                                                                                         | `/kaggle/working/outputs.zip (16.7 MB); total run time 6.69 h`              |
+| Cell group               | What it does                                                                                                                                                                                                                                                                                                                                     | Saved output                                                                |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| 11.1 Annotation sheets   | Exports blinded, shuffled sheets for two human raters, with the condition names kept in separate key files                                                                                                                                                                                                                                       | 1,250 recall items, 150 persona and lore items, 240 desynchronisation items |
+| 11.2 Tables and manifest | Writes [`metrics/article_tables.md`](notebooks/outputs/metrics/article_tables.md) (every table, the verdicts, and the run's limitations) and [`metrics/run_manifest.json`](notebooks/outputs/metrics/run_manifest.json) (commit, hardware, package versions, configuration, plan, server attempts, stage times, cache statistics, W3 provenance) | Rendered markdown                                                           |
+| 11.3 Package             | Zips everything under `/kaggle/working` into `outputs.zip`                                                                                                                                                                                                                                                                                       | `/kaggle/working/outputs.zip (16.7 MB); total run time 6.69 h`              |
 
 ## Evaluation results
 
-All numbers below come from `notebooks/outputs/metrics/`. Values are mean [95% cluster-bootstrap CI]. "Held-out" means W2a to W4-128; W1 is the development world. Backbone: K2-Horizon-7B, fp16, reasoning effort low, thinking budget 192 tokens.
+All numbers below come from [`notebooks/outputs/metrics/`](notebooks/outputs/metrics/). Values are mean [95% cluster-bootstrap CI]. "Held-out" means W2a to W4-128; W1 is the development world. Backbone: K2-Horizon-7B, fp16, reasoning effort low, thinking budget 192 tokens.
 
 ### World suite
 
@@ -994,7 +1001,7 @@ Outputs from all five context conditions are pooled; each attack output is commi
 | secret      | 350       | 0.9 [0.0, 2.3]                    | 0.9 [0.0, 2.3]                      | 0.9 [0.0, 2.3]              | 0.0 [0.0, 0.0]                     | n/a               |
 | all         | 2450      | 16.2 [13.6, 18.8]                 | 7.1 [5.3, 9.0]                      | 2.9 [1.8, 4.3]              | 0.0 [0.0, 0.0]                     | 11.0 [6.6, 15.7]  |
 
-Oracle codes behind the direct-write violations (`metrics/probe_oracle_codes_direct.csv`, counts):
+Oracle codes behind the direct-write violations ([`metrics/probe_oracle_codes_direct.csv`](notebooks/outputs/metrics/probe_oracle_codes_direct.csv), counts):
 
 | Category    | O1  | O2  | O3  | O4  | O5  | O6  | O7  | O8  |
 | ----------- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -1028,7 +1035,7 @@ Per-condition live turn shares printed by cell 8.7:
 | A5        | 0.029                  | 0.044  | 0.985         | 0.002         |
 | A6        | 0.238                  | 0.198  | 0.978         | 0.000         |
 
-In the direct-write sessions (F1 and F3), the player ended up in a location that does not exist on an average of 29.9 and 30.4 of 39 turns per session (`metrics/live_sessions.csv`, `corrupt_turns`). Live recall with dual-tier memory (41.1% and 44.6%) is about half the teacher-forced figure; the notebook does not isolate the cause.
+In the direct-write sessions (F1 and F3), the player ended up in a location that does not exist on an average of 29.9 and 30.4 of 39 turns per session ([`metrics/live_sessions.csv`](notebooks/outputs/metrics/live_sessions.csv), `corrupt_turns`). Live recall with dual-tier memory (41.1% and 44.6%) is about half the teacher-forced figure; the notebook does not isolate the cause.
 
 ![Interaction plots for the 2 x 2 factorial: live recall (left) and violations per 100 transitions (right)](notebooks/outputs/plots/06_factorial_interaction.png)
 
@@ -1064,7 +1071,7 @@ The probe violation figure for F4 here (9.6) pools all seven worlds; Table 1 (9.
 | Backend load path after a crash (snapshot only)      | 0.0 (8.0 turns lost on average) |
 | Backend load path when the per-turn auto-save worked | 1.0                             |
 
-These are means over 42 sessions of 200 turns (6 per world), with 367.2 events per session on average (`metrics/replay_summary.csv`).
+These are means over 42 sessions of 200 turns (6 per world), with 367.2 events per session on average ([`metrics/replay_summary.csv`](notebooks/outputs/metrics/replay_summary.csv)).
 
 ![Median time to rebuild state at each snapshot point: full replay against snapshot loading](notebooks/outputs/plots/08_replay_recovery.png)
 
@@ -1085,7 +1092,7 @@ Full replay time grows with the length of the log (about 146 ms at turn 160), wh
 | local      | 24.921   | 27.526   | 37.016   | 24      |
 | end to end | 25.006   | 27.609   | 37.127   | 24      |
 
-Read the `llm` row with care: all 24 turns in this stage were served from the response cache (`cached = True` in `metrics/latency_single_stream_live.csv`), so 0.09 ms is a cache lookup, not a model call, and the `end to end` row excludes real generation. The local stages are valid measurements. For real single-stream LLM time, use the recall benchmark: F4 P50 6,906 ms and P95 9,409 ms. Under the batched load of the live stage (84 concurrent sessions), the median LLM time per turn was about 89.6 s for F4.
+Read the `llm` row with care: all 24 turns in this stage were served from the response cache (`cached = True` in [`metrics/latency_single_stream_live.csv`](notebooks/outputs/metrics/latency_single_stream_live.csv)), so 0.09 ms is a cache lookup, not a model call, and the `end to end` row excludes real generation. The local stages are valid measurements. For real single-stream LLM time, use the recall benchmark: F4 P50 6,906 ms and P95 9,409 ms. Under the batched load of the live stage (84 concurrent sessions), the median LLM time per turn was about 89.6 s for F4.
 
 ![Per-stage latency for F4 (left, log scale) and single-stream LLM latency per condition (right)](notebooks/outputs/plots/07_latency.png)
 
@@ -1154,7 +1161,7 @@ Confirmatory tests (Holm-corrected together):
 | H3         | attack success direct vs barrier, F4 context (McNemar)          | 490 | 0.114  | 2.8e-17 | yes                    | 9.1e-17  |
 | H3         | live violations per transition F3 vs F4 (Wilcoxon, per session) | 14  | 3.459  | 9.7e-4  | yes                    | 1.9e-3   |
 
-Factorial mixed-effects models (`metrics/factorial_model_recall.csv`, `metrics/factorial_model_violation.csv`):
+Factorial mixed-effects models, fitted by variational Bayes (`BinomialBayesMixedGLM`), so Coefficient and SE are the posterior mean and standard deviation and p is the normal tail of z ([`metrics/factorial_model_recall.csv`](notebooks/outputs/metrics/factorial_model_recall.csv), [`metrics/factorial_model_violation.csv`](notebooks/outputs/metrics/factorial_model_violation.csv)):
 
 | Outcome   | Term           | Coefficient | SE     | z        | p      |
 | --------- | -------------- | ----------- | ------ | -------- | ------ |
@@ -1167,7 +1174,7 @@ Factorial mixed-effects models (`metrics/factorial_model_recall.csv`, `metrics/f
 | Violation | control        | -6.7729     | 0.3043 | -22.2551 | 0.0000 |
 | Violation | memory:control | -0.1608     | 0.4022 | -0.3997  | 0.6894 |
 
-Generalisation by world family (`metrics/h7_generalisation.csv`):
+Generalisation by world family ([`metrics/h7_generalisation.csv`](notebooks/outputs/metrics/h7_generalisation.csv)):
 
 | Family            | Recall F4 minus B1 | Attack success direct minus barrier | H1 direction | H3 direction |
 | ----------------- | ------------------ | ----------------------------------- | ------------ | ------------ |
@@ -1175,7 +1182,7 @@ Generalisation by world family (`metrics/h7_generalisation.csv`):
 | W3 held-out genre | +0.796             | +0.086                              | holds        | holds        |
 | W4 procedural     | +0.898             | +0.121                              | holds        | holds        |
 
-Verdicts (`metrics/hypothesis_verdicts.csv`):
+Verdicts ([`metrics/hypothesis_verdicts.csv`](notebooks/outputs/metrics/hypothesis_verdicts.csv)):
 
 | Hypothesis         | Verdict                                                              | Evidence                                                                                                                          |
 | ------------------ | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
@@ -1189,7 +1196,7 @@ Verdicts (`metrics/hypothesis_verdicts.csv`):
 
 ### Error analysis
 
-Automatic failure coding (`metrics/error_analysis_counts.csv`, counts; up to 50 examples per category and condition are in `annotation/error_samples.csv`):
+Automatic failure coding ([`metrics/error_analysis_counts.csv`](notebooks/outputs/metrics/error_analysis_counts.csv), counts; up to 50 examples per category and condition are in [`annotation/error_samples.csv`](notebooks/outputs/annotation/error_samples.csv)):
 
 | Metric    | Category                            | A1  | A2  | A3  | A4  | A5  | A6  | B0  | B1  | B1x2 | B2  | B3  | F1  | F2  | F3  | F4  |
 | --------- | ----------------------------------- | --- | --- | --- | --- | --- | --- | --- | --- | ---- | --- | --- | --- | --- | --- | --- |
@@ -1211,7 +1218,7 @@ Both GPUs stay near 100% through the LLM stages. The short drops are server rest
 
 ### Limitations of this run
 
-These are recorded by the notebook in `metrics/article_tables.md`:
+These are recorded by the notebook in [`metrics/article_tables.md`](notebooks/outputs/metrics/article_tables.md):
 
 - W3 was written by the notebook author, not by an independent contributor as the article requires.
 - Recall, leaks, and desynchronisation are scored automatically. The blinded sheets for two human raters are exported but not yet labelled, so Cohen's kappa is not available.
@@ -1222,11 +1229,11 @@ These are recorded by the notebook in `metrics/article_tables.md`:
 - The prompt tells the model trust deltas are -10 to 10, while the validator allows +/-20; the oracle uses +/-20.
 - Live scripts keep addressing the scripted NPC even when a scripted move was not committed.
 - Baselines B4 (scripted state machine) and B5 (MemGPT-style memory) were not run.
-- Sample size is ladder level 2 of 7; the article's full targets are level 7.
+- Sample size is ladder level 2, the third of 8 levels numbered 0 to 7; the article's full targets are level 7.
 
 ## Evaluation output files
 
-The run's archive was extracted to `notebooks/outputs/` (187 MB extracted, 16.7 MB zipped). Note that the repository's `.gitignore` ignores every folder named `data/` or `logs/` and every `*.log` file, so `notebooks/outputs/data/` and `notebooks/outputs/logs/` are not tracked by Git; they exist only in a local extraction. `data/adversarial_probes.jsonl` alone is about 130 MB, above GitHub's 100 MB file limit.
+The run's archive was extracted to [`notebooks/outputs/`](notebooks/outputs/) (187 MB extracted, 16.7 MB zipped). Note that the repository's `.gitignore` ignores every folder named `data/` or `logs/` and every `*.log` file, so `notebooks/outputs/data/` and `notebooks/outputs/logs/` are not tracked by Git; they exist only in a local extraction. `data/adversarial_probes.jsonl` alone is about 130 MB, above GitHub's 100 MB file limit.
 
 | Folder         | Files                      | Contents                                                                                                                                                                                                                                                              |
 | -------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1267,22 +1274,22 @@ Annotation files: `recall_sheet.csv` (1,250 items: item, gold, reply, automatic 
 
 Configuration values from [Backend/config.py](Backend/config.py):
 
-| Setting                                      | Value                                            |
-| -------------------------------------------- | ------------------------------------------------ |
-| LLM model                                    | `openai/gpt-oss-120b` (Groq)                     |
-| LLM temperature                              | `0.35`                                           |
-| LLM max generation tokens                    | `4096`                                           |
-| LLM request timeout                          | `30` seconds                                     |
-| LLM max retries and backoff                  | `3`, `1.0` second                                |
-| Embedding model and dimension                | `sentence-transformers/all-MiniLM-L12-v2`, `384` |
-| Short term turns                             | `8`                                              |
-| FAISS top K and overfetch factor             | `6`, `5`                                         |
-| Retrieval minimum candidates before fallback | `3`                                              |
-| Snapshot interval                            | Every `16` turns                                 |
-| Memory prune threshold and keep ratio        | `1000` entries, `0.5`                            |
-| Max context characters                       | `16384`                                          |
-| Max concurrent sessions                      | `50`                                             |
-| WebSocket heartbeat                          | `30` seconds                                     |
+| Setting                                      | Value                                                                                                              |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| LLM model                                    | [`openai/gpt-oss-120b`](https://console.groq.com/docs/model/openai/gpt-oss-120b) (Groq)                            |
+| LLM temperature                              | `0.35`                                                                                                             |
+| LLM max generation tokens                    | `4096`                                                                                                             |
+| LLM request timeout                          | `30` seconds                                                                                                       |
+| LLM max retries and backoff                  | `3`, `1.0` second                                                                                                  |
+| Embedding model and dimension                | [`sentence-transformers/all-MiniLM-L12-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L12-v2), `384` |
+| Short term turns                             | `8`                                                                                                                |
+| FAISS top K and overfetch factor             | `6`, `5`                                                                                                           |
+| Retrieval minimum candidates before fallback | `3`                                                                                                                |
+| Snapshot interval                            | Every `16` turns                                                                                                   |
+| Memory prune threshold and keep ratio        | `1000` entries, `0.5`                                                                                              |
+| Max context characters                       | `16384`                                                                                                            |
+| Max concurrent sessions                      | `50`                                                                                                               |
+| WebSocket heartbeat                          | `30` seconds                                                                                                       |
 
 Measured in the evaluation (K2-Horizon-7B on 2 x T4, not the Groq endpoint):
 
@@ -1305,50 +1312,50 @@ Request throughput, memory use, and WebSocket capacity of the game server: `Not 
 - Backend logs include request latency, the request ID that matches the `X-Request-ID` header, and one `turn complete` line per turn with LLM time and rejected-proposal count.
 - Session data can be inspected under `Backend/data/sessions`. Back up `Backend/data` if save files matter.
 - Run `npm run check` before submitting changes, and `npm audit` after frontend dependency changes.
-- To refresh the evaluation, rerun the notebook on Kaggle, replace `notebooks/outputs/`, and update the results here and in the research article.
+- To refresh the evaluation, rerun the notebook on Kaggle, replace [`notebooks/outputs/`](notebooks/outputs/), and update the results here and in the research article.
 
 ## Repository metrics
 
-| Metric                           | Value                                     | Source or command                              |
-| -------------------------------- | ----------------------------------------- | ---------------------------------------------- |
-| Tracked files                    | `133`                                     | `git ls-files \| wc -l`                        |
-| Backend tracked files            | `48`                                      | `git ls-files Backend \| wc -l`                |
-| Frontend tracked files           | `67`                                      | `git ls-files Frontend \| wc -l`               |
-| HTTP endpoints                   | `18`                                      | Route decorators in `Backend/api`              |
-| WebSocket endpoints              | `1`                                       | Same                                           |
-| Event types                      | `14`                                      | `Backend/schemas/events.py`                    |
-| Turn graph nodes                 | `8`                                       | `Backend/graph/definition.py`                  |
-| Frontend route pages             | `8`                                       | `Frontend/src/pages`                           |
-| Frontend scripts                 | `11`                                      | `Frontend/package.json`                        |
-| Backend runtime dependency lines | `14`                                      | `Backend/requirements.txt`                     |
-| Backend tests                    | `18` in `4` files                         | `python -m unittest discover -s tests`         |
-| Frontend tests                   | `7` in `2` files                          | `npm run test`                                 |
-| Test coverage percentage         | `Not measured in the current repository.` | No coverage tooling output                     |
-| World W1                         | 8 locations, 4 NPCs, 4 objects, 7 rules   | `Backend/game/world_seed.json`                 |
-| Notebook cells                   | `131` (65 code)                           | `notebooks/npc-memory-state-benchmark.ipynb`   |
-| Evaluation figures               | `13`                                      | `notebooks/outputs/plots`                      |
-| Evaluation run time              | `6.69` hours                              | `notebooks/outputs/metrics/run_manifest.json`  |
-| JS bundle gzip size              | `128.63 kB`                               | `npm run build`, 2 October 2026                |
-| CSS bundle gzip size             | `5.67 kB`                                 | `npm run build`, 2 October 2026                |
-| Default ports                    | backend `8000`, frontend `8080`           | `Backend/config.py`, `Frontend/vite.config.ts` |
+| Metric                           | Value                                     | Source or command                                                                              |
+| -------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Tracked files                    | `194` at commit `a2bb646`                 | `git ls-files \| wc -l`                                                                        |
+| Backend tracked files            | `48`                                      | `git ls-files Backend \| wc -l`                                                                |
+| Frontend tracked files           | `67`                                      | `git ls-files Frontend \| wc -l`                                                               |
+| HTTP endpoints                   | `18`                                      | Route decorators in [`Backend/api`](Backend/api)                                               |
+| WebSocket endpoints              | `1`                                       | Same                                                                                           |
+| Event types                      | `14`                                      | [`Backend/schemas/events.py`](Backend/schemas/events.py)                                       |
+| Turn graph nodes                 | `8`                                       | [`Backend/graph/definition.py`](Backend/graph/definition.py)                                   |
+| Frontend route pages             | `8`                                       | [`Frontend/src/pages`](Frontend/src/pages)                                                     |
+| Frontend scripts                 | `11`                                      | [`Frontend/package.json`](Frontend/package.json)                                               |
+| Backend runtime dependency lines | `14`                                      | [`Backend/requirements.txt`](Backend/requirements.txt)                                         |
+| Backend tests                    | `18` in `4` files                         | `python -m unittest discover -s tests`                                                         |
+| Frontend tests                   | `7` in `2` files                          | `npm run test`                                                                                 |
+| Test coverage percentage         | `Not measured in the current repository.` | No coverage tooling output                                                                     |
+| World W1                         | 8 locations, 4 NPCs, 4 objects, 7 rules   | [`Backend/game/world_seed.json`](Backend/game/world_seed.json)                                 |
+| Notebook cells                   | `131` (65 code)                           | [`notebooks/npc-memory-state-benchmark.ipynb`](notebooks/npc-memory-state-benchmark.ipynb)     |
+| Evaluation figures               | `13`                                      | [`notebooks/outputs/plots`](notebooks/outputs/plots)                                           |
+| Evaluation run time              | `6.69` hours                              | [`notebooks/outputs/metrics/run_manifest.json`](notebooks/outputs/metrics/run_manifest.json)   |
+| JS bundle gzip size              | `128.63 kB`                               | `npm run build`, 2 October 2026                                                                |
+| CSS bundle gzip size             | `5.67 kB`                                 | `npm run build`, 2 October 2026                                                                |
+| Default ports                    | backend `8000`, frontend `8080`           | [`Backend/config.py`](Backend/config.py), [`Frontend/vite.config.ts`](Frontend/vite.config.ts) |
 
 ## Troubleshooting
 
-| Problem                                  | Likely cause                                        | Diagnostic command                                                    | Resolution                                                                              |
-| ---------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `npm run dev` reports a busy port        | Another process or earlier run holds the port       | `netstat -ano`                                                        | Stop that process, then rerun `npm run dev`                                             |
-| First setup run is slow                  | Large ML dependencies or embedding model download   | Check `.cache\pip` and `.cache\huggingface`                           | Let the setup finish. Later runs reuse the repository-local caches                      |
-| Backend import or package error          | Backend dependencies not installed in `.venv`       | `.venv/Scripts/python.exe -m pip show fastapi`                        | Rerun `npm run dev`; setup reinstalls a broken `.venv`                                  |
-| Frontend loading screen does not proceed | Backend health endpoint not ready                   | `Invoke-RestMethod http://127.0.0.1:8000/health`                      | Start the backend and wait for shared resources to load                                 |
-| Groq generation fails                    | Missing or invalid API key                          | Check `Backend/.env`                                                  | Set `GROQ_API_KEY` in `Backend/.env` and restart                                        |
-| Session creation returns `422`           | Invalid request body                                | Check the browser network response                                    | Provide all required fields and use age `18` or higher                                  |
-| Travel returns `400`                     | Target location is not connected                    | `Invoke-RestMethod http://127.0.0.1:8000/api/game/state/<session_id>` | Travel only to a location listed in `connected_to`                                      |
-| A loaded save is missing recent turns    | `load_session` reads the snapshot only              | Compare the snapshot's turn with the last event in `events.db`        | Known defect; see [ARCHITECTURE.md](ARCHITECTURE.md#known-gaps-and-recommended-changes) |
-| `npm run check` fails                    | One validation step failed                          | Read the first failed step in the output                              | Fix that step locally, then rerun `npm run check`                                       |
-| Notebook stops at the hardware check     | Kaggle accelerator is not GPU T4 x2                 | The cell's assertion message                                          | Set Accelerator to GPU T4 x2 and rerun                                                  |
-| Notebook fails to clone or download      | Kaggle internet is off                              | The error in section 1.5 or `logs/vllm_install.log`                   | Turn Internet on in the notebook settings                                               |
-| A vLLM server never becomes healthy      | Engine start-up failure on the T4s                  | `logs/vllm_<tag>_<port>.log`                                          | The launcher retries with safer flags; read the last attempt's log tail                 |
-| Images in this README do not show        | `notebooks/outputs/` not extracted or not committed | Check that `notebooks/outputs/plots/` exists                          | Extract `outputs.zip` into `notebooks/outputs/`                                         |
+| Problem                                  | Likely cause                                                              | Diagnostic command                                                       | Resolution                                                                              |
+| ---------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `npm run dev` reports a busy port        | Another process or earlier run holds the port                             | `netstat -ano`                                                           | Stop that process, then rerun `npm run dev`                                             |
+| First setup run is slow                  | Large ML dependencies or embedding model download                         | Check `.cache\pip` and `.cache\huggingface`                              | Let the setup finish. Later runs reuse the repository-local caches                      |
+| Backend import or package error          | Backend dependencies not installed in `.venv`                             | `.venv/Scripts/python.exe -m pip show fastapi`                           | Rerun `npm run dev`; setup reinstalls a broken `.venv`                                  |
+| Frontend loading screen does not proceed | Backend health endpoint not ready                                         | `Invoke-RestMethod http://127.0.0.1:8000/health`                         | Start the backend and wait for shared resources to load                                 |
+| Groq generation fails                    | Missing or invalid API key                                                | Check `Backend/.env`                                                     | Set `GROQ_API_KEY` in `Backend/.env` and restart                                        |
+| Session creation returns `422`           | Invalid request body                                                      | Check the browser network response                                       | Provide all required fields and use age `18` or higher                                  |
+| Travel returns `400`                     | Target location is not connected                                          | `Invoke-RestMethod http://127.0.0.1:8000/api/game/state/<session_id>`    | Travel only to a location listed in `connected_to`                                      |
+| A loaded save is missing recent turns    | `load_session` reads the snapshot only                                    | Compare the snapshot's turn with the last event in `events.db`           | Known defect; see [ARCHITECTURE.md](ARCHITECTURE.md#known-gaps-and-recommended-changes) |
+| `npm run check` fails                    | One validation step failed                                                | Read the first failed step in the output                                 | Fix that step locally, then rerun `npm run check`                                       |
+| Notebook stops at the hardware check     | Kaggle accelerator is not GPU T4 x2                                       | The cell's assertion message                                             | Set Accelerator to GPU T4 x2 and rerun                                                  |
+| Notebook fails to clone or download      | Kaggle internet is off                                                    | The error in section 1.5 or `logs/vllm_install.log`                      | Turn Internet on in the notebook settings                                               |
+| A vLLM server never becomes healthy      | Engine start-up failure on the T4s                                        | `logs/vllm_<tag>_<port>.log`                                             | The launcher retries with safer flags; read the last attempt's log tail                 |
+| Images in this README do not show        | [`notebooks/outputs/`](notebooks/outputs/) not extracted or not committed | Check that [`notebooks/outputs/plots/`](notebooks/outputs/plots/) exists | Extract `outputs.zip` into [`notebooks/outputs/`](notebooks/outputs/)                   |
 
 ## Known limitations
 
@@ -1357,7 +1364,7 @@ Request throughput, memory use, and WebSocket capacity of the game server: `Not 
 - Frontend tests cover the HTTP client and dialogue mapping, not route rendering or WebSocket flows.
 - Defects found by the evaluation and still present in the code: the validator accepts any currency gain and checks spending per proposal rather than per turn; `load_session` ignores events logged after the snapshot; `active_npc_id` is not event-sourced; the prompt's trust range (-10 to 10) differs from the validator's (+/-20); NPC secrets never reach the prompt, so the trust-60 reveal rule cannot be honoured. Details and suggested fixes are in [ARCHITECTURE.md](ARCHITECTURE.md#known-gaps-and-recommended-changes).
 - A rejected proposal does not change the NPC's dialogue, so the dialogue can describe a change that did not happen (18.7% of live turns with the barrier, by the automatic proxy).
-- The evaluation used ladder level 2 of 7, a self-hosted K2-Horizon model rather than the game's Groq model, and automatic scoring without human labels yet.
+- The evaluation used ladder level 2 (the third of 8 levels numbered 0 to 7), a self-hosted K2-Horizon model rather than the game's Groq model, and automatic scoring without human labels yet.
 - `SESSION_SECRET` is loaded but not used.
 
 ## Contribution guidelines
@@ -1381,12 +1388,12 @@ Backend:
 - Use Python type hints where practical, and format with `black`.
 - Keep world mutations represented as events, and validate LLM-proposed changes before applying them.
 - Keep schema changes reflected in Pydantic models.
-- Follow the layer rules in [ARCHITECTURE.md](ARCHITECTURE.md); `Backend/tests/test_architecture.py` enforces them.
+- Follow the layer rules in [ARCHITECTURE.md](ARCHITECTURE.md); [`Backend/tests/test_architecture.py`](Backend/tests/test_architecture.py) enforces them.
 
 Frontend:
 
 - Use TypeScript for API contracts, store state, and components.
-- Keep REST calls in `Frontend/src/services/httpClient.ts`, WebSocket lifecycle logic in `Frontend/src/services/websocket.ts`, and backend DTOs in `Frontend/src/contracts/api.ts`.
+- Keep REST calls in [`Frontend/src/services/httpClient.ts`](Frontend/src/services/httpClient.ts), WebSocket lifecycle logic in [`Frontend/src/services/websocket.ts`](Frontend/src/services/websocket.ts), and backend DTOs in [`Frontend/src/contracts/api.ts`](Frontend/src/contracts/api.ts).
 - Keep shared client state in Zustand stores, and use the path alias `@/*`.
 - Follow the existing tab-based formatting (`Frontend/.prettierrc.json`: `useTabs: true`, `tabWidth: 2`).
 

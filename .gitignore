@@ -89,6 +89,19 @@ coverage/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# LaTeX build artefacts (docs/paper/main.pdf is the tracked output)
+docs/paper/*.aux
+docs/paper/*.bbl
+docs/paper/*.blg
+docs/paper/*.out
+docs/paper/*.toc
+docs/paper/*.lof
+docs/paper/*.lot
+docs/paper/*.fls
+docs/paper/*.fdb_latexmk
+docs/paper/*.synctex.gz
+docs/paper/*.xdv
+
 # pyenv
 .python-version
 

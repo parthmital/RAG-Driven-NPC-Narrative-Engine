@@ -9,6 +9,7 @@
 	"scripts": {
 		"dev": "node scripts/dev.mjs",
 		"check": "node scripts/check.mjs",
+		"paper": "node scripts/paper.mjs",
 		"build": "npm --prefix Frontend run build",
 		"build:dev": "npm --prefix Frontend run build:dev",
 		"preview": "npm --prefix Frontend run preview"

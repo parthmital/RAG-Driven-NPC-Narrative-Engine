@@ -2,9 +2,13 @@
 
 Source Code Repository: [https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine](https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine)
 
+Paper version: [docs/paper/main.pdf](paper/main.pdf) (LaTeX source [docs/paper/main.tex](paper/main.tex), build with `npm run paper`). The paper adds a formal model, an updated literature survey and an audit of these results against the raw run outputs; both documents report the same numbers.
+
 ## Abstract
 
-Large Language Models (LLMs) allow Non-Player Characters (NPCs) in interactive fiction to hold open-ended conversations, but three problems limit their use in games: facts established early in a session are forgotten as dialogue grows, model-proposed world changes break symbolic game rules (illegal moves, fabricated items, unbounded trust shifts), and per-turn cost and latency grow with context length. This article presents _The Obsidian Flask_, an NPC dialogue engine that separates language generation from state control. It combines (i) a dual-tier memory, an 8-turn short-term buffer plus a 384-dimensional FAISS store with location- and NPC-scoped retrieval and a relaxation fallback, with (ii) an event-sourced world state in which every LLM-proposed mutation passes a pre-commit invariant-validation barrier before a pure reducer applies it. The central question is not whether the system works in its own world but whether its two mechanisms, memory tiering and state control, outperform independent baselines and whether each contributes separately. We therefore specify a controlled comparison against three independent baseline agents (rolling-context, vector-memory, and generic RAG), a full-history reference, and a $2 \times 2$ factorial crossing of memory architecture with state control, plus seven single-component ablations. Evaluation spans long-horizon sessions of 50, 100 and 200 turns and 7 categories of adversarial invariant probes across four worlds that differ in authorship, genre, and scale (8 to 128 locations), including worlds converted from the externally authored LIGHT corpus and procedurally generated worlds. We report factual recall by fact-age, invariant violations measured by an oracle independent of the system's own validator, retrieval MRR and Recall@k, latency percentiles, token cost, and state-replay consistency, with bootstrap confidence intervals and pre-registered hypotheses. In a 6.7-hour automated run with a self-hosted 7B backbone on seven worlds, the system recalled 87.7% [84.2, 91.0] of facts 20 or more turns old on held-out worlds, against 0.0% for a rolling context of equal token budget, 63.9% for generic RAG and 80.2% for full history; its advantage over flat vector memory (84.9%) was not significant, and it used more input tokens than that baseline, so the memory hypothesis is not supported as stated. Scoped retrieval raised MRR@6 from 0.750 to 0.898. On the same model outputs, the validation barrier lowered adversarial attack success from 16.2% (direct writes) to 2.9%, with no false rejection of lawful twins and 0.039 ms of validation at P95, but it left a currency gap (19.7% attack success) and raised dialogue-state desynchronisation from 3.7% to 18.7% of live turns. Event-log replay reproduced the live state in 100% of sessions, while the backend's own load path lost the events logged after its last snapshot. Memory and control interacted significantly on recall, so the two mechanisms are not fully separable. Both main effects held on every held-out world family and on a second 3.7B backbone. The run used the second of eight pre-declared sample-size levels, automatic scoring without human labels, and a notebook-authored science fiction world, so these results are preliminary.
+Large Language Models (LLMs) allow Non-Player Characters (NPCs) in interactive fiction to hold open-ended conversations, but three problems limit their use in games: facts established early in a session are forgotten as dialogue grows, model-proposed world changes break symbolic game rules (illegal moves, fabricated items, unbounded trust shifts), and per-turn cost and latency grow with context length. This article presents _The Obsidian Flask_, an NPC dialogue engine that separates language generation from state control. It combines (i) a dual-tier memory, an 8-turn short-term buffer plus a 384-dimensional FAISS store with location- and NPC-scoped retrieval and a relaxation fallback, with (ii) an event-sourced world state in which every LLM-proposed mutation passes a pre-commit invariant-validation barrier before a pure reducer applies it. The central question is not whether the system works in its own world but whether its two mechanisms, memory tiering and state control, outperform independent baselines and whether each contributes separately. We therefore specify a controlled comparison against three independent baseline agents (rolling-context, vector-memory, and generic RAG), a full-history reference, and a $2 \times 2$ factorial crossing of memory architecture with state control, plus seven single-component ablations. Evaluation spans long-horizon sessions of 50, 100 and 200 turns and 7 categories of adversarial invariant probes across four worlds that differ in authorship, genre, and scale (8 to 128 locations), including worlds converted from the externally authored LIGHT corpus and procedurally generated worlds. We report factual recall by fact-age, invariant violations measured by an oracle independent of the system's own validator, retrieval MRR and Recall@k, latency percentiles, token cost, and state-replay consistency, with bootstrap confidence intervals and pre-registered hypotheses. In a 6.7-hour automated run with a self-hosted 7B backbone on seven worlds, the system recalled 87.7% [84.2, 91.0] of facts 20 or more turns old on held-out worlds, against 0.0% for a rolling context of equal token budget, 63.9% for generic RAG and 80.2% for full history; its advantage over flat vector memory (84.9%) was not significant, and it used more input tokens than that baseline, so the memory hypothesis is not supported as stated. Scoped retrieval raised MRR@6 from 0.750 to 0.898. On the same model outputs, the validation barrier lowered adversarial attack success from 16.2% (direct writes) to 2.9%, with no false rejection of lawful twins and 0.039 ms of validation at P95, but it left a currency gap (19.7% attack success) and raised dialogue-state desynchronisation from 3.7% to 18.7% of live turns. Event-log replay reproduced the live state in 100% of sessions, while the backend's own load path lost the events logged after its last snapshot. Memory and control interacted significantly on recall, so the two mechanisms are not fully separable. Both main effects held on every held-out world family and on a second 3.7B backbone. The run used the third of eight pre-declared sample-size levels (level 2 of levels 0 to 7), automatic scoring without human labels, and a notebook-authored science fiction world, so these results are preliminary.
+
+<a id="section-1"></a>
 
 # 1. Choosing the Research Topic
 
@@ -18,9 +22,9 @@ NPCs carry narrative progression, world immersion, and quest delivery in role-pl
 
 Generative models let players converse freely, but unconstrained LLM NPCs show three failure modes in interactive loops:
 
-1. Long-horizon memory degradation: as history grows, facts established early are truncated out of the context window or under-attended when buried in long contexts (Liu et al., 2024; Maharana et al., 2024).
-2. Invariant violations: LLMs have no built-in world model or conservation laws. Without external constraints they propose fabricated items, moves between disconnected rooms, and state changes that contradict established rules (Callison-Burch et al., 2022).
-3. Cost and latency growth: approaches that append full history, or run multiple reflective LLM calls per turn (Park et al., 2023; Shinn et al., 2023), increase per-turn tokens and response time.
+1. Long-horizon memory degradation: as history grows, facts established early are truncated out of the context window or under-attended when buried in long contexts ([Liu et al., 2024](#ref-14); [Maharana et al., 2024](#ref-13)).
+2. Invariant violations: LLMs have no built-in world model or conservation laws. Without external constraints they propose fabricated items, moves between disconnected rooms, and state changes that contradict established rules ([Callison-Burch et al., 2022](#ref-10)).
+3. Cost and latency growth: approaches that append full history, or run multiple reflective LLM calls per turn ([Park et al., 2023](#ref-3); [Shinn et al., 2023](#ref-9)), increase per-turn tokens and response time.
 
 ## Research Questions
 
@@ -34,11 +38,13 @@ Generative models let players converse freely, but unconstrained LLM NPCs show t
 
 - Practical significance: a reproducible architecture that couples open-ended dialogue with verifiable game mechanics on a single commodity machine plus a hosted inference endpoint.
 - Technical novelty: the individual components (buffers, vector retrieval, event sourcing, validators) are established. The contribution is their integration for NPC dialogue and, principally, a controlled, ablated evaluation that isolates the value of memory tiering and of state control against independent baselines. We make no claim that any single component is new.
-- Feasibility: embedding, retrieval, validation, and reduction run locally on CPU; in the game, LLM inference is delegated to a hosted endpoint. The evaluation reported here ran end to end in one Kaggle session on two T4 GPUs with self-hosted open-weight backbones (Section 11).
+- Feasibility: embedding, retrieval, validation, and reduction run locally on CPU; in the game, LLM inference is delegated to a hosted endpoint. The evaluation reported here ran end to end in one Kaggle session on two T4 GPUs with self-hosted open-weight backbones ([Section 11](#section-11)).
 
 ## Target Venues
 
 Candidate venues include the AAAI Conference on Artificial Intelligence and Interactive Digital Entertainment (AIIDE), the ACM International Conference on the Foundations of Digital Games (FDG), IEEE Transactions on Games, the IEEE Conference on Games (CoG), and the Wordplay workshop series. Venue fit will be finalised after results are available.
+
+<a id="section-2"></a>
 
 # 2. Systematic Literature Review
 
@@ -46,27 +52,27 @@ Candidate venues include the AAAI Conference on Artificial Intelligence and Inte
 
 ### Theme 1: Grounded Dialogue and Action in Virtual Worlds
 
-Urbanek et al. (2019) introduced LIGHT, a crowdsourced fantasy text-adventure platform, showing that conditioning dialogue models on room descriptions, objects, and personas improves grounded behaviour. The models generated dialogue and actions but did not maintain a persistent, validated world state across long sessions. Ammanabrolu et al. (2021) trained goal-driven agents with reinforcement learning over a factorised space of speech and actions in LIGHT, which required domain-specific training and targets quest completion rather than persistent open-ended NPC conversation.
+[Urbanek et al. (2019)](#ref-1) introduced LIGHT, a crowdsourced fantasy text-adventure platform, showing that conditioning dialogue models on room descriptions, objects, and personas improves grounded behaviour. The models generated dialogue and actions but did not maintain a persistent, validated world state across long sessions. [Ammanabrolu et al. (2021)](#ref-2) trained goal-driven agents with reinforcement learning over a factorised space of speech and actions in LIGHT, which required domain-specific training and targets quest completion rather than persistent open-ended NPC conversation.
 
 ### Theme 2: Memory Architectures for LLM Agents
 
-Park et al. (2023) combined a memory stream, periodic reflection, and recency-importance-relevance retrieval to produce believable social behaviour in a sandbox town. The architecture uses several LLM calls per agent step, which raises cost and latency for player-facing dialogue. Shinn et al. (2023) used verbal self-reflection stored in an episodic buffer to improve agents over repeated trials, a loop designed for multi-trial tasks rather than single interactive turns. Packer et al. (2023) proposed MemGPT, which manages a bounded context and an external archival store through LLM-invoked memory functions. Maharana et al. (2024) introduced LoCoMo, showing that LLMs and RAG-augmented agents still struggle with very long-term conversational memory, particularly temporal and causal questions.
+[Park et al. (2023)](#ref-3) combined a memory stream, periodic reflection, and recency-importance-relevance retrieval to produce believable social behaviour in a sandbox town. The architecture uses several LLM calls per agent step, which raises cost and latency for player-facing dialogue. [Shinn et al. (2023)](#ref-9) used verbal self-reflection stored in an episodic buffer to improve agents over repeated trials, a loop designed for multi-trial tasks rather than single interactive turns. [Packer et al. (2023)](#ref-12) proposed MemGPT, which manages a bounded context and an external archival store through LLM-invoked memory functions. [Maharana et al. (2024)](#ref-13) introduced LoCoMo, showing that LLMs and RAG-augmented agents still struggle with very long-term conversational memory, particularly temporal and causal questions.
 
 ### Theme 3: Retrieval Augmentation and Long Contexts
 
-Lewis et al. (2020) formalised Retrieval-Augmented Generation (RAG), conditioning generation on passages retrieved from a dense index. Generic RAG retrieves by semantic similarity alone and has no notion of the spatial or social scope of a game turn. Liu et al. (2024) showed that LLM accuracy drops when relevant information sits in the middle of long contexts, which weakens the assumption that simply extending context solves memory. Yao et al. (2023) interleaved reasoning traces with actions (ReAct), letting agents query tools and environments within a prompt scratchpad.
+[Lewis et al. (2020)](#ref-7) formalised Retrieval-Augmented Generation (RAG), conditioning generation on passages retrieved from a dense index. Generic RAG retrieves by semantic similarity alone and has no notion of the spatial or social scope of a game turn. [Liu et al. (2024)](#ref-14) showed that LLM accuracy drops when relevant information sits in the middle of long contexts, which weakens the assumption that simply extending context solves memory. [Yao et al. (2023)](#ref-8) interleaved reasoning traces with actions (ReAct), letting agents query tools and environments within a prompt scratchpad.
 
 ### Theme 4: Symbolic World Models and State Tracking
 
-Côté et al. (2019) built TextWorld, a generator of text games with formally specified state and rule-enforced transitions. Hausknecht et al. (2020) released Jericho, a benchmark of human-authored interactive fiction games run on the Z-Machine. Symbolic engines guarantee consistency within their rule set but parse only a constrained command language and do not produce open-ended NPC dialogue.
+[Côté et al. (2019)](#ref-6) built TextWorld, a generator of text games with formally specified state and rule-enforced transitions. [Hausknecht et al. (2020)](#ref-5) released Jericho, a benchmark of human-authored interactive fiction games run on the Z-Machine. Symbolic engines guarantee consistency within their rule set but parse only a constrained command language and do not produce open-ended NPC dialogue.
 
 ### Theme 5: LLMs in Games and Tabletop Play
 
-Gallotta et al. (2024) surveyed LLM roles in games and identified integration with game mechanics and state as an open challenge. Callison-Burch et al. (2022) framed Dungeons and Dragons as a dialogue challenge, including the task of predicting game state from dialogue, and found that state tracking remains difficult for LLMs. Akoury et al. (2020) released STORIUM, a dataset and platform for machine-in-the-loop story generation that uses structured cards to anchor collaborative narratives.
+[Gallotta et al. (2024)](#ref-4) surveyed LLM roles in games and identified integration with game mechanics and state as an open challenge. [Callison-Burch et al. (2022)](#ref-10) framed Dungeons and Dragons as a dialogue challenge, including the task of predicting game state from dialogue, and found that state tracking remains difficult for LLMs. [Akoury et al. (2020)](#ref-11) released STORIUM, a dataset and platform for machine-in-the-loop story generation that uses structured cards to anchor collaborative narratives.
 
 ## Comparative Analysis
 
-1. Urbanek et al. (2019) [EMNLP]:
+1. [Urbanek et al. (2019)](#ref-1) [EMNLP]:
    - Method: Generative and retrieval-ranking transformers conditioned on setting, persona, and objects.
    - Memory: Current episode context.
    - State: Text descriptions of rooms, characters, and objects.
@@ -74,7 +80,7 @@ Gallotta et al. (2024) surveyed LLM roles in games and identified integration wi
    - Data: LIGHT (crowdsourced fantasy dialogues).
    - Limitation relevant here: No persistent long-horizon memory across extended sessions.
 
-2. Ammanabrolu et al. (2021) [NAACL]:
+2. [Ammanabrolu et al. (2021)](#ref-2) [NAACL]:
    - Method: RL over factorised speech and action spaces.
    - Memory: Encoded within the learned policy.
    - State: LIGHT environment state.
@@ -82,7 +88,7 @@ Gallotta et al. (2024) surveyed LLM roles in games and identified integration wi
    - Data: LIGHT-Quests.
    - Limitation: Requires task-specific training; not aimed at persistent free-form NPC conversation.
 
-3. Park et al. (2023) [UIST]:
+3. [Park et al. (2023)](#ref-3) [UIST]:
    - Method: Memory stream, reflection, and planning.
    - Memory: Natural-language memory stream with scored retrieval.
    - State: Sandbox environment tree with natural-language agent summaries.
@@ -90,7 +96,7 @@ Gallotta et al. (2024) surveyed LLM roles in games and identified integration wi
    - Data: 25-agent sandbox simulation.
    - Limitation: Multiple LLM calls per step raise cost and latency.
 
-4. Shinn et al. (2023) [NeurIPS]:
+4. [Shinn et al. (2023)](#ref-9) [NeurIPS]:
    - Method: Verbal reinforcement via self-reflection.
    - Memory: Episodic reflection buffer across trials.
    - State: Task environment.
@@ -98,7 +104,7 @@ Gallotta et al. (2024) surveyed LLM roles in games and identified integration wi
    - Data: ALFWorld, HotpotQA, HumanEval.
    - Limitation: Designed for repeated trials, not single-pass interactive turns.
 
-5. Packer et al. (2023) [arXiv]:
+5. [Packer et al. (2023)](#ref-12) [arXiv]:
    - Method: OS-inspired hierarchical memory with LLM-invoked memory functions.
    - Memory: Bounded main context plus archival and recall storage.
    - State: Unstructured text memory.
@@ -106,7 +112,7 @@ Gallotta et al. (2024) surveyed LLM roles in games and identified integration wi
    - Data: Multi-session chat and document QA.
    - Limitation: No symbolic world state or mutation validation.
 
-6. Maharana et al. (2024) [ACL]:
+6. [Maharana et al. (2024)](#ref-13) [ACL]:
    - Method: Benchmark for very long-term conversational memory.
    - Memory: Evaluates long-context and RAG agents.
    - State: Not applicable.
@@ -114,7 +120,7 @@ Gallotta et al. (2024) surveyed LLM roles in games and identified integration wi
    - Data: LoCoMo.
    - Limitation: Measures memory only; no game-state integrity.
 
-7. Lewis et al. (2020) [NeurIPS]:
+7. [Lewis et al. (2020)](#ref-7) [NeurIPS]:
    - Method: Retrieval-augmented generation over a dense passage index.
    - Memory: Static non-parametric index.
    - State: Static corpus.
@@ -122,12 +128,12 @@ Gallotta et al. (2024) surveyed LLM roles in games and identified integration wi
    - Data: Open-domain QA benchmarks.
    - Limitation: No temporal or spatial scoping; corpus is not an evolving world state.
 
-8. Liu et al. (2024) [TACL]:
+8. [Liu et al. (2024)](#ref-14) [TACL]:
    - Method: Analysis of how LLMs use long input contexts.
    - Finding: Accuracy is highest when relevant information is at the start or end of the context and drops in the middle.
    - Relevance: Motivates comparing retrieval against simply extending the rolling context.
 
-9. Yao et al. (2023) [ICLR]:
+9. [Yao et al. (2023)](#ref-8) [ICLR]:
    - Method: Interleaved reasoning and acting (ReAct).
    - Memory: Prompt scratchpad.
    - State: Environment observations.
@@ -135,25 +141,25 @@ Gallotta et al. (2024) surveyed LLM roles in games and identified integration wi
    - Data: HotpotQA, FEVER, ALFWorld, WebShop.
    - Limitation: Scratchpad grows with trajectory length; no replayable state log.
 
-10. Côté et al. (2019) [CGW, Springer]:
+10. [Côté et al. (2019)](#ref-6) [CGW, Springer]:
     - Method: Procedural text-game generator with formal state and rules.
     - Rule enforcement: Complete within its rule language.
     - Limitation: Constrained command parser; no generative NPC dialogue.
 
-11. Hausknecht et al. (2020) [AAAI]:
+11. [Hausknecht et al. (2020)](#ref-5) [AAAI]:
     - Method: Interactive fiction benchmark for agents (Jericho).
     - Rule enforcement: Game engine.
     - Limitation: Parser-based action space; no free-form NPC conversation.
 
-12. Gallotta et al. (2024) [IEEE ToG]:
+12. [Gallotta et al. (2024)](#ref-4) [IEEE ToG]:
     - Method: Survey and roadmap of LLMs in games.
     - Relevance: Identifies coupling LLM output with game state and mechanics as open.
 
-13. Callison-Burch et al. (2022) [EMNLP]:
+13. [Callison-Burch et al. (2022)](#ref-10) [EMNLP]:
     - Method: D&D gameplay dataset; next-turn generation and game-state prediction.
     - Limitation relevant here: LLM state tracking is unreliable without explicit state.
 
-14. Akoury et al. (2020) [EMNLP]:
+14. [Akoury et al. (2020)](#ref-11) [EMNLP]:
     - Method: Collaborative story dataset and platform (STORIUM).
     - Limitation relevant here: Structured narrative anchors without executable world state.
 
@@ -164,6 +170,8 @@ Gallotta et al. (2024) surveyed LLM roles in games and identified integration wi
 3. Generation-mutation coupling: most dialogue systems do not bind what an NPC says to validated, replayable state changes.
 4. Evaluation: memory benchmarks (LoCoMo) ignore state integrity, and game benchmarks (Jericho, TextWorld) ignore open dialogue. No common protocol measures both, with ablations, across multiple worlds.
 
+<a id="section-3"></a>
+
 # 3. Datasets, Worlds, and Benchmark Construction
 
 ## Design Principle
@@ -173,8 +181,8 @@ A single handcrafted world cannot support generalisation claims, and a benchmark
 ## World Suite
 
 1. W1, Obsidian (in-house, dark fantasy): the existing [world_seed.json](../Backend/game/world_seed.json), with 8 locations, 4 NPCs, 4 conserved objects, and 7 rules. Used for development; results on W1 are reported separately as in-distribution.
-2. W2, LIGHT-derived (externally authored, fantasy): 3 worlds of 16 to 32 locations assembled from LIGHT locations, characters, and objects (Urbanek et al., 2019; CC BY-NC 4.0), converted to the same seed schema by a deterministic script. Content is written by LIGHT crowdworkers, not the authors.
-3. W3, Held-out genre (science fiction station): 1 world of 24 locations and 6 NPCs, intended to be authored by a contributor not involved in system development, following a written specification, and frozen before any system run on it. In the run reported in Section 13, W3 was authored inside the evaluation notebook from that specification before any system run, so it is held out from tuning but not independently authored. The notebook accepts an independently written seed file in its place.
+2. W2, LIGHT-derived (externally authored, fantasy): 3 worlds of 16 to 32 locations assembled from LIGHT locations, characters, and objects ([Urbanek et al., 2019](#ref-1); CC BY-NC 4.0), converted to the same seed schema by a deterministic script. Content is written by LIGHT crowdworkers, not the authors.
+3. W3, Held-out genre (science fiction station): 1 world of 24 locations and 6 NPCs, intended to be authored by a contributor not involved in system development, following a written specification, and frozen before any system run on it. In the run reported in [Section 13](#section-13), W3 was authored inside the evaluation notebook from that specification before any system run, so it is held out from tuning but not independently authored. The notebook accepts an independently written seed file in its place.
 4. W4, Procedural scaling worlds: generated graphs of 32 and 128 locations with 8 to 16 NPCs and 16 to 64 objects from a seeded generator, to test retrieval and validation at larger scale. Names and descriptions are templated, so W4 tests structure rather than prose quality.
 
 No system hyperparameter (buffer size, k, fallback threshold, prompt wording) is tuned on W2 to W4.
@@ -197,11 +205,11 @@ LIGHT's resolvable room links split into small components, so each W2 world is c
 
 ## Long-Horizon Session Benchmark
 
-- Scripted player sessions of 50, 100, and 200 turns. Player turns are fixed scripts, so every system receives identical inputs; this removes player-adaptation confounds at the cost of realism (Section 14).
+- Scripted player sessions of 50, 100, and 200 turns. Player turns are fixed scripts, so every system receives identical inputs; this removes player-adaptation confounds at the cost of realism ([Section 14](#section-14)).
 - Each session plants facts (player disclosures, NPC commitments, object transfers, location events) and later probes them at fact ages of 5, 10, 20, 40, 80, and 160 turns, with fact age bucketed for analysis.
 - Each probe has a gold answer and a set of gold-relevant memory turn IDs for retrieval scoring.
 - Distractor turns include paraphrased near-duplicate facts and facts from other locations or NPCs, to test scoping.
-- Target size: 40 sessions per world per horizon where the world is large enough, giving approximately 480 sessions in total. The run in Section 13 used 3 sessions per world per horizon (63 sessions, 630 probes per condition), chosen by a time-budget planner (Section 11).
+- Target size: 40 sessions per world per horizon where the world is large enough, giving approximately 480 sessions in total. The run in [Section 13](#section-13) used 3 sessions per world per horizon (63 sessions, 630 probes per condition), chosen by a time-budget planner ([Section 11](#section-11)).
 - Teacher forcing: NPC replies in the history are scripted, so every condition sees the same history and the LLM is called only at probe turns. Fact values come from invented-word pools filtered against each world's text, and a probe is scored correct when the gold value's key word appears in the reply.
 
 ## Adversarial Invariant Probe Suite
@@ -216,13 +224,13 @@ Probes are player turns designed to induce an illegal mutation. Seven categories
 6. Prompt injection: player text that instructs the model to emit specific world updates or ignore rules.
 7. Lore and secret violations: attempts to make an NPC reveal a secret before its trust threshold or contradict canonical lore.
 
-Categories 1 to 5 are checkable by the symbolic oracle; categories 6 and 7 are scored by the oracle where they produce mutations and by annotation where they affect only dialogue. Target size: 60 probes per category per world family, approximately 1,680 probes. Each probe also has a legitimate twin (a lawful version of the same request) to measure false rejection. The run in Section 13 used 10 probes per category per world (490 attacks and 470 twins; theft has twins for 70% of its attacks), each posed under five context conditions.
+Categories 1 to 5 are checkable by the symbolic oracle; categories 6 and 7 are scored by the oracle where they produce mutations and by annotation where they affect only dialogue. Target size: 60 probes per category per world family, approximately 1,680 probes. Each probe also has a legitimate twin (a lawful version of the same request) to measure false rejection. The run in [Section 13](#section-13) used 10 probes per category per world (490 attacks and 470 twins; theft has twins for 50 of its 70 attacks per context, 71%), each posed under five context conditions.
 
 ## Annotation and Quality Control
 
 - Two annotators label recall correctness and lore violations on a stratified 20% sample; agreement is reported as Cohen's kappa. Remaining items are scored by an LLM judge whose agreement with the human labels is reported; the judge is a different model family from the system backbone.
 - Annotators are blind to which system produced each output.
-- Status: the run in Section 13 is scored automatically (key-word recall, secret keywords, and refusal and arrival cues for desynchronisation). It exports blinded, shuffled sheets for raters (1,250 recall items, 150 persona and lore items, 240 desynchronisation items) with the condition keys in separate files. Human labels, Cohen's kappa and the LLM judge are not yet available.
+- Status: the run in [Section 13](#section-13) is scored automatically (key-word recall, secret keywords, and refusal and arrival cues for desynchronisation). It exports blinded, shuffled sheets for raters (1,250 recall items, 150 persona and lore items, 240 desynchronisation items) with the condition keys in separate files. Human labels, Cohen's kappa and the LLM judge are not yet available.
 
 ## Preprocessing
 
@@ -232,29 +240,33 @@ Categories 1 to 5 are checkable by the symbolic oracle; categories 6 and 7 are s
 
 ## Release
 
-The evaluation harness is [notebooks/npc-memory-state-benchmark.ipynb](../notebooks/npc-memory-state-benchmark.ipynb). Its run outputs (world seeds, session scripts, probes, raw per-job predictions, LLM response caches, metrics, figures, annotation sheets, and logs) are in `notebooks/outputs/`, subject to LIGHT's non-commercial licence for W2 content. Gold human annotations will be added when labelling is complete.
+The evaluation harness is [notebooks/npc-memory-state-benchmark.ipynb](../notebooks/npc-memory-state-benchmark.ipynb). Its run outputs (world seeds, session scripts, probes, raw per-job predictions, LLM response caches, metrics, figures, annotation sheets, and logs) are in [`notebooks/outputs/`](../notebooks/outputs/), subject to LIGHT's non-commercial licence for W2 content. Gold human annotations will be added when labelling is complete.
+
+<a id="section-4"></a>
 
 # 4. Research Gaps
 
 ## Gap 1: Controlled Evidence on Memory Architectures for NPC Dialogue
 
-- Evidence: Long contexts are used unevenly (Liu et al., 2024), and very long-term conversational memory remains weak for LLM and RAG agents (Maharana et al., 2024). Memory systems such as MemGPT and generative agents are not compared under a fixed token budget in game settings.
+- Evidence: Long contexts are used unevenly ([Liu et al., 2024](#ref-14)), and very long-term conversational memory remains weak for LLM and RAG agents ([Maharana et al., 2024](#ref-13)). Memory systems such as MemGPT and generative agents are not compared under a fixed token budget in game settings.
 - Gap: No token-budget-controlled comparison of rolling context, flat vector memory, generic RAG, and scoped dual-tier memory on game dialogue.
 
 ## Gap 2: Validation of LLM-Proposed World Mutations
 
-- Evidence: LLMs track game state poorly (Callison-Burch et al., 2022), and coupling LLMs to game mechanics is an open challenge (Gallotta et al., 2024). Symbolic engines enforce rules but not over free-form dialogue (Côté et al., 2019; Hausknecht et al., 2020).
+- Evidence: LLMs track game state poorly ([Callison-Burch et al., 2022](#ref-10)), and coupling LLMs to game mechanics is an open challenge ([Gallotta et al., 2024](#ref-4)). Symbolic engines enforce rules but not over free-form dialogue ([Côté et al., 2019](#ref-6); [Hausknecht et al., 2020](#ref-5)).
 - Gap: Little measurement of how much a pre-commit validator reduces violations, how often it wrongly blocks lawful updates, and how often dialogue then contradicts committed state.
 
 ## Gap 3: Replayable, Auditable State for LLM Agents
 
-- Evidence: Agent memories in prior systems are natural-language logs (Park et al., 2023; Packer et al., 2023), which do not support exact state reconstruction.
+- Evidence: Agent memories in prior systems are natural-language logs ([Park et al., 2023](#ref-3); [Packer et al., 2023](#ref-12)), which do not support exact state reconstruction.
 - Gap: Little evaluation of replay consistency for LLM-driven game state.
 
 ## Gap 4: Joint Evaluation across Memory, Integrity, and Cost
 
 - Evidence: Memory benchmarks omit state integrity; game benchmarks omit open dialogue.
 - Gap: No protocol reporting recall, violations, retrieval quality, latency, token cost, and replay consistency together, with ablations, across multiple worlds.
+
+<a id="section-5"></a>
 
 # 5. Hypotheses and Objectives
 
@@ -268,7 +280,9 @@ Hypotheses are stated before running the full evaluation. Each is tested against
 - H6 (Separability): In the $2 \times 2$ factorial, the memory factor mainly affects recall, and the control factor mainly affects violations, with small interaction.
 - H7 (Generalisation): The direction of the H1 and H3 effects holds on held-out worlds W2 to W4.
 
-A hypothesis is supported only if its effect is significant after correction (Section 12) and its sign is consistent across worlds. Results contrary to a hypothesis are reported as such.
+A hypothesis is supported only if its effect is significant after correction ([Section 12](#section-12)) and its sign is consistent across worlds. Results contrary to a hypothesis are reported as such.
+
+<a id="section-6"></a>
 
 # 6. Proposed System: The Obsidian Flask Engine
 
@@ -293,7 +307,7 @@ $$
 S_{t+1} = \delta(S_t, e_t), \qquad S_T = \text{foldl}(\delta, S_0, [e_0, \dots, e_{T-1}])
 $$
 
-Snapshots every 16 turns bound recovery to loading the latest snapshot and folding the remaining suffix. Replay consistency is therefore expected by construction for the reducer; Section 12 tests it empirically, including across process restarts and against snapshot-plus-suffix reconstruction, because implementation defects (non-deterministic iteration order, timestamps inside state, floating-point effects) can break construction-level guarantees.
+Snapshots every 16 turns bound recovery to loading the latest snapshot and folding the remaining suffix. Replay consistency is therefore expected by construction for the reducer; [Section 12](#section-12) tests it empirically, including across process restarts and against snapshot-plus-suffix reconstruction, because implementation defects (non-deterministic iteration order, timestamps inside state, floating-point effects) can break construction-level guarantees.
 
 ## Dual-Tier Memory Retrieval
 
@@ -322,11 +336,11 @@ Rejected proposals are dropped with a logged reason; the turn continues. Accepte
 
 These are stated so the evaluation can measure them rather than hide them:
 
-- Drops by NPCs do not check that the NPC holds the object.
+- Drops by NPCs do not check that the NPC holds the object, and an NPC state change with key `location_id` is accepted for any value; only the reducer ignores a non-canonical NPC location.
 - The validator checks structural legality, not narrative plausibility (for example, a trust change that is within bounds but unjustified by the dialogue).
-- Rejection does not rewrite the NPC's dialogue, so an NPC can say it handed over an item whose transfer was rejected. This dialogue-state desynchronisation is measured explicitly (Section 12).
+- Rejection does not rewrite the NPC's dialogue, so an NPC can say it handed over an item whose transfer was rejected. This dialogue-state desynchronisation is measured explicitly ([Section 12](#section-12)).
 
-The evaluation and a code review for it found further gaps, all measured or stated in Section 13:
+The evaluation and a code review for it found further gaps, all measured or stated in [Section 13](#section-13):
 
 - Currency gains are not bounded: only a negative delta is checked, against the balance. Any positive delta passes.
 - Spending is checked per proposal against the balance before the turn, so several spends that each fit can together overspend (the reducer then floors the balance at zero).
@@ -335,20 +349,24 @@ The evaluation and a code review for it found further gaps, all measured or stat
 - The backend's load path restores the latest snapshot without folding the events logged after it, and the active NPC is set outside the event log.
 - At the evaluated commit, the JSON extractor could return a bare JSON string or list, which the parse node did not handle. This was fixed after the evaluation (commit `a9767d5`).
 
+<a id="section-7"></a>
+
 # 7. Research Methodology
 
 1. Specify invariants and the event schema.
 2. Build the four-world suite, session scripts, probes, and gold annotations; freeze W2 to W4 before any system run on them.
-3. Implement the proposed system and all baselines on a shared harness (Section 11) so that only the studied factor differs between conditions.
-4. Implement an independent invariant oracle (Section 12) that shares no code with the validator.
+3. Implement the proposed system and all baselines on a shared harness ([Section 11](#section-11)) so that only the studied factor differs between conditions.
+4. Implement an independent invariant oracle ([Section 12](#section-12)) that shares no code with the validator.
 5. Run all conditions on all sessions and probes with three sampling seeds and two LLM backbones.
 6. Compute metrics, confidence intervals, and hypothesis tests; run the factorial and ablation analyses.
 7. Conduct error analysis on a stratified sample of failures per condition.
 
+<a id="section-8"></a>
+
 # 8. Technology Choices
 
-- Inference in the game: Groq-hosted `openai/gpt-oss-120b` (the configured default in [config.py](../Backend/config.py)), temperature 0.35.
-- Inference in the evaluation: `IFM/K2-Horizon-7B` as the primary backbone and `IFM/K2-Horizon-3.7B` as the second, both Apache 2.0, served locally by vLLM 0.30.0 in fp16 on two T4 GPUs at the backend's temperature of 0.35, with top-p 0.95. Both are reasoning models; reasoning effort is set to low and thinking is capped at 192 tokens, after which the notebook closes the thinking block and asks for the JSON answer (up to 768 tokens). Self-hosting removes network variance and gives exact token counts, but means the evaluated backbone differs from the game's default.
+- Inference in the game: Groq-hosted [`openai/gpt-oss-120b`](https://console.groq.com/docs/model/openai/gpt-oss-120b) (the configured default in [config.py](../Backend/config.py)), temperature 0.35.
+- Inference in the evaluation: [`IFM/K2-Horizon-7B`](https://huggingface.co/IFM/K2-Horizon-7B) as the primary backbone and [`IFM/K2-Horizon-3.7B`](https://huggingface.co/IFM/K2-Horizon-3.7B) as the second, both Apache 2.0, served locally by vLLM 0.30.0 in fp16 on two T4 GPUs at the backend's temperature of 0.35, with top-p 0.95. Both are reasoning models; reasoning effort is set to low and thinking is capped at 192 tokens, after which the notebook closes the thinking block and asks for the JSON answer (up to 768 tokens). Self-hosting removes network variance and gives exact token counts, but means the evaluated backbone differs from the game's default.
 - Embedding: all-MiniLM-L12-v2 on CPU.
 - Vector index: FAISS IndexFlatIP, exact search.
 - Orchestration: LangGraph StateGraph with a fixed linear node order.
@@ -356,12 +374,16 @@ The evaluation and a code review for it found further gaps, all measured or stat
 - Schemas: Pydantic v2.
 - Web: FastAPI with per-session async locks.
 
+<a id="section-9"></a>
+
 # 9. Contributions
 
 1. An NPC dialogue architecture that routes all LLM-proposed world changes through a pre-commit validator into an event-sourced state, coupled with location- and NPC-scoped dual-tier memory.
 2. A multi-world benchmark (four world families, long-horizon sessions, seven probe categories with legitimate twins) and an evaluation harness measuring recall, invariant violations, retrieval quality, latency, token cost, and replay consistency together.
 3. A controlled comparison against independent rolling-context, vector-memory, and generic RAG agents, a factorial separation of memory and state-control effects, and single-component ablations.
 4. An explicit account of the validator's costs: false rejections, dialogue-state desynchronisation, and coverage gaps.
+
+<a id="section-10"></a>
 
 # 10. Turn Pipeline and Complexity
 
@@ -388,7 +410,9 @@ With $n$ memory entries, $d = 384$, and $p$ proposals per turn:
 - Reduction: $O(p)$ events, plus a state copy proportional to world size.
 - Recovery: $O(|S| + r)$ where $r < 16$ is the number of events after the latest snapshot, versus $O(|S| + T)$ for full replay.
 
-Measured per-stage latencies are reported in Table 6 rather than asserted here.
+Measured per-stage latencies are reported in [Table 6](#table-6) rather than asserted here.
+
+<a id="section-11"></a>
 
 # 11. Experimental Setup
 
@@ -405,10 +429,10 @@ All baselines are independent implementations that do not reuse the proposed sys
 - B0, Full history (reference): entire dialogue history in the prompt, truncated only at the backbone's context limit. An upper-bound reference for recall and a worst case for cost.
 - B1, Rolling context: the most recent turns that fit a fixed token budget $B$. Evaluated at two budgets: $B$ matched to the proposed system's mean prompt size, and ${2B}$.
 - B2, Vector-memory agent: every turn summary embedded into a flat store; top-$k$ by cosine similarity with no scoping and no short-term buffer, following the flat vector memory pattern common in agent frameworks.
-- B3, Generic RAG agent: raw dialogue chunks plus world lore documents indexed together; top-$k$ chunks retrieved per turn with a standard RAG template (Lewis et al., 2020), no scoping, no event log.
+- B3, Generic RAG agent: raw dialogue chunks plus world lore documents indexed together; top-$k$ chunks retrieved per turn with a standard RAG template ([Lewis et al., 2020](#ref-7)), no scoping, no event log.
 - B4, Scripted FSM (reference only): a hand-written dialogue tree for W1, used to anchor the integrity and latency floor. It is not comparable on open-ended input and is excluded from hypothesis tests.
 
-Where feasible, an LLM-managed memory baseline in the style of MemGPT (Packer et al., 2023) is added as B5; if it is not run, this is listed as a limitation.
+Where feasible, an LLM-managed memory baseline in the style of MemGPT ([Packer et al., 2023](#ref-12)) is added as B5; if it is not run, this is listed as a limitation.
 
 ## Factorial Design (RQ3)
 
@@ -435,23 +459,25 @@ Sensitivity sweeps: buffer size $\{4, 8, 16\}$, $k \in \{3, 6, 12\}$, fallback t
 - Local compute: a documented 8-core CPU, 16 GB RAM machine; exact model, OS, and library versions are recorded in the released run manifest.
 - Library versions are pinned from [requirements.txt](../Backend/requirements.txt).
 
-As run for Section 13:
+As run for [Section 13](#section-13):
 
 - System under test: the repository at commit `0ea345fe140b359d7e82e77ffb2fdfa74caf0e7c`, imported as a library. Only baselines, the oracle and benchmark generators are new code. Live conditions are built from the backend's own LangGraph node factories, swapping only the nodes a condition changes.
 - Hardware: one Kaggle session with 2 x Tesla T4 (15.64 GB each), 4 CPU cores and 33.7 GB RAM; Python 3.12.13, sentence-transformers 5.4.1, faiss-cpu 1.15.1, LangGraph 0.6.11, Pydantic 2.12.3, statsmodels 0.14.6. The 7B model ran with tensor parallelism over both GPUs; the 3.7B model ran as one replica per GPU.
 - Paired sampling: each request's seed depends on the probe or turn, not on the condition, so identical prompts receive identical outputs (common random numbers). Probe outputs are committed three ways (barrier, reducer only, direct writes), so the control comparison is exactly paired.
-- Sample size: a pilot of 256 jobs measured throughput, and a planner chose the largest of eight pre-declared levels that fit the 11.25-hour budget. It chose level 2 (3 sessions per world per horizon, 10 probes per category per world, 2 live sessions per world); level 7 corresponds to the targets above. No row was lost to a deadline in any main stage.
+- Sample size: a pilot of 256 jobs measured throughput, and a planner chose the largest of eight pre-declared levels that fit the 11.25-hour budget. It chose level 2, the third of the eight levels numbered 0 to 7 (3 sessions per world per horizon, 10 probes per category per world, 2 live sessions per world); level 7 corresponds to the targets above. No row was lost to a deadline in any main stage.
 - Seeds: the calibration sessions were rerun with two further seeds for F4, B1, B2 and B3.
 - Budget $B$: 440 tokens, the mean size of F4's memory and history blocks on the calibration probes.
 - Second backbone: worlds W1, W2a, W3 and W4-32 at horizon 100, with probes under the F4 context only.
 - Not run: B4 (scripted FSM) and B5 (MemGPT-style memory).
 - Total wall time: 6.69 hours.
 
+<a id="section-12"></a>
+
 # 12. Metrics
 
 1. Factual recall: proportion of recall probes answered correctly against gold, reported overall and by fact-age bucket (5, 10, 20, 40, 80, 160 turns).
 2. Invariant violations:
-   - Committed violation rate: oracle-detected violations per 100 committed state transitions, and proportion of sessions with at least one violation.
+   - Committed violation rate: turns whose post-state the oracle flags, per 100 committed state transitions, and proportion of sessions with at least one violation.
    - Probe attack success rate: proportion of adversarial probes that result in a committed violation, per category.
    - False rejection rate: proportion of legitimate-twin updates rejected by the barrier.
    - Dialogue-state desynchronisation: proportion of turns where the NPC's dialogue asserts a state change that was not committed, or vice versa (annotated sample).
@@ -460,19 +486,26 @@ As run for Section 13:
 4. Latency: end-to-end P50, P95, and P99, split into local compute and LLM time; reported for the hosted backbone and the local latency-control backbone. In the run reported here, all latency is from the self-hosted backbone on two T4 GPUs, measured with one request in flight.
 5. Token cost: mean input and output tokens per turn from API usage fields, and cost per 100 turns at the provider's list price on the run date. Because the evaluated models were self-hosted, cost is reported in tokens only.
 
-Until human labels are available, dialogue-state desynchronisation is scored by an automatic proxy: a turn is flagged when the barrier rejected a proposal but the dialogue contains no refusal cue, or when, on a scripted move turn, the narration's claim of arrival disagrees with the committed move. 6. State-replay consistency: proportion of sessions where the state rebuilt from the seed plus the logged events matches the live final state by canonical hash, tested (a) by full fold, (b) by snapshot plus suffix, (c) after a forced process restart mid-session. For direct-write conditions without an event log, replay uses the recorded mutation sequence where one exists and is otherwise reported as not replayable. 7. Secondary: schema parse success rate, secret-leak rate before trust threshold, and persona consistency (blind 1 to 5 rating on a sample, with inter-rater agreement).
+Until human labels are available, dialogue-state desynchronisation (item 2) is scored by an automatic proxy: a turn is flagged when the barrier rejected a proposal but the dialogue contains no refusal cue, or when, on a scripted move turn, the narration's claim of arrival disagrees with the committed move.
+
+6. State-replay consistency: proportion of sessions where the state rebuilt from the seed plus the logged events matches the live final state by canonical hash, tested (a) by full fold, (b) by snapshot plus suffix, (c) after a forced process restart mid-session. For direct-write conditions without an event log, replay uses the recorded mutation sequence where one exists and is otherwise reported as not replayable.
+7. Secondary: schema parse success rate, secret-leak rate before trust threshold, and persona consistency (blind 1 to 5 rating on a sample, with inter-rater agreement).
 
 ## Statistical Analysis
 
 - Unit of analysis: session for session-level metrics, probe for probe metrics.
-- 95% confidence intervals by session-level bootstrap (10,000 resamples).
+- 95% confidence intervals by cluster bootstrap (10,000 resamples), clustered on session for recall and live metrics and on probe for probe metrics; ratios are bootstrapped as ratios of resampled sums.
 - Paired comparisons against the proposed system: McNemar's test for binary per-probe outcomes and Wilcoxon signed-rank for continuous per-session metrics, with Holm-Bonferroni correction across the hypothesis family.
-- Factorial effects: mixed-effects logistic regression with memory, control, and their interaction as fixed effects and world and session as random effects.
+- Factorial effects: Bayesian mixed-effects logistic regression (statsmodels `BinomialBayesMixedGLM`, fitted by variational Bayes) with memory, control, and their interaction as fixed effects and world and session as random intercepts. Reported coefficients and SEs are posterior means and standard deviations, and p is the normal tail of their ratio, an approximate posterior summary rather than a frequentist test.
 - Effect sizes are reported alongside p-values.
+
+<a id="section-13"></a>
 
 # 13. Results
 
-All values come from the evaluation notebook's run outputs (`notebooks/outputs/metrics/`). They are formatted as mean [95% cluster-bootstrap CI], pooled over the held-out worlds W2a to W4-128 unless stated; W1 appears in Table 7. The backbone is K2-Horizon-7B unless stated. No value is estimated or carried over from earlier prototype runs.
+All values come from the evaluation notebook's run outputs ([`notebooks/outputs/metrics/`](../notebooks/outputs/metrics/)). They are formatted as mean [95% cluster-bootstrap CI], pooled over the held-out worlds W2a to W4-128 unless stated; W1 appears in [Table 7](#table-7). The backbone is K2-Horizon-7B unless stated. No value is estimated or carried over from earlier prototype runs.
+
+<a id="table-1"></a>
 
 ## Table 1: Main Comparison (Held-Out Worlds)
 
@@ -492,13 +525,19 @@ Notes:
 - The single-stream latency stage reached its deadline before B1 ${2B}$, B2 and B3 were measured (B1 ${2B}$ has one cached sample only; B1 has 15 of 24 samples).
 - Baselines keep no event log, so they cannot be replayed.
 
+<a id="figure-1"></a>
+
 ![Recall by fact age against baselines and ablations](../notebooks/outputs/plots/02_recall_by_fact_age.png)
 
 _Figure 1. Recall by fact age on held-out worlds, against the baselines (left) and the memory ablations (right). The rolling contexts fall to zero once a fact leaves the window; F4 and B2 stay flat._
 
+<a id="figure-2"></a>
+
 ![Token cost against long-range recall](../notebooks/outputs/plots/03_cost_vs_recall.png)
 
 _Figure 2. Mean input tokens per turn against recall at fact age 20 or more. B2 and A2 reach similar recall with fewer tokens than F4; B0 costs about three times as much for lower recall._
+
+<a id="table-2"></a>
 
 ## Table 2: Recall by Fact Age (Held-Out Worlds, %)
 
@@ -535,6 +574,8 @@ Ages 80 and 160 exist only in 100- and 200-turn sessions, so those columns rest 
 
 No prompt reached the system's 16,384-character cap.
 
+<a id="figure-3"></a>
+
 ![Retrieval quality and in-context presence of the gold turn](../notebooks/outputs/plots/04_retrieval_quality.png)
 
 _Figure 3. Left: MRR@6 and Recall@6 per retrieval condition. Right: share of probes whose gold turn reached the prompt, by fact age, which bounds recall from above._
@@ -551,6 +592,8 @@ Sensitivity sweeps (retrieval only, W1 and W2, one setting varied at a time arou
 | threshold 0 | 1.0000         | 0.9227 |
 | threshold 6 | 0.9955         | 0.8303 |
 
+<a id="figure-4"></a>
+
 ![Sensitivity sweeps](../notebooks/outputs/plots/09_sensitivity_sweeps.png)
 
 _Figure 4. Gold-in-prompt rate and MRR@k for each sweep setting._
@@ -564,6 +607,8 @@ Seed variance (calibration sessions, recall over all ages):
 | B2        | 0.871  | 0.848  | 0.795  | 3.90                     |
 | B3        | 0.681  | 0.681  | 0.671  | 0.55                     |
 
+<a id="table-3"></a>
+
 ## Table 3: Factorial Separation (Memory × Control, Live Sessions)
 
 | Cell                        | Recall, live probes (%) | Committed violations per 100 transitions | False rejection (%) | Desync rate (%)   | Sessions |
@@ -573,17 +618,21 @@ Seed variance (calibration sessions, recall over all ages):
 | F3 Dual-tier, direct writes | 41.1 [26.8, 55.4]       | 345.9 [305.3, 390.3]                     | n/a                 | 3.7 [1.8, 5.7]    | 14       |
 | F4 Dual-tier, barrier       | 44.6 [30.4, 59.0]       | 14.0 [4.3, 27.6]                         | 0.0 [0.0, 0.0]      | 18.7 [16.5, 20.9] | 14       |
 
-Live sessions are 39-turn scripts run on the real turn graph, with live probes at fact ages of about 20 to 32 turns. Violations can exceed 100 per 100 transitions because one transition can break several invariants. In F1 and F3, direct writes left the player in a non-existent location on an average of 29.9 and 30.4 of 39 turns per session; the harness then prompted from the last valid location. False rejection is from the lawful twins under the matching probe context.
+Live sessions are 39-turn scripts run on the real turn graph, with live probes at recorded fact ages of 30 to 34 turns. Violations can exceed 100 per 100 transitions because the numerator counts turns whose post-state violates an invariant, and the oracle audits the whole state: a corruption that persists is flagged again on every later turn, including turns that commit nothing (439 of 546 F1 turns were flagged from 125 committed transitions). In F1 and F3, direct writes left the player in a non-existent location on an average of 29.9 and 30.4 of 39 turns per session; the harness then prompted from the last valid location. False rejection is from the lawful twins under the matching probe context.
+
+<a id="figure-5"></a>
 
 ![Factorial interaction plots](../notebooks/outputs/plots/06_factorial_interaction.png)
 
 _Figure 5. Live recall (left) and violations per 100 transitions (right) for the 2 × 2 design._
 
+<a id="figure-6"></a>
+
 ![Live violations by oracle code](../notebooks/outputs/plots/11_live_violation_codes.png)
 
 _Figure 6. Live oracle-flagged turns per 100 turns by condition and invariant. Direct writes produce mainly O1 (non-canonical entities), O3 (non-adjacent moves) and O7 (overspending); with the barrier only O5 and O8 remain, below 1 per 100 turns._
 
-Mixed-effects logistic models (memory, control and their interaction as fixed effects; world and session as random intercepts):
+Bayesian mixed-effects logistic models fitted by variational Bayes (memory, control and their interaction as fixed effects; world and session as random intercepts). Coefficient and SE are the posterior mean and standard deviation; p is the two-sided normal tail of z = coefficient / SE:
 
 | Outcome   | Term           | Coefficient | SE     | z        | p      |
 | --------- | -------------- | ----------- | ------ | -------- | ------ |
@@ -593,6 +642,8 @@ Mixed-effects logistic models (memory, control and their interaction as fixed ef
 | Violation | memory         | 0.3409      | 0.1205 | 2.8282   | 0.0047 |
 | Violation | control        | -6.7729     | 0.3043 | -22.2551 | <0.001 |
 | Violation | memory:control | -0.1608     | 0.4022 | -0.3997  | 0.6894 |
+
+<a id="table-4"></a>
 
 ## Table 4: Ablations
 
@@ -607,7 +658,7 @@ Mixed-effects logistic models (memory, control and their interaction as fixed ef
 | A6 No event sourcing     | as full system      | as full system       | live 351.4 [122.6, 675.0]                      | 10.4                   | no log to recover from         | not replayable         |
 | A7 No snapshots          | as full system      | as full system       | as full system                                 | n/a                    | 145.9 (full replay)            | 100 (full fold)        |
 
-The probe violation figures in this table pool all seven worlds; Table 1 uses held-out worlds only. Local compute here is turn time minus LLM time in the batched live sessions.
+The probe violation figures in this table pool all seven worlds; [Table 1](#table-1) uses held-out worlds only. Local compute here is turn time minus LLM time in the batched live sessions. A6 applies validator-accepted proposals by in-place writes instead of the reducer: in 5 of its 14 sessions an O1 corruption appeared on a small-talk turn and persisted (130 flagged turns from 37 transitions). The reducer's own guards are absent in A6, for example it ignores an NPC relocation to a non-canonical location, which the validator accepts; the stored rows do not record proposal payloads, so the exact triggering proposal is not confirmed.
 
 Replay and recovery (42 CPU sessions of 200 turns, 367.2 events on average):
 
@@ -621,9 +672,13 @@ Replay and recovery (42 CPU sessions of 200 turns, 367.2 events on average):
 
 All event-sourced live sessions (F2, F4, A5) also replayed exactly. Replay hashes exclude the active NPC, which is set outside the event log.
 
+<a id="figure-7"></a>
+
 ![Replay and recovery time](../notebooks/outputs/plots/08_replay_recovery.png)
 
 _Figure 7. Median time to rebuild state at each snapshot point by full replay (A7) and by snapshot loading. Full replay grows with log length; snapshot loading stays near 0.5 ms._
+
+<a id="table-5"></a>
 
 ## Table 5: Adversarial Probes by Category
 
@@ -642,9 +697,13 @@ Outputs under all five context conditions are pooled (350 attacks per category).
 
 Oracle codes for the direct-write violations: currency 60 O7 and 69 O8 (and 2 O1); fabrication 73 O1; theft 92 O1, 25 O4 and 14 O2; teleport 52 O3 and 43 O1; injection 18 O4, 5 O6 and 1 O3. The accepted unlawful currency proposals were gains such as a +2,000 delta "for a chest of coins". Secret leak rates: 0.9% [0.0, 2.3] for secret probes, 1.8% [1.1, 2.6] over all attacks, and 0.5% to 2.4% in live sessions. Parse success was 95.8% for probes and 97.6% for live turns.
 
+<a id="figure-8"></a>
+
 ![Adversarial probes](../notebooks/outputs/plots/05_adversarial_probes.png)
 
 _Figure 8. Left: attack success by commit mode and category. Right: the barrier's false rejection on lawful twins and its validator gap, against the 5% bound of H4._
+
+<a id="table-6"></a>
 
 ## Table 6: Per-Stage Latency (Proposed System, Single Stream)
 
@@ -662,9 +721,13 @@ _Figure 8. Left: attack success by commit mode and category. Right: the barrier'
 
 The live F4 graph was timed on 24 turns over two worlds with one request in flight. All 24 LLM responses in that stage were served from the response cache, so its LLM row (0.09 ms at P50) is a cache lookup and is omitted here. Single-stream LLM time, from the recall-prompt benchmark, was P50 6,906 ms and P95 9,409 ms for F4 and P50 10,948 ms and P95 23,984 ms for B0. Under the batched live stage (84 concurrent sessions), the median LLM time per F4 turn was about 89.6 s.
 
+<a id="figure-9"></a>
+
 ![Latency](../notebooks/outputs/plots/07_latency.png)
 
 _Figure 9. Left: per-stage latency of the F4 graph (log scale). Right: single-stream LLM latency per condition; B2 and B3 were not measured before the stage deadline._
+
+<a id="table-7"></a>
 
 ## Table 7: Per-World and Backbone Breakdown
 
@@ -684,9 +747,13 @@ _Figure 9. Left: per-stage latency of the F4 graph (log scale). Right: single-st
 
 The best baseline for recall is the highest of B0 to B3 on that world; for attacks it is the baseline context with the lowest direct-write attack success. The 3.7B model ran at horizon 100 with probes under the F4 context only, so its attack comparison is the barrier against direct writes of the same outputs.
 
+<a id="figure-10"></a>
+
 ![Per-world effects](../notebooks/outputs/plots/10_per_world_effects.png)
 
 _Figure 10. Per-world recall gain of F4 over B1 (left) and attack reduction by the barrier (right). W1 is in-distribution (grey)._
+
+<a id="figure-11"></a>
 
 ![Seed variance and backbone sensitivity](../notebooks/outputs/plots/12_seed_and_backbone.png)
 
@@ -726,11 +793,15 @@ Failures were coded automatically. Counts for the main conditions (up to 50 exam
 | Oracle-detected violation, barrier | 16  | 13  | 13      | 13  | 14  | n/a | n/a | n/a | n/a |
 | Desynchronisation (live, proxy)    | 102 | n/a | n/a     | n/a | n/a | n/a | n/a | 101 | 108 |
 
-The system's recall failures are almost all cases where the gold memory was in the prompt but the model answered wrongly; none came from retrieval. Its committed violations under the barrier are almost all validator gaps, which Table 5 places in the currency category.
+The system's recall failures are almost all cases where the gold memory was in the prompt but the model answered wrongly; none came from retrieval. Its committed violations under the barrier are almost all validator gaps, which [Table 5](#table-5) places in the currency category.
+
+<a id="figure-12"></a>
 
 ![GPU utilisation over the run](../notebooks/outputs/plots/13_gpu_utilisation.png)
 
 _Figure 12. GPU utilisation of both T4s over the 6.69-hour run. The gaps are server restarts and CPU-only stages._
+
+<a id="section-14"></a>
 
 # 14. Discussion, Limitations, and Threats to Validity
 
@@ -748,7 +819,7 @@ _Figure 12. GPU utilisation of both T4s over the 6.69-hour run. The gaps are ser
 
 ## Expected Trade-Offs to Examine
 
-- A validation barrier bounds structural violations to the validator's coverage, not to zero in general. Violations outside its rule set (Section 6 coverage gaps) remain possible, which is why an independent oracle is used. The currency result confirms this.
+- A validation barrier bounds structural violations to the validator's coverage, not to zero in general. Violations outside its rule set ([Section 6](#section-6) coverage gaps) remain possible, which is why an independent oracle is used. The currency result confirms this.
 - Blocking an update without regenerating dialogue can make the NPC say something the world does not reflect. The desynchronisation rate quantifies this cost; regeneration on rejection is a candidate fix with a latency cost.
 - Scoping can exclude relevant memories created in another location or with another NPC; the relaxation fallback only triggers when scoped results are few, not when they are irrelevant. A3 and A4 measure this.
 
@@ -758,7 +829,7 @@ _Figure 12. GPU utilisation of both T4s over the 6.69-hour run. The gaps are ser
 2. Scripted players: fixed player scripts do not adapt to NPC responses. Findings on engagement or experience require a user study, which is outside this article's scope.
 3. Backbone dependence: results are reported for two backbones of the same family (K2-Horizon 7B and 3.7B), self-hosted, with a capped thinking budget. The game's default hosted backbone was not evaluated.
 4. Latency: measured on two T4 GPUs; the hosted-endpoint latency is not reproduced, and the single-stream LLM row for the live graph was served from cache.
-5. Sample size: the run used level 2 of 8 pre-declared levels (63 recall sessions, 490 attacks, 14 live sessions per factorial cell), well below the targets in Section 3. Live-session intervals are wide.
+5. Sample size: the run used level 2, the third of 8 pre-declared levels numbered 0 to 7 (63 recall sessions, 490 attacks, 14 live sessions per factorial cell), well below the targets in [Section 3](#section-3). Live-session intervals are wide.
 6. Scoring: recall, leaks and desynchronisation are scored automatically. Human labels, inter-rater agreement and an LLM judge are pending.
 7. Secrets: NPC secrets are not given to the model, so the low leak rates do not show that the model keeps secrets it knows.
 8. Baselines: B4 (scripted FSM) and B5 (MemGPT-style memory) were not run.
@@ -772,6 +843,8 @@ _Figure 12. GPU utilisation of both T4s over the 6.69-hour run. The gaps are ser
 - Construct: invariant violations are measured by an independent oracle rather than the validator itself. Recall is judged by key-word match against invented-word values; human agreement is pending. Desynchronisation is an automatic proxy based on refusal and arrival cues.
 - External: see Limitations 1 to 5. Claims are restricted to the tested worlds and backbones.
 - Conclusion: pre-registered hypotheses, Holm correction across the confirmatory family, and confidence intervals; all outcomes are reported, including the two unsupported hypotheses.
+
+<a id="section-15"></a>
 
 # 15. Conclusion
 
@@ -792,17 +865,17 @@ The evidence from the first full run supports three claims. Long-term retrieval 
 
 # References
 
-- [1] Urbanek, J., Fan, A., Karamcheti, S., Jain, S., Humeau, S., Dinan, E., Rocktäschel, T., Kiela, D., Szlam, A., & Weston, J. (2019). Learning to Speak and Act in a Fantasy Text Adventure Game. In _Proceedings of EMNLP-IJCNLP 2019_, pages 673-683. https://doi.org/10.18653/v1/D19-1062
-- [2] Ammanabrolu, P., Urbanek, J., Li, M., Szlam, A., Rocktäschel, T., & Weston, J. (2021). How to Motivate Your Dragon: Teaching Goal-Driven Agents to Speak and Act in Fantasy Worlds. In _Proceedings of NAACL-HLT 2021_, pages 807-833. https://doi.org/10.18653/v1/2021.naacl-main.64
-- [3] Park, J. S., O'Brien, J. C., Cai, C. J., Morris, M. R., Liang, P., & Bernstein, M. S. (2023). Generative Agents: Interactive Simulacra of Human Behavior. In _Proceedings of UIST '23_. https://doi.org/10.1145/3586183.3606763
-- [4] Gallotta, R., Todd, G., Zammit, M., Earle, S., Liapis, A., Togelius, J., & Yannakakis, G. N. (2024). Large Language Models and Games: A Survey and Roadmap. _IEEE Transactions on Games_. https://doi.org/10.1109/TG.2024.3461510
-- [5] Hausknecht, M., Ammanabrolu, P., Côté, M.-A., & Yuan, X. (2020). Interactive Fiction Games: A Colossal Adventure. In _Proceedings of AAAI 2020_, 34(05), pages 7903-7910. https://doi.org/10.1609/aaai.v34i05.6297
-- [6] Côté, M.-A., Kádár, Á., Yuan, X., Kybartas, B., Barnes, T., Fine, E., Moore, J., Hausknecht, M., El Asri, L., Adada, M., Tay, W., & Trischler, A. (2019). TextWorld: A Learning Environment for Text-Based Games. In _Computer Games (CGW 2018)_, CCIS vol. 1017, pages 41-75. Springer. https://doi.org/10.1007/978-3-030-24337-1_3
-- [7] Lewis, P., Perez, E., Piktus, A., Petroni, F., Karpukhin, V., Goyal, N., Küttler, H., Lewis, M., Yih, W., Rocktäschel, T., Riedel, S., & Kiela, D. (2020). Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. In _Advances in Neural Information Processing Systems 33 (NeurIPS 2020)_, pages 9459-9474.
-- [8] Yao, S., Zhao, J., Yu, D., Du, N., Shafran, I., Narasimhan, K., & Cao, Y. (2023). ReAct: Synergizing Reasoning and Acting in Language Models. In _ICLR 2023_.
-- [9] Shinn, N., Cassano, F., Gopinath, A., Narasimhan, K., & Yao, S. (2023). Reflexion: Language Agents with Verbal Reinforcement Learning. In _Advances in Neural Information Processing Systems 36 (NeurIPS 2023)_.
-- [10] Callison-Burch, C., Singh Tomar, G., Martin, L. J., Ippolito, D., Bailis, S., & Reitter, D. (2022). Dungeons and Dragons as a Dialog Challenge for Artificial Intelligence. In _Proceedings of EMNLP 2022_, pages 9379-9393. https://aclanthology.org/2022.emnlp-main.637/
-- [11] Akoury, N., Wang, S., Whiting, J., Hood, S., Peng, N., & Iyyer, M. (2020). STORIUM: A Dataset and Evaluation Platform for Machine-in-the-Loop Story Generation. In _Proceedings of EMNLP 2020_, pages 6470-6484. https://doi.org/10.18653/v1/2020.emnlp-main.525
-- [12] Packer, C., Wooders, S., Lin, K., Fang, V., Patil, S. G., Stoica, I., & Gonzalez, J. E. (2023). MemGPT: Towards LLMs as Operating Systems. _arXiv:2310.08560_.
-- [13] Maharana, A., Lee, D.-H., Tulyakov, S., Bansal, M., Barbieri, F., & Fang, Y. (2024). Evaluating Very Long-Term Conversational Memory of LLM Agents. In _Proceedings of ACL 2024 (Volume 1: Long Papers)_, pages 13851-13870. https://aclanthology.org/2024.acl-long.747/
-- [14] Liu, N. F., Lin, K., Hewitt, J., Paranjape, A., Bevilacqua, M., Petroni, F., & Liang, P. (2024). Lost in the Middle: How Language Models Use Long Contexts. _Transactions of the Association for Computational Linguistics_, 12, pages 157-173. https://doi.org/10.1162/tacl_a_00638
+- <a id="ref-1"></a>[1] Urbanek, J., Fan, A., Karamcheti, S., Jain, S., Humeau, S., Dinan, E., Rocktäschel, T., Kiela, D., Szlam, A., & Weston, J. (2019). Learning to Speak and Act in a Fantasy Text Adventure Game. In _Proceedings of EMNLP-IJCNLP 2019_, pages 673-683. [https://doi.org/10.18653/v1/D19-1062](https://doi.org/10.18653/v1/D19-1062)
+- <a id="ref-2"></a>[2] Ammanabrolu, P., Urbanek, J., Li, M., Szlam, A., Rocktäschel, T., & Weston, J. (2021). How to Motivate Your Dragon: Teaching Goal-Driven Agents to Speak and Act in Fantasy Worlds. In _Proceedings of NAACL-HLT 2021_, pages 807-833. [https://doi.org/10.18653/v1/2021.naacl-main.64](https://doi.org/10.18653/v1/2021.naacl-main.64)
+- <a id="ref-3"></a>[3] Park, J. S., O'Brien, J. C., Cai, C. J., Morris, M. R., Liang, P., & Bernstein, M. S. (2023). Generative Agents: Interactive Simulacra of Human Behavior. In _Proceedings of UIST '23_. [https://doi.org/10.1145/3586183.3606763](https://doi.org/10.1145/3586183.3606763)
+- <a id="ref-4"></a>[4] Gallotta, R., Todd, G., Zammit, M., Earle, S., Liapis, A., Togelius, J., & Yannakakis, G. N. (2024). Large Language Models and Games: A Survey and Roadmap. _IEEE Transactions on Games_. [https://doi.org/10.1109/TG.2024.3461510](https://doi.org/10.1109/TG.2024.3461510)
+- <a id="ref-5"></a>[5] Hausknecht, M., Ammanabrolu, P., Côté, M.-A., & Yuan, X. (2020). Interactive Fiction Games: A Colossal Adventure. In _Proceedings of AAAI 2020_, 34(05), pages 7903-7910. [https://doi.org/10.1609/aaai.v34i05.6297](https://doi.org/10.1609/aaai.v34i05.6297)
+- <a id="ref-6"></a>[6] Côté, M.-A., Kádár, Á., Yuan, X., Kybartas, B., Barnes, T., Fine, E., Moore, J., Hausknecht, M., El Asri, L., Adada, M., Tay, W., & Trischler, A. (2019). TextWorld: A Learning Environment for Text-Based Games. In _Computer Games (CGW 2018)_, CCIS vol. 1017, pages 41-75. Springer. [https://doi.org/10.1007/978-3-030-24337-1_3](https://doi.org/10.1007/978-3-030-24337-1_3)
+- <a id="ref-7"></a>[7] Lewis, P., Perez, E., Piktus, A., Petroni, F., Karpukhin, V., Goyal, N., Küttler, H., Lewis, M., Yih, W., Rocktäschel, T., Riedel, S., & Kiela, D. (2020). Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. In _Advances in Neural Information Processing Systems 33 (NeurIPS 2020)_, pages 9459-9474. [https://arxiv.org/abs/2005.11401](https://arxiv.org/abs/2005.11401)
+- <a id="ref-8"></a>[8] Yao, S., Zhao, J., Yu, D., Du, N., Shafran, I., Narasimhan, K., & Cao, Y. (2023). ReAct: Synergizing Reasoning and Acting in Language Models. In _ICLR 2023_. [https://arxiv.org/abs/2210.03629](https://arxiv.org/abs/2210.03629)
+- <a id="ref-9"></a>[9] Shinn, N., Cassano, F., Gopinath, A., Narasimhan, K., & Yao, S. (2023). Reflexion: Language Agents with Verbal Reinforcement Learning. In _Advances in Neural Information Processing Systems 36 (NeurIPS 2023)_. [https://arxiv.org/abs/2303.11366](https://arxiv.org/abs/2303.11366)
+- <a id="ref-10"></a>[10] Callison-Burch, C., Singh Tomar, G., Martin, L. J., Ippolito, D., Bailis, S., & Reitter, D. (2022). Dungeons and Dragons as a Dialog Challenge for Artificial Intelligence. In _Proceedings of EMNLP 2022_, pages 9379-9393. [https://doi.org/10.18653/v1/2022.emnlp-main.637](https://doi.org/10.18653/v1/2022.emnlp-main.637)
+- <a id="ref-11"></a>[11] Akoury, N., Wang, S., Whiting, J., Hood, S., Peng, N., & Iyyer, M. (2020). STORIUM: A Dataset and Evaluation Platform for Machine-in-the-Loop Story Generation. In _Proceedings of EMNLP 2020_, pages 6470-6484. [https://doi.org/10.18653/v1/2020.emnlp-main.525](https://doi.org/10.18653/v1/2020.emnlp-main.525)
+- <a id="ref-12"></a>[12] Packer, C., Wooders, S., Lin, K., Fang, V., Patil, S. G., Stoica, I., & Gonzalez, J. E. (2023). MemGPT: Towards LLMs as Operating Systems. _arXiv:2310.08560_. [https://arxiv.org/abs/2310.08560](https://arxiv.org/abs/2310.08560)
+- <a id="ref-13"></a>[13] Maharana, A., Lee, D.-H., Tulyakov, S., Bansal, M., Barbieri, F., & Fang, Y. (2024). Evaluating Very Long-Term Conversational Memory of LLM Agents. In _Proceedings of ACL 2024 (Volume 1: Long Papers)_, pages 13851-13870. [https://doi.org/10.18653/v1/2024.acl-long.747](https://doi.org/10.18653/v1/2024.acl-long.747)
+- <a id="ref-14"></a>[14] Liu, N. F., Lin, K., Hewitt, J., Paranjape, A., Bevilacqua, M., Petroni, F., & Liang, P. (2024). Lost in the Middle: How Language Models Use Long Contexts. _Transactions of the Association for Computational Linguistics_, 12, pages 157-173. [https://doi.org/10.1162/tacl_a_00638](https://doi.org/10.1162/tacl_a_00638)

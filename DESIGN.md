@@ -190,7 +190,7 @@ Motion only clarifies state or arrival. `prefers-reduced-motion` reduces every C
 | `<meter>`, `<progress>`                                         | `TrustScale` and the standing scale, with `role="meter"` |
 | Focus ring, selection, caret, placeholder, autofill, scrollbars | Styled in the base layer of `index.css`                  |
 
-Real `<input>` and `<textarea>` elements remain for typing, fully restyled. An audit of `Frontend/src` on 2 October 2026 found no `alert(`, `confirm(`, `prompt(`, `<select`, `<datalist`, `<details`, `<dialog`, `<progress`, `<meter`, native picker input types, or `title=` attributes on elements, and the only form uses `noValidate`.
+Real `<input>` and `<textarea>` elements remain for typing, fully restyled. An audit of [`Frontend/src`](Frontend/src) on 2 October 2026 found no `alert(`, `confirm(`, `prompt(`, `<select`, `<datalist`, `<details`, `<dialog`, `<progress`, `<meter`, native picker input types, or `title=` attributes on elements, and the only form uses `noValidate`.
 
 ## Copy and terminology
 

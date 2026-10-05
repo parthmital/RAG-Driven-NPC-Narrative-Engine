@@ -6,11 +6,11 @@ This document describes how the repository is structured: the parts, the module 
 
 The repository has three parts:
 
-| Part       | Location                                     | Runs where              | Owns                                                                                                                                 |
-| ---------- | -------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Backend    | `Backend/`                                   | Local Python process    | Session lifecycle, event persistence, deterministic world state, memory retrieval, prompts, LLM calls, validation, WebSocket updates |
-| Frontend   | `Frontend/`                                  | Browser, served by Vite | Routing, UI state, HTTP calls, WebSocket connection state, and presentation                                                          |
-| Evaluation | `notebooks/npc-memory-state-benchmark.ipynb` | Kaggle, GPU T4 x2       | The benchmark, baselines, independent oracle, and statistics; imports the backend as a library                                       |
+| Part       | Location                                                                                   | Runs where              | Owns                                                                                                                                 |
+| ---------- | ------------------------------------------------------------------------------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Backend    | `Backend/`                                                                                 | Local Python process    | Session lifecycle, event persistence, deterministic world state, memory retrieval, prompts, LLM calls, validation, WebSocket updates |
+| Frontend   | `Frontend/`                                                                                | Browser, served by Vite | Routing, UI state, HTTP calls, WebSocket connection state, and presentation                                                          |
+| Evaluation | [`notebooks/npc-memory-state-benchmark.ipynb`](notebooks/npc-memory-state-benchmark.ipynb) | Kaggle, GPU T4 x2       | The benchmark, baselines, independent oracle, and statistics; imports the backend as a library                                       |
 
 The application is a layered modular monolith. One backend process and one static frontend are enough for the current workload: a single-player game with at most `MAX_CONCURRENT_SESSIONS` (50) in-memory sessions. Each layer is a package with one responsibility, so it could be extracted later without rewriting callers.
 
@@ -98,7 +98,7 @@ The notebook treats the backend as a library under test:
 4. It replaces the Groq call with a client adapter that calls a local vLLM server, and replaces only the storage of `Embedder` with a precomputed table.
 5. An independent oracle, which imports nothing from `game/validator.py`, audits every committed transition.
 
-So a backend change that alters a node's signature, the `LLMOutput` schema, or `build_prompt` can break the notebook. When the notebook is rerun against a new commit, update `REPO_COMMIT` in its configuration cell. The run outputs live in `notebooks/outputs/`; the README documents every file.
+So a backend change that alters a node's signature, the `LLMOutput` schema, or `build_prompt` can break the notebook. When the notebook is rerun against a new commit, update `REPO_COMMIT` in its configuration cell. The run outputs live in [`notebooks/outputs/`](notebooks/outputs/); the README documents every file.
 
 ## Where new code goes
 
@@ -106,7 +106,7 @@ So a backend change that alters a node's signature, the `LLMOutput` schema, or `
 - New player-driven state change (like move or pickup): add a route to the matching `api/routes/*.py` group that validates input and calls `SessionManager.commit_event`.
 - New route group: add a module under `api/routes/` and include it in `api/routes/__init__.py`.
 - New save artefact: extend `session/save_files.py` only.
-- New backend DTO: add it to `api/schemas.py` and mirror it in `Frontend/src/contracts/api.ts`.
+- New backend DTO: add it to `api/schemas.py` and mirror it in [`Frontend/src/contracts/api.ts`](Frontend/src/contracts/api.ts).
 - New frontend workflow: server calls go in `services/`, DTO mapping in `stores/mappers.ts`, state transitions in `stores/`, route composition in `pages/`, and repeated UI in `components/`.
 - New prompt input: format it in `llm/prompt_builder.py`. Keep enforcement in code (`game/validator.py`), not only in the prompt.
 - New world: write a seed in the `WorldState` schema. The notebook's `data/world_*.json` files are examples of six more worlds in that schema.
@@ -136,7 +136,7 @@ Persistence is per session under `Backend/data/sessions/{session_id}/`: `events.
 | Turn nodes built by factories in `graph/definition.py`        | Each node can be reused or swapped on its own, which the evaluation relies on                           |
 | Validation and reduction kept in separate pure modules        | The barrier can be measured apart from the reducer (ablation A5), and state can be rebuilt from the log |
 | Frontend DTO mapping in `stores/mappers.ts`                   | Pure, testable, and kept out of the store                                                               |
-| Single Node launcher (`scripts/dev.mjs`)                      | Cross-platform, one entry point, lockfile-hash setup skip, fail-fast ports, crash and Ctrl+C teardown   |
+| Single Node launcher ([`scripts/dev.mjs`](scripts/dev.mjs))   | Cross-platform, one entry point, lockfile-hash setup skip, fail-fast ports, crash and Ctrl+C teardown   |
 | `black` in `requirements-dev.txt`                             | Keeps a development tool out of the runtime dependencies                                                |
 | One logging setup in `log_config.py`, Uvicorn access log off  | One format and one line per request; request and session IDs on every line, including in turn threads   |
 | Groq SDK retries off; `GroqClient` retries transient errors   | Two stacked retry loops could make nine calls; auth and bad-request errors fail at once as `LLMError`   |
@@ -148,13 +148,13 @@ Persistence is per session under `Backend/data/sessions/{session_id}/`: `events.
 
 The clone detector (`jscpd`, run by `npm run check`) fails when duplicated code exceeds 1%. These known exceptions are kept on purpose:
 
-- `Backend/memory/faiss_index.py`: the `MemoryEntry` constructor and `FAISSMemory.add` share a parameter list. `add` builds the entry, and merging the two would couple the index API to the storage record.
-- `Frontend/src/contracts/api.ts` mirrors `Backend/api/schemas.py` by hand. The DTOs are a small, stable contract, and code generation would add a build step. Revisit if contract drift becomes a problem.
+- [`Backend/memory/faiss_index.py`](Backend/memory/faiss_index.py): the `MemoryEntry` constructor and `FAISSMemory.add` share a parameter list. `add` builds the entry, and merging the two would couple the index API to the storage record.
+- [`Frontend/src/contracts/api.ts`](Frontend/src/contracts/api.ts) mirrors [`Backend/api/schemas.py`](Backend/api/schemas.py) by hand. The DTOs are a small, stable contract, and code generation would add a build step. Revisit if contract drift becomes a problem.
 - Literal expected values in tests.
 
 ## Production notes
 
-- Configuration comes from the environment (`Backend/config.py`, `Backend/.env.example`).
+- Configuration comes from the environment ([`Backend/config.py`](Backend/config.py), [`Backend/.env.example`](Backend/.env.example)).
 - Unhandled backend exceptions are logged, and clients get a generic error; `DEBUG_ERRORS=true` exposes details. Expected errors are `HTTPException`s.
 - Groq calls have a timeout. Only transient failures (429, 5xx, connection, timeout) are retried with exponential backoff. The LLM health ping runs off the event loop.
 - Logs are structured (`LOG_FORMAT=text` or `json`, `LOG_LEVEL`), carry `req` and `session` IDs, and every response returns `X-Request-ID`.
@@ -166,11 +166,11 @@ The clone detector (`jscpd`, run by `npm run check`) fails when duplicated code 
 - `npm run dev`: first-run setup, then both services. See the README.
 - `npm run check`: setup, clone detection, `black --check`, backend tests, and the frontend format check, typecheck, lint, tests, and build.
 - `GET /health` reports readiness. `GET /api/game/health` reports active sessions and LLM reachability; it makes a real Groq call, so do not poll it frequently.
-- Evaluation: run the notebook on Kaggle (GPU T4 x2, internet on, Save & Run All), then extract `outputs.zip` into `notebooks/outputs/`. Never run it locally.
+- Evaluation: run the notebook on Kaggle (GPU T4 x2, internet on, Save & Run All), then extract `outputs.zip` into [`notebooks/outputs/`](notebooks/outputs/). Never run it locally.
 
 ## Known gaps and recommended changes
 
-These were found by the evaluation notebook (`notebooks/outputs/`) or by reviewing the code against its results. None of the recommended changes is implemented yet.
+These were found by the evaluation notebook ([`notebooks/outputs/`](notebooks/outputs/)) or by reviewing the code against its results. None of the recommended changes is implemented yet.
 
 | Gap                                                                    | Evidence                                                                                                                                                              | Recommended change                                                                      |
 | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
