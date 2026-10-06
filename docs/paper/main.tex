@@ -26,7 +26,7 @@
 \renewcommand{\bottomfraction}{0.8}
 \renewcommand{\textfraction}{0.07}
 \renewcommand{\floatpagefraction}{0.8}
-\usepackage[round,authoryear]{natbib}
+\usepackage[numbers,sort&compress]{natbib} % references numbered in order of first citation (unsrtnat)
 \usepackage{microtype}
 \usepackage{xurl}
 \usepackage{hyperref}
@@ -143,7 +143,7 @@ PANGeA generates RPG content with a memory system and a validator in which the L
 \paragraph{Positioning.}
 \Cref{tab:related} contrasts representative systems. The present work is, to our knowledge, the first to evaluate symbolic pre-commit validation of LLM-proposed game mutations with an oracle independent of the validator, paired on identical model outputs, together with memory scoping, replay and cost in one factorial design. We make no claim of novelty for the individual components.
 
-\begin{table}[t]
+\begin{table}[!htbp]
 \centering\footnotesize
 \caption{Positioning against representative prior work. ``Indep.\ audit'' means violations are scored by a checker that does not share code with the component being evaluated. Entries describe the cited papers' own evaluations.}
 \label{tab:related}
@@ -215,7 +215,7 @@ The evaluation's oracle (notebook cell~36) re-derives facts from $(S_{\text{pre}
 O8 encodes a design bound the validator does not implement; it is the oracle's only rule with no counterpart in $V$, and it exposes the gap reported in \cref{sec:control}.
 
 \subsection{Scoped dual-tier memory}\label{sec:memory-formal}
-Long-term memory is a set of entries $m_i=(\mathbf{v}_i,x_i,t_i,\ell_i,n_i)$: a unit vector, the text shown to the model, the turn, a location and an NPC. On commit, $\mathbf{v}_i$ is the embedding of the \emph{player input} (\href{https://huggingface.co/sentence-transformers/all-MiniLM-L12-v2}{all-MiniLM-L12-v2}, $d=384$, L2-normalised; \citealp{reimers2019sbert,wang2020minilm}), $x_i$ is the model's memory summary (or the truncated input when absent), $\ell_i$ is the player's location after the turn's events and $n_i$ the active NPC. The index is an exact inner-product FAISS index \citep{johnson2021faiss}, so $\mathbf{q}^\top\mathbf{v}_i$ is cosine similarity. For query $\mathbf{q}$, current location $\ell$ and NPC $n$, let $\topk_m(\mathbf{q})$ be the $m$ most similar entries in descending order and define the scope predicate
+Long-term memory is a set of entries $m_i=(\mathbf{v}_i,x_i,t_i,\ell_i,n_i)$: a unit vector, the text shown to the model, the turn, a location and an NPC. On commit, $\mathbf{v}_i$ is the embedding of the \emph{player input} under \href{https://huggingface.co/sentence-transformers/all-MiniLM-L12-v2}{all-MiniLM-L12-v2} \citep{reimers2019sbert,wang2020minilm} ($d=384$, L2-normalised), $x_i$ is the model's memory summary (or the truncated input when absent), $\ell_i$ is the player's location after the turn's events and $n_i$ the active NPC. The index is an exact inner-product FAISS index \citep{johnson2021faiss}, so $\mathbf{q}^\top\mathbf{v}_i$ is cosine similarity. For query $\mathbf{q}$, current location $\ell$ and NPC $n$, let $\topk_m(\mathbf{q})$ be the $m$ most similar entries in descending order and define the scope predicate
 \begin{equation}\label{eq:scope}
 \phi_{\ell,n}(m_i)=\bigl(\ell_i=\varnothing\lor\ell_i=\ell\bigr)\land\bigl(n_i=\varnothing\lor n_i=n\bigr),
 \end{equation}
@@ -240,9 +240,9 @@ The scoped branch filters $\topk_{fk}(\mathbf{q})$; entries outside it are never
 %=====================================================================
 \section{System Architecture}\label{sec:system}
 
-\Cref{fig:arch} shows the four tiers. The presentation tier (React, TypeScript, Zustand) streams turns over a WebSocket; the orchestration tier (FastAPI with per-session async locks) runs a compiled eight-node LangGraph \code{StateGraph}; validation and storage are described above. In the shipped game the LLM is a hosted endpoint (Groq, \code{openai/gpt-oss-120b}, temperature 0.35, \esrc{Backend/config.py}); in the evaluation it is a self-hosted model (\cref{sec:repro}).
+\Cref{fig:arch} shows the four tiers. The presentation tier (React, TypeScript, Zustand) streams turns over a WebSocket; the orchestration tier (FastAPI with per-session async locks) runs a compiled eight-node LangGraph \code{StateGraph}; validation and storage are described above. In the shipped game the LLM is a hosted endpoint (Groq, \code{openai/gpt-oss-120b}, temperature 0.35, \esrc{Backend/config.py}); in the evaluation it is a self-hosted model (\cref{sec:repro}). \Cref{alg:turn} gives one turn in pseudocode and \cref{alg:retrieve} its scoped retrieval step.
 
-\begin{figure}[t]
+\begin{figure}[!htbp]
 \centering
 \begin{tikzpicture}[
   node distance=3.5mm and 4mm,
@@ -275,7 +275,7 @@ The scoped branch filters $\topk_{fk}(\mathbf{q})$; entries outside it are never
 \label{fig:arch}
 \end{figure}
 
-\begin{algorithm}[t]
+\begin{algorithm}[!htbp]
 \caption{One turn of the engine (nodes 1 to 8 of \cref{fig:arch})}\label{alg:turn}
 \begin{algorithmic}[1]
 \Require player input $u$, active NPC $n$, state $S_t$, store $M$, buffer $H$, log $\mathcal{E}$
@@ -292,7 +292,7 @@ The scoped branch filters $\topk_{fk}(\mathbf{q})$; entries outside it are never
 \end{algorithmic}
 \end{algorithm}
 
-\begin{algorithm}[t]
+\begin{algorithm}[!htbp]
 \caption{\textsc{ScopedRetrieve} (\code{make\_node\_retrieval}, \code{FAISSMemory.search})}\label{alg:retrieve}
 \begin{algorithmic}[1]
 \Require query $\mathbf{q}$, location $\ell$, NPC $n$, $k=6$, $f=5$, $\theta=3$
@@ -329,7 +329,7 @@ Reading the code against the specification, and the evaluation itself, exposed t
 \subsection{World suite}
 A single hand-made world cannot support generalisation claims, and a benchmark written by the system's authors risks being tuned to it. The suite therefore has four families (\cref{tab:worlds,fig:worlds}): W1, the in-house dark-fantasy development world (\esrc{Backend/game/world_seed.json}); W2a to W2c, converted by a deterministic seeded script from the crowd-written \href{https://dl.fbaipublicfiles.com/parlai/light/light-environment.pkl}{LIGHT environment file} \citep{urbanek2019light} (CC BY-NC 4.0), with LIGHT's fragmented room graph joined by a seeded spanning tree and two templated secrets per NPC built from words that occur nowhere else in the world; W3, a 24-location science-fiction station authored in the notebook from a written specification before any system run; and W4-32 and W4-128, procedural graphs (random spanning tree plus about 30\% extra edges) with templated names. No system setting was tuned on W2 to W4. W3 is held out from tuning but was \emph{not} independently authored.
 
-\begin{table}[t]
+\begin{table}[!htbp]
 \centering\footnotesize
 \caption{World suite as built for the run (\osrc{metrics/world_stats.csv}). ``Join'' counts spanning-tree edges added to connect LIGHT's room graph.}
 \label{tab:worlds}
@@ -348,7 +348,7 @@ W4-128 & procedural & 128 & 16 & 64 & 5 & 163 & 12 & 32 & 0 \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[t]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=0.82\linewidth]{01_world_suite.png}
 \caption{Size of each world (log scale): locations, NPCs and objects. The procedural W4-128 extends the suite to 128 locations, 16 NPCs and 64 objects.}
@@ -369,7 +369,7 @@ Live sessions run the backend's real LangGraph nodes every turn, so the model's 
 \subsection{Conditions}\label{sec:conditions}
 All conditions share the backbone, decoding parameters, system prompt, canonical-state serialisation, output schema and player scripts; they differ only in memory and in how proposals reach state (\cref{tab:conditions}). Baselines are independent NumPy implementations that do not reuse the system's retrieval code. Budget $B$ is the mean token count of F4's memory and history blocks on the calibration probes, 440 tokens. Without a validator, schema-valid proposals are written straight into the state (direct writes), modelling an agent that writes state through a tool interface. The scripted-FSM reference (B4) and an LLM-managed memory baseline in the style of MemGPT (B5) were planned but not run.
 
-\begin{table}[t]
+\begin{table}[!htbp]
 \centering\footnotesize
 \caption{Conditions. F1 to F4 form the $2\times2$ factorial; A1 to A7 change one component of F4.}
 \label{tab:conditions}
@@ -401,7 +401,7 @@ A7 & as F4 & 8-turn buffer & as F4, recovery by full replay \\
 \subsection{Paired three-way commit protocol}\label{sec:protocol}
 \Cref{alg:protocol} is the protocol's core. Request seeds depend on the probe or turn and never on the condition, so identical prompts receive identical outputs (common random numbers). For probes, the \emph{same} parsed output is then committed three ways and audited by the oracle of \cref{sec:oracle}, so differences between modes are attributable to the commit path alone. Lawfulness of a proposal is judged by the oracle on a single-proposal transition, which gives false-rejection and validator-gap rates that do not depend on the validator's own verdicts.
 
-\begin{algorithm}[t]
+\begin{algorithm}[!htbp]
 \caption{Paired three-way commit and independent audit of one probe output}\label{alg:protocol}
 \begin{algorithmic}[1]
 \Require scenario state $S$, prompt $x$, seed $s=h(\text{probe id})$ \Comment{independent of condition}
@@ -439,7 +439,7 @@ Paired binary outcomes use the exact McNemar test \citep{mcnemar1947}, which con
 \begin{equation}\label{eq:glmm}
 \operatorname{logit}\Pr(y=1)=\beta_0+\beta_M M+\beta_C C+\beta_{MC}MC+u_{\text{world}}+v_{\text{session}},
 \end{equation}
-with $M,C\in\{0,1\}$ indicating dual-tier memory and the barrier and Gaussian random intercepts, fitted by variational Bayes (\code{BinomialBayesMixedGLM.fit\_vb} in statsmodels; \citealp{seabold2010statsmodels}). We report posterior means and standard deviations and, as the notebook does, $z=\text{mean}/\text{sd}$ with a two-sided normal tail probability. These are approximate posterior summaries, not frequentist Wald tests.
+with $M,C\in\{0,1\}$ indicating dual-tier memory and the barrier and Gaussian random intercepts, fitted by variational Bayes (\code{BinomialBayesMixedGLM.fit\_vb} in statsmodels \citep{seabold2010statsmodels}). We report posterior means and standard deviations and, as the notebook does, $z=\text{mean}/\text{sd}$ with a two-sided normal tail probability. These are approximate posterior summaries, not frequentist Wald tests.
 
 \subsection{Hypotheses}\label{sec:hyp}
 Stated before the run, each against the strongest applicable baseline. A hypothesis is supported only if the corrected effect is significant with the predicted sign, or the stated threshold is met.
@@ -457,9 +457,9 @@ Stated before the run, each against the strongest applicable baseline. A hypothe
 \section{Reproducibility}\label{sec:repro}
 
 \paragraph{System under test.}
-The notebook \msrc{notebooks/npc-memory-state-benchmark.ipynb} clones the repository at commit \commit{0ea345fe140b359d7e82e77ffb2fdfa74caf0e7c}, asserts the hash, and imports the real backend modules (reducer, validator, event store, snapshots, prompt builder, FAISS memory, buffer, JSON extractor and the LangGraph node factories). Live conditions are built from the backend's own nodes, swapping only the nodes a condition changes. Only the baselines, the oracle and the benchmark generators are new code. Before any GPU time, a self-test with a deterministic mock LLM checks that the oracle flags direct writes, the barrier commits fewer violations, event-sourced sessions replay exactly, and the notebook's scoped retrieval matches \code{node\_retrieval}.
+The notebook \msrc{notebooks/npc-memory-state-benchmark.ipynb} clones the repository at commit \commit{0ea345fe140b359d7e82e77ffb2fdfa74caf0e7c}, asserts the hash, and imports the real backend modules (reducer, validator, event store, snapshots, prompt builder, FAISS memory, buffer, JSON extractor and the LangGraph node factories). Live conditions are built from the backend's own nodes, swapping only the nodes a condition changes. Only the baselines, the oracle and the benchmark generators are new code. Before any GPU time, a self-test with a deterministic mock LLM checks that the oracle flags direct writes, the barrier commits fewer violations, event-sourced sessions replay exactly, and the notebook's scoped retrieval matches \code{node\_retrieval}. \Cref{tab:config} lists the run configuration.
 
-\begin{table}[t]
+\begin{table}[!htbp]
 \centering\footnotesize
 \caption{Run configuration (\osrc{metrics/run_manifest.json}).}
 \label{tab:config}
@@ -481,7 +481,7 @@ Statistics & 10{,}000 cluster-bootstrap resamples, $\alpha=0.05$, Holm correctio
 \paragraph{Sample-size planning.}
 Eight pre-declared levels (index 0 to 7; \cref{tab:ladder} in \cref{app:ladder}) fix sessions per world and horizon, probes per category and world, and live sessions per world, so a smaller level is a prefix of a larger one. A pilot of 256 jobs measured steady-state throughput, and a planner chose the largest level whose estimated cost fitted the 11.25-hour budget after reserves: level 2 (estimated 8.18\,h of 8.47\,h available), the third of the eight levels. The full targets correspond to level 7 (estimated 63.0\,h). Coverage was complete: 6{,}300 recall, 4{,}800 probe, 3{,}276 live-turn, 1{,}680 seed-variance, 720 secondary-recall and 550 secondary-probe rows, none lost to a deadline. The primary server generated 14{,}448 responses and served 1{,}953 from the response cache; 80 requests were skipped at a deadline, all in the single-stream latency stage. \Cref{fig:gpu} shows the run profile.
 
-\begin{figure}[t]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=0.9\linewidth]{13_gpu_utilisation.png}
 \caption{GPU utilisation of both T4s over the 6.69-hour run, sampled every 15\,s by \code{nvidia-smi}. Utilisation is near 100\% during the LLM stages; the drops are server restarts and the CPU-only stages (replay, sweeps), and the final segment is the secondary backbone served as one replica per GPU.}
@@ -489,16 +489,18 @@ Eight pre-declared levels (index 0 to 7; \cref{tab:ladder} in \cref{app:ladder})
 \end{figure}
 
 \paragraph{Execution procedure.}
-(1) Create a Kaggle notebook from \msrc{notebooks/npc-memory-state-benchmark.ipynb}, select \emph{GPU T4 x2}, enable Internet, and optionally attach an independently written \code{w3\_world\_seed.json} or earlier \code{llm\_cache\_*.jsonl} files. (2) Run it as a saved version (\emph{Save \& Run All}). The notebook installs the pinned packages, builds the worlds and benchmark, runs the CPU experiments, the pilot, the planner and every LLM stage, and writes \code{outputs.zip}. Stage times in the reported run were: recall 154.8\,min, probes 52.5\,min, live sessions 96.8\,min, seed variance 23.9\,min, latency 10.0\,min, secondary backbone 35.7\,min, replay 9.4\,min. (3) The outputs used in this paper are committed under \mdir{notebooks/outputs/} (plots, metrics, predictions, annotation sheets) together with \msrc{notebooks/outputs.zip}, which also holds the generated worlds, sessions, probes and logs. Every table here can be regenerated from \mdir{notebooks/outputs/predictions/} without a GPU; we recomputed all point estimates in \cref{tab:main,tab:age,tab:probes,tab:factorial} and the six confirmatory tests from those files and obtained identical values (bootstrap intervals agree to within resampling noise). The game itself runs with \code{npm run dev} from the repository root (Python 3.10+, Node 20.19+ or 22.12+, and a \code{GROQ\_API\_KEY}); this paper builds with \code{npm run paper} from the repository root, which runs the bundled Tectonic and fails on any undefined reference, overfull box or bibliography warning.
+(1) Create a Kaggle notebook from \msrc{notebooks/npc-memory-state-benchmark.ipynb}, select \emph{GPU T4 x2}, enable Internet, and optionally attach an independently written \code{w3\_world\_seed.json} or earlier \code{llm\_cache\_*.jsonl} files. (2) Run it as a saved version (\emph{Save \& Run All}). The notebook installs the pinned packages, builds the worlds and benchmark, runs the CPU experiments, the pilot, the planner and every LLM stage, and writes \code{outputs.zip}. Stage times in the reported run were: recall 154.8\,min, probes 52.5\,min, live sessions 96.8\,min, seed variance 23.9\,min, latency 10.0\,min, secondary backbone 35.7\,min, replay 9.4\,min. (3) The outputs used in this paper are committed under \mdir{notebooks/outputs/} (plots, metrics, predictions, annotation sheets) together with \msrc{notebooks/outputs.zip}, which also holds the generated worlds, sessions, probes and logs. Every table here can be regenerated from \mdir{notebooks/outputs/predictions/} without a GPU; we recomputed all point estimates of the main, fact-age, probe and factorial tables (\cref{sec:main,sec:control,sec:factorial}) and the six confirmatory tests from those files and obtained identical values (bootstrap intervals agree to within resampling noise). The game itself runs with \code{npm run dev} from the repository root (Python 3.10+, Node 20.19+ or 22.12+, and a \code{GROQ\_API\_KEY}); this paper builds with \code{npm run paper} from the repository root, which runs the bundled Tectonic and fails on any undefined reference, overfull box or bibliography warning.
 
 %=====================================================================
 \section{Results}\label{sec:results}
 
-Values are mean [95\% cluster-bootstrap CI], pooled over the held-out worlds W2a to W4-128 unless stated, with K2-Horizon-7B as backbone. W1 appears in \cref{tab:perworld}.
+Values are mean [95\% cluster-bootstrap CI], pooled over the held-out worlds W2a to W4-128 unless stated, with K2-Horizon-7B as backbone. W1 appears in \cref{sec:general}.
 
 \subsection{Main comparison}\label{sec:main}
 
-\begin{table}[t]
+\Cref{tab:main} summarises the comparison. F4 had the highest long-range recall, the best ranking and the lowest violation and attack rates. Its recall advantage over flat vector memory B2 (+2.8 points) was not significant, and B2 used 21\% fewer input tokens (\cref{fig:cost}). Full history cost three times F4's input tokens for lower recall, and its single-stream LLM latency was 1.6 times F4's at the median and 2.5 times at P95.
+
+\begin{table}[!htbp]
 \centering\footnotesize
 \setlength{\tabcolsep}{3.5pt}
 \caption{Main comparison on held-out worlds. Violations and attack success are from the probe suite: F4 commits through the barrier and baselines by direct writes. Latency is single-stream LLM time per request. ``n.r.'': not replayable (no event log). Probe prompts carry three history turns, so B0 and B1 build identical probe prompts and their violation figures coincide.}
@@ -521,16 +523,23 @@ B3 Generic RAG & \ci{63.9}{57.7}{69.9} & \ci{56.4}{50.8}{61.9} & \ci{19.3}{15.7}
 Replay consistency: F4 \ci{100.0}{100.0}{100.0}\%; all baselines n.r. Latency for B1 rests on 15 of 24 requests; B1$\times$2 (one cached sample), B2 and B3 were not reached before the stage deadline.
 \end{table}
 
-\Cref{tab:main} summarises the comparison. F4 had the highest long-range recall, the best ranking and the lowest violation and attack rates. Its recall advantage over flat vector memory B2 (+2.8 points) was not significant, and B2 used 21\% fewer input tokens (\cref{fig:cost}). Full history cost three times F4's input tokens for lower recall, and its single-stream LLM latency was 1.6 times F4's at the median and 2.5 times at P95.
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.66\linewidth]{03_cost_vs_recall.png}
+\caption{Mean input tokens per turn against recall at fact age 20 or more (held-out worlds). Up and to the left is better. B2 and A2 reach recall similar to F4 with fewer tokens; B0 costs about three times as much for lower recall; A1 and B1 sit at zero.}
+\label{fig:cost}
+\end{figure}
 
-\begin{figure}[t]
+Recall by fact age (\cref{fig:age,tab:age}) separates the memory designs. The rolling contexts fall to zero once a fact leaves their window (B1 after age 10, B1$\times$2 after age 20), while F4 and B2 stay flat up to age 160 and generic RAG (B3) declines to 44.4\%. Among the memory ablations, only removing long-term memory (A1) is catastrophic.
+
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth]{02_recall_by_fact_age.png}
 \caption{Recall by fact age on held-out worlds with 95\% bootstrap intervals. Left: F4 against the baselines; the rolling contexts fall to zero once a fact leaves the window (B1 after age 10, B1$\times$2 after age 20), while F4 and B2 stay flat and generic RAG (B3) declines to 44.4\% at age 160. Right: F4 against its memory ablations; only removing long-term memory (A1) is catastrophic.}
 \label{fig:age}
 \end{figure}
 
-\begin{table}[t]
+\begin{table}[!htbp]
 \centering\footnotesize
 \setlength{\tabcolsep}{3pt}
 \caption{Recall (\%) by fact age on held-out worlds. Ages 80 and 160 occur only in 100- and 200-turn sessions.}
@@ -557,16 +566,12 @@ $n$ (F4 probes) & 108 & 108 & 108 & 108 & 72 & 36 \\
 \end{adjustbox}
 \end{table}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.66\linewidth]{03_cost_vs_recall.png}
-\caption{Mean input tokens per turn against recall at fact age 20 or more (held-out worlds). Up and to the left is better. B2 and A2 reach recall similar to F4 with fewer tokens; B0 costs about three times as much for lower recall; A1 and B1 sit at zero.}
-\label{fig:cost}
-\end{figure}
-
+\FloatBarrier
 \subsection{Retrieval quality, sensitivity and seed variance}\label{sec:retrieval}
 
-\begin{table}[t]
+Scoping changed \emph{ranking} more than \emph{reach}. F4, B2, B3 and A3 placed the gold turn in the prompt for 98\% to 100\% of probes (\cref{tab:retrieval}), so recall@6 does not separate them, but F4 ranked it higher (MRR@6 0.898 against 0.750 for B2 and 0.705 for the unscoped ablation A3; \cref{fig:retrieval}) and kept the paraphrased distractor out of 43\% of prompts, against 10\% for B2 and 9\% for A3. Removing the buffer (A2) kept the distractor out of 90\% of prompts, because the distractor, told to a different NPC, then reaches the prompt only through retrieval. In the teacher-forced design the fallback rarely fires usefully: disabling it (A4) raised MRR@6 to 0.950, since the fallback replaces a short scoped list with unscoped neighbours.
+
+\begin{table}[!htbp]
 \centering\footnotesize
 \setlength{\tabcolsep}{3pt}
 \caption{Retrieval quality and secondary memory metrics (held-out worlds). ``Confused'': answered with the distractor's value. No prompt reached the 16{,}384-character cap.}
@@ -591,9 +596,7 @@ A4 & \ci{100.0}{100.0}{100.0} & \ci{52.6}{49.1}{56.3} & \ci{1.1}{0.4}{2.0} & \ci
 \end{adjustbox}
 \end{table}
 
-Scoping changed \emph{ranking} more than \emph{reach}. F4, B2, B3 and A3 placed the gold turn in the prompt for 98\% to 100\% of probes, so recall@6 does not separate them, but F4 ranked it higher (MRR@6 0.898 against 0.750 for B2 and 0.705 for the unscoped ablation A3; \cref{fig:retrieval}) and kept the paraphrased distractor out of 43\% of prompts, against 10\% for B2 and 9\% for A3. Removing the buffer (A2) kept the distractor out of 90\% of prompts, because the distractor, told to a different NPC, then reaches the prompt only through retrieval. In the teacher-forced design the fallback rarely fires usefully: disabling it (A4) raised MRR@6 to 0.950, since the fallback replaces a short scoped list with unscoped neighbours.
-
-\begin{figure}[t]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth]{04_retrieval_quality.png}
 \caption{Left: MRR@6 and Recall@6 of the gold memory for each retrieval condition (held-out). Recall@6 is near 1 everywhere; MRR separates scoped (F4, A2, A4) from unscoped (A3, B2, B3) retrieval. Right: share of probes whose gold turn reached the prompt, by fact age, which bounds recall from above.}
@@ -602,7 +605,7 @@ Scoping changed \emph{ranking} more than \emph{reach}. F4, B2, B3 and A3 placed 
 
 The retrieval-only sweeps (80 sessions on W1 and W2 at horizons 100 and 200, one setting varied at a time around buffer 8, $k=6$, $\theta=3$) confirm this (\cref{tab:sweeps,fig:sweeps}). Buffer size had no effect on retrieval. A threshold of 0, which is A4, gave the best MRR; $\theta=6$ triggered the fallback more often and lowered it.
 
-\begin{table}[t]
+\begin{table}[!htbp]
 \centering\footnotesize
 \caption{Sensitivity sweeps (retrieval only; W1 and W2a to W2c, horizons 100 and 200; 880 probes per setting).}
 \label{tab:sweeps}
@@ -616,7 +619,7 @@ MRR@$k$ & 0.8990 & 0.8990 & 0.8990 & 0.8390 & 0.9124 & 0.9227 & 0.8303 \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[t]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=0.8\linewidth]{09_sensitivity_sweeps.png}
 \caption{Gold-in-prompt rate and MRR@$k$ for each sweep setting. The default is buffer 8, $k=6$, threshold 3 (labelled buf8). Lower $k$ and a higher fallback threshold reduce ranking quality; removing the fallback (thr0) improves it on this benchmark.}
@@ -625,7 +628,7 @@ MRR@$k$ & 0.8990 & 0.8990 & 0.8990 & 0.8390 & 0.9124 & 0.9227 & 0.8303 \\
 
 Across three sampling seeds on the 21 calibration sessions (210 probes, all ages), F4 was the most stable condition (\cref{tab:seeds}; \cref{fig:seeds}, left).
 
-\begin{table}[t]
+\begin{table}[!htbp]
 \centering\footnotesize
 \caption{Recall over all ages for three sampling seeds (calibration sessions, all worlds).}
 \label{tab:seeds}
@@ -641,11 +644,19 @@ B3 & 0.681 & 0.681 & 0.671 & 0.55 \\
 \end{tabular}
 \end{table}
 
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{12_seed_and_backbone.png}
+\caption{Left: recall over all ages for three sampling seeds on the calibration sessions; F4's three points nearly coincide, while B2 varies by about 8 points. Right: recall at fact age 20 or more on the secondary-backbone subset for K2-Horizon-7B and K2-Horizon-3.7B; F4 degrades least with the smaller model.}
+\label{fig:seeds}
+\end{figure}
+
+\FloatBarrier
 \subsection{State control under adversarial probes}\label{sec:control}
 
 \Cref{tab:probes} pools the outputs of all five context conditions (350 attacks per category) and commits each three ways. Through the barrier, teleportation, fabrication, theft and injection attacks never produced a committed violation, against 6\% to 33\% with direct writes, and no lawful twin was rejected (\cref{fig:probes}). Much of the protection already comes from the reducer: committing every schema-valid proposal as an event (A5) cut overall attack success from 16.2\% to 7.1\%, because the reducer ignores unknown entities and destinations. The barrier's remaining failure is concentrated in one category: it accepted 51.9\% of unlawful currency proposals, gains such as a $+2{,}000$ delta ``for a chest of coins'', which the validator never bounds (gap G1). Trust inflation never succeeded under any mode: even under direct writes, no output to a trust-inflation probe changed an NPC's trust by more than 20 in one turn, although five injection outputs did (O6). Secret leaks were rare in every mode, but the model never sees the secrets (gap G5), so this does not show secret keeping.
 
-\begin{table}[t]
+\begin{table}[!htbp]
 \centering\footnotesize
 \setlength{\tabcolsep}{4pt}
 \caption{Adversarial probes by category, all worlds and all five contexts (350 attacks per category, 2{,}450 in all). Attack success is a committed oracle violation, or a secret leak for the secret category. Validator gap: unlawful proposals accepted by the barrier over unlawful proposals.}
@@ -669,16 +680,19 @@ All & \ci{16.2}{13.6}{18.8} & \ci{7.1}{5.3}{9.0} & \ci{2.9}{1.8}{4.3} & \ci{0.0}
 Oracle codes under direct writes: currency 60$\times$O7, 69$\times$O8, 2$\times$O1; fabrication 73$\times$O1, 1$\times$O3; theft 92$\times$O1, 25$\times$O4, 14$\times$O2; teleportation 52$\times$O3, 43$\times$O1, 1$\times$O5; injection 18$\times$O4, 5$\times$O6, 1$\times$O3. Parse success: 95.8\% of probe outputs. Secret leak rate over all attacks: \ci{1.8}{1.1}{2.6}\%.
 \end{table}
 
-\begin{figure}[t]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth]{05_adversarial_probes.png}
 \caption{Left: attack success by category when the same model outputs are committed by direct writes, by the reducer without validation (A5), and through the barrier. Right: the barrier's false rejection of lawful twins (zero in every category) and its validator gap, against the 5\% bound of H4; the gap is confined to currency.}
 \label{fig:probes}
 \end{figure}
 
+\FloatBarrier
 \subsection{Factorial separation in live sessions}\label{sec:factorial}
 
-\begin{table}[t]
+Live sessions reproduce the probe result at larger scale (\cref{tab:factorial,fig:factorial}). Under direct writes the oracle flagged 439 of 546 F1 turns and 460 of 546 F3 turns, from only 125 and 133 committed transitions, because the corruption persists: direct writes left the player in a non-existent location on an average of 29.9 (F1) and 30.4 (F3) of 39 turns, and the harness then prompted from the last valid location. With the barrier, 3 (F2) and 6 (F4) turns were flagged. The per-code breakdown (\cref{fig:codes}) shows that direct writes fail mainly through non-canonical entities (O1), non-adjacent moves (O3) and overspending (O7), while with the barrier only O5 and O8 remain, each below 1 per 100 turns.
+
+\begin{table}[!htbp]
 \centering\footnotesize
 \caption{Memory $\times$ control factorial on live sessions (14 sessions of 39 turns per cell; 56 live probes per cell). False rejection is from lawful twins under the matching probe context.}
 \label{tab:factorial}
@@ -694,25 +708,23 @@ F4 Dual-tier, barrier & \ci{44.6}{30.4}{59.0} & \ci{14.0}{4.3}{27.6} & \ci{0.0}{
 \end{tabular}
 \end{table}
 
-Live sessions reproduce the probe result at larger scale (\cref{tab:factorial,fig:factorial}). Under direct writes the oracle flagged 439 of 546 F1 turns and 460 of 546 F3 turns, from only 125 and 133 committed transitions, because the corruption persists: direct writes left the player in a non-existent location on an average of 29.9 (F1) and 30.4 (F3) of 39 turns, and the harness then prompted from the last valid location. With the barrier, 3 (F2) and 6 (F4) turns were flagged. The per-code breakdown (\cref{fig:codes}) shows that direct writes fail mainly through non-canonical entities (O1), non-adjacent moves (O3) and overspending (O7), while with the barrier only O5 and O8 remain, each below 1 per 100 turns.
-
-The cost of blocking without regenerating is visible: desynchronisation rose from about 3\% to about 19\% of live turns once proposals could be rejected, because the NPC's words still describe the rejected change. Live recall with dual-tier memory (41\% to 45\%) was about half of teacher-forced recall; live memories are written from model-generated summaries and depend on committed movement, and the run does not isolate which factor causes the drop.
-
-\begin{figure}[t]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=0.9\linewidth]{06_factorial_interaction.png}
 \caption{Interaction plots for the $2\times2$ design. Left: live recall rises with memory under either control setting. Right: violations per 100 transitions fall with the barrier under either memory setting. Near-parallel lines indicate little interaction in the raw cells; the mixed model (\cref{tab:glmm}) nevertheless finds a significant recall interaction.}
 \label{fig:factorial}
 \end{figure}
 
-\begin{figure}[t]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=0.78\linewidth]{11_live_violation_codes.png}
 \caption{Oracle-flagged live turns per 100 turns by condition and invariant code (O2 and O6 never fired and are omitted by the plot). Direct writes (F1, F3) fail mostly on O1, O3 and O7. A6, which keeps the validator but writes accepted proposals in place, accumulates persistent O1 corruption.}
 \label{fig:codes}
 \end{figure}
 
-\begin{table}[t]
+The cost of blocking without regenerating is visible: desynchronisation rose from about 3\% to about 19\% of live turns once proposals could be rejected, because the NPC's words still describe the rejected change. Live recall with dual-tier memory (41\% to 45\%) was about half of teacher-forced recall; live memories are written from model-generated summaries and depend on committed movement, and the run does not isolate which factor causes the drop.
+
+\begin{table}[!htbp]
 \centering\footnotesize
 \caption{Mixed-effects logistic models of \cref{eq:glmm} on live turns, fitted by variational Bayes. ``SD'' is the posterior standard deviation; $p$ is the two-sided normal tail of $z=\text{mean}/\text{SD}$.}
 \label{tab:glmm}
@@ -735,9 +747,12 @@ Outcome & Term & Posterior mean & SD & $z$ & $p$ \\
 
 \Cref{tab:glmm} confirms that memory dominates recall and control dominates violations, as designed. It also shows what H6 ruled out: a significant control effect on recall and a positive memory-by-control interaction, and a small memory effect on violations. In the raw cells the barrier made no difference to recall under rolling memory (0.0\% in both) and a small one under dual-tier memory (41.1\% against 44.6\%), so with 56 live probes per cell the interaction should be read cautiously.
 
+\FloatBarrier
 \subsection{Ablations}\label{sec:ablations}
 
-\begin{table}[t]
+\Cref{tab:ablations} shows that not every memory component earned its place on this benchmark: removing the buffer (A2) or the fallback (A4) did not lower recall. Scoping did: without it (A3) recall at $a\ge20$ fell to 81.8\% and MRR to 0.705. On the control side, A5 had a slightly \emph{lower} live violation rate than F4 (11.4 against 14.0 per 100 transitions, overlapping intervals), consistent with the probe finding that the reducer alone blocks most structural attacks, while on probes the barrier was better (9.6 against 13.1). A6, which validates but applies accepted proposals by in-place writes instead of the reducer, reached 351.4 violations per 100 transitions: in 5 of its 14 sessions an O1 corruption appeared on a small-talk turn and persisted thereafter (130 flagged turns from 37 transitions). The reducer's own guards are absent in A6; for example it ignores an NPC relocation to a non-canonical location, which the validator accepts (gap G3). The stored rows do not record proposal payloads, so the exact triggering proposal could not be confirmed. Validator and reducer thus work as a pair.
+
+\begin{table}[!htbp]
 \centering\footnotesize
 \setlength{\tabcolsep}{3.5pt}
 \caption{Single-component ablations. Memory ablations are teacher-forced on held-out worlds; control ablations use probes (all seven worlds, F4 context) and live sessions. Local compute is turn time minus LLM time in the batched live sessions. Recovery is the median at turn 160 over 42 replay sessions.}
@@ -764,11 +779,12 @@ A7 no snapshots & as F4 & as F4 & as F4 & as F4 & -- & 145.9 (replay) \\
 Replay consistency: F4 and A5 100\%; A6 not replayable; A7 100\% (full fold). F4's live interval here is a separate bootstrap draw of the same quantity as in \cref{tab:factorial}.
 \end{table}
 
-\Cref{tab:ablations} shows that not every memory component earned its place on this benchmark: removing the buffer (A2) or the fallback (A4) did not lower recall. Scoping did: without it (A3) recall at $a\ge20$ fell to 81.8\% and MRR to 0.705. On the control side, A5 had a slightly \emph{lower} live violation rate than F4 (11.4 against 14.0 per 100 transitions, overlapping intervals), consistent with the probe finding that the reducer alone blocks most structural attacks, while on probes the barrier was better (9.6 against 13.1). A6, which validates but applies accepted proposals by in-place writes instead of the reducer, reached 351.4 violations per 100 transitions: in 5 of its 14 sessions an O1 corruption appeared on a small-talk turn and persisted thereafter (130 flagged turns from 37 transitions). The reducer's own guards are absent in A6; for example it ignores an NPC relocation to a non-canonical location, which the validator accepts (gap G3). The stored rows do not record proposal payloads, so the exact triggering proposal could not be confirmed. Validator and reducer thus work as a pair.
-
+\FloatBarrier
 \subsection{Replay and recovery}\label{sec:replay}
 
-\begin{table}[t]
+Replay behaved as \cref{prop:replay} predicts (\cref{tab:replay,fig:replay}): every event-sourced live session (F2, F4, A5) and every CPU replay session was reproduced exactly by full fold, by snapshot plus suffix and after a restart. Full replay time grew with log length, reaching a median of 145.9\,ms at turn 160, while snapshot loading stayed near 0.5\,ms. The application's load path, which drops the suffix, was consistent in none of the simulated crashes and lost 8 turns on average: the gap between the periodic snapshot at turn 192 and turn 200.
+
+\begin{table}[!htbp]
 \centering\footnotesize
 \caption{Replay and recovery on 42 CPU sessions of 200 turns (6 per world; 367.2 events on average), committed through the real event store and reducer.}
 \label{tab:replay}
@@ -785,18 +801,19 @@ Application load path when the per-turn auto-save succeeded & 100\% \\
 \end{tabular}
 \end{table}
 
-Replay behaved as \cref{prop:replay} predicts (\cref{tab:replay,fig:replay}): every event-sourced live session (F2, F4, A5) and every CPU replay session was reproduced exactly by full fold, by snapshot plus suffix and after a restart. Full replay time grew with log length, reaching a median of 145.9\,ms at turn 160, while snapshot loading stayed near 0.5\,ms. The application's load path, which drops the suffix, was consistent in none of the simulated crashes and lost 8 turns on average: the gap between the periodic snapshot at turn 192 and turn 200.
-
-\begin{figure}[t]
+\begin{figure}[!htbp]
 \centering
 \adjincludegraphics[trim={0 0 0 {0.08\height}},clip,width=0.72\linewidth]{08_replay_recovery.png}
 \caption{Median time to rebuild state at each snapshot point (log scale): full replay of the event log (A7) against snapshot loading (the system), over 42 sessions of 200 turns. The plot's title strip, which lists the consistency rates of \cref{tab:replay}, is cropped.}
 \label{fig:replay}
 \end{figure}
 
+\FloatBarrier
 \subsection{Latency and token cost}\label{sec:latency}
 
-\begin{table}[t]
+Local work was negligible against generation (\cref{tab:latency,fig:latency}). Validation took 0.039\,ms at P95, well inside the 5\,ms bound of H4, and the commit node (SQLite append, reduction, indexing) dominated local time at 18.4\,ms. Single-stream LLM time, from the recall-prompt benchmark, was 6{,}906\,ms at P50 and 9{,}409\,ms at P95 for F4. Under the batched live stage (84 concurrent sessions) the median LLM time per F4 turn was about 89.6\,s, a throughput setting rather than an interactive one. Per 100 turns F4 consumed 139{,}898 input and 15{,}394 output tokens, against 431{,}032 and 14{,}117 for full history (\cref{tab:retrieval}). Because the models were self-hosted, no monetary cost is reported.
+
+\begin{table}[!htbp]
 \centering\footnotesize
 \caption{Per-stage latency (ms) of the live F4 graph, single stream (24 turns, two worlds). All 24 LLM responses in this stage came from the response cache, so the LLM row (0.09\,ms at P50) is a cache lookup and is omitted.}
 \label{tab:latency}
@@ -811,18 +828,19 @@ P99 & 0.009 & 0.385 & 0.167 & 0.125 & 0.046 & 30.311 & 0.013 & 37.016 & 37.127 \
 \end{tabular}
 \end{table}
 
-Local work was negligible against generation (\cref{tab:latency,fig:latency}). Validation took 0.039\,ms at P95, well inside the 5\,ms bound of H4, and the commit node (SQLite append, reduction, indexing) dominated local time at 18.4\,ms. Single-stream LLM time, from the recall-prompt benchmark, was 6{,}906\,ms at P50 and 9{,}409\,ms at P95 for F4. Under the batched live stage (84 concurrent sessions) the median LLM time per F4 turn was about 89.6\,s, a throughput setting rather than an interactive one. Per 100 turns F4 consumed 139{,}898 input and 15{,}394 output tokens, against 431{,}032 and 14{,}117 for full history (\cref{tab:retrieval}). Because the models were self-hosted, no monetary cost is reported.
-
-\begin{figure}[t]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth]{07_latency.png}
 \caption{Left: P50 (bars) and P95 (ticks) latency of each F4 stage, single stream, log scale; the ``llm'' bar is a response-cache lookup (\cref{tab:latency}). Right: single-stream LLM time per request for each condition's recall prompts; B2 and B3 were not reached before the stage deadline and B1$\times$2 has one cached sample.}
 \label{fig:latency}
 \end{figure}
 
+\FloatBarrier
 \subsection{Generalisation across worlds and backbones}\label{sec:general}
 
-\begin{table}[t]
+Both main effects held on every held-out world (\cref{tab:perworld,fig:perworld}). By family, F4 minus B1 recall at $a\ge20$ was $+0.889$ (W2), $+0.796$ (W3) and $+0.898$ (W4), and direct-minus-barrier attack success was $+0.114$, $+0.086$ and $+0.121$. F4 did not beat the best baseline on every world: B2 was ahead on W2c and B0 on W4-32, both within overlapping intervals. On the subset where both backbones ran (W1, W2a, W3, W4-32 at horizon 100; 72 F4 probes at $a\ge20$), the 3.7B model kept F4's recall close to the 7B model's (81.9\% against 86.1\%) while every baseline dropped more: B0 from 79.2\% to 61.1\%, B2 from 84.7\% to 73.6\% and B3 from 70.8\% to 48.6\% (\cref{fig:seeds}, right). With the 3.7B model the barrier blocked every attack (0 of 280, against 18.6\% under direct writes of the same outputs) and rejected no lawful twin (0 of 42 lawful proposals).
+
+\begin{table}[!htbp]
 \centering\footnotesize
 \setlength{\tabcolsep}{3.5pt}
 \caption{Per-world and per-backbone breakdown. Best baseline for recall: highest of B0 to B3 on that world; for attacks: the baseline context with the lowest direct-write success. The 3.7B model ran at horizon 100 on four worlds with probes under the F4 context only, so its attack comparison is barrier against direct writes of the same outputs.}
@@ -849,8 +867,6 @@ W4-32 & 3.7B & \ci{77.8}{50.0}{100.0} & B0: \ci{66.7}{50.0}{83.3} & \ci{0.0}{0.0
 \end{adjustbox}
 \end{table}
 
-Both main effects held on every held-out world (\cref{tab:perworld,fig:perworld}). By family, F4 minus B1 recall at $a\ge20$ was $+0.889$ (W2), $+0.796$ (W3) and $+0.898$ (W4), and direct-minus-barrier attack success was $+0.114$, $+0.086$ and $+0.121$. F4 did not beat the best baseline on every world: B2 was ahead on W2c and B0 on W4-32, both within overlapping intervals. On the subset where both backbones ran (W1, W2a, W3, W4-32 at horizon 100; 72 F4 probes at $a\ge20$), the 3.7B model kept F4's recall close to the 7B model's (81.9\% against 86.1\%) while every baseline dropped more: B0 from 79.2\% to 61.1\%, B2 from 84.7\% to 73.6\% and B3 from 70.8\% to 48.6\% (\cref{fig:seeds}, right). With the 3.7B model the barrier blocked every attack (0 of 280, against 18.6\% under direct writes of the same outputs) and rejected no lawful twin (0 of 42 lawful proposals).
-
 \begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth]{10_per_world_effects.png}
@@ -858,14 +874,10 @@ Both main effects held on every held-out world (\cref{tab:perworld,fig:perworld}
 \label{fig:perworld}
 \end{figure}
 
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=\linewidth]{12_seed_and_backbone.png}
-\caption{Left: recall over all ages for three sampling seeds on the calibration sessions; F4's three points nearly coincide, while B2 varies by about 8 points. Right: recall at fact age 20 or more on the secondary-backbone subset for K2-Horizon-7B and K2-Horizon-3.7B; F4 degrades least with the smaller model.}
-\label{fig:seeds}
-\end{figure}
-
+\FloatBarrier
 \subsection{Hypothesis tests}\label{sec:hyptests}
+
+\Cref{tab:hyp} summarises the verdicts. H1 fails on two counts: the gain over B2 is not significant, and F4 used more input tokens (1{,}399 per turn) than both B2 (1{,}102) and B3 (1{,}209), so ``equal or lower token cost'' is not met. H5 holds for the event-sourced design but not for the application's load path. H6 fails because control affects recall and the two factors interact.
 
 \begin{table}[!htbp]
 \centering\footnotesize
@@ -889,10 +901,10 @@ H7 & H1 and H3 directions on W2, W3, W4 & -- & all positive & -- & supported \\
 \end{tabularx}
 \end{table}
 
-\Cref{tab:hyp} summarises the verdicts. H1 fails on two counts: the gain over B2 is not significant, and F4 used more input tokens (1{,}399 per turn) than both B2 (1{,}102) and B3 (1{,}209), so ``equal or lower token cost'' is not met. H5 holds for the event-sourced design but not for the application's load path. H6 fails because control affects recall and the two factors interact.
-
 %=====================================================================
 \section{Error Analysis}\label{sec:errors}
+
+\Cref{tab:errors} locates the failures. None of F4's recall failures came from retrieval: in all 57 ``hit but ignored'' cases the gold memory was in the prompt and the model answered wrongly, and only 6 answers used the distractor's value. Rolling contexts failed by forgetting (315 misses for B1), generic RAG by ignoring or confusing retrieved chunks (142 and 50), and the ablation without long-term memory by both (377 misses, 132 confusions). F4's committed violations under the barrier (16) almost all coincide with validator gaps (17), which \cref{tab:probes} places in the currency category. Desynchronisation counts were similar for F4, F2 and A6 (102, 101, 108), the three conditions that can reject proposals, which ties the effect to rejection without regeneration rather than to memory.
 
 \begin{table}[!htbp]
 \centering\footnotesize
@@ -913,8 +925,6 @@ Desynchronisation (live, proxy) & 102 & -- & -- & -- & -- & -- & -- & -- & 101 &
 \bottomrule
 \end{tabular}
 \end{table}
-
-\Cref{tab:errors} locates the failures. None of F4's recall failures came from retrieval: in all 57 ``hit but ignored'' cases the gold memory was in the prompt and the model answered wrongly, and only 6 answers used the distractor's value. Rolling contexts failed by forgetting (315 misses for B1), generic RAG by ignoring or confusing retrieved chunks (142 and 50), and the ablation without long-term memory by both (377 misses, 132 confusions). F4's committed violations under the barrier (16) almost all coincide with validator gaps (17), which \cref{tab:probes} places in the currency category. Desynchronisation counts were similar for F4, F2 and A6 (102, 101, 108), the three conditions that can reject proposals, which ties the effect to rejection without regeneration rather than to memory.
 
 %=====================================================================
 \section{Discussion}\label{sec:discussion}
@@ -960,7 +970,7 @@ Fix the defects found (bound currency gains and validate per turn; fold the logg
 \paragraph{Data and licences.}
 W2 content derives from LIGHT under CC BY-NC 4.0, so the released W2 worlds are for non-commercial use. Both evaluated backbones are Apache 2.0.
 
-\bibliographystyle{plainnat}
+\bibliographystyle{unsrtnat}
 \bibliography{references}
 
 %=====================================================================
