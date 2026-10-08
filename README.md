@@ -45,7 +45,9 @@ The repository also contains a full evaluation of the engine's two mechanisms, s
 
 ## Screenshots
 
-Title screen with continue, new game, and load game:
+The interface is styled as a Persian palace at night, after Prince of Persia: lapis surfaces, sandstone trim, gold for the player, and turquoise for NPCs. The design system is in [DESIGN.md](DESIGN.md).
+
+Title screen with resume, new game, and load game:
 
 ![Title screen](docs/screenshots/title-screen.png)
 
@@ -619,15 +621,15 @@ JSON format (`LOG_FORMAT=json`) writes the same fields as one object per line, w
 
 ## Testing and verification
 
-Checks run for this revision of the README (2 October 2026, Windows 11, Python 3.11.9):
+Checks run for this revision of the README (8 October 2026, Windows 11, Python 3.11.9):
 
 | Check          | Command                                             | Result                                       |
 | -------------- | --------------------------------------------------- | -------------------------------------------- |
 | Backend tests  | `python -m unittest discover -s tests` in `Backend` | Passed, `18` tests                           |
 | Frontend tests | `npm run test` in `Frontend`                        | Passed, `7` tests in `2` files               |
-| Frontend build | `npm run build` in `Frontend`                       | Passed, `2014` modules transformed, `1.28 s` |
+| Frontend build | `npm run build` in `Frontend`                       | Passed, `2015` modules transformed, `1.65 s` |
 
-`npm run check` (format, lint, typecheck, and clone detection) was not re-run for this revision.
+`npm run check` from the repository root also passed: all 8 steps (clone detection, backend format, backend tests, frontend format, typecheck, lint, tests, and build) in `26.4 s`.
 
 What the tests cover:
 
@@ -650,13 +652,13 @@ Real LLM turns are not exercised by the unit tests. They are exercised by the ev
 npm run build
 ```
 
-The root command delegates to the `Frontend` build script. Output from the run on 2 October 2026:
+The root command delegates to the `Frontend` build script. Output from the run on 8 October 2026:
 
 | Asset                            | Size        | Gzip size   |
 | -------------------------------- | ----------- | ----------- |
-| `dist/index.html`                | `1.40 kB`   | `0.61 kB`   |
-| `dist/assets/index-DLVh6p70.css` | `22.66 kB`  | `5.67 kB`   |
-| `dist/assets/index-CrvtptNF.js`  | `407.04 kB` | `128.63 kB` |
+| `dist/index.html`                | `1.39 kB`   | `0.61 kB`   |
+| `dist/assets/index-BGGWw3u0.css` | `23.57 kB`  | `6.06 kB`   |
+| `dist/assets/index-BHoVedeA.js`  | `408.08 kB` | `128.84 kB` |
 
 There is no separate backend build step; the backend runs directly through Python.
 
@@ -1335,8 +1337,8 @@ Request throughput, memory use, and WebSocket capacity of the game server: `Not 
 | Notebook cells                   | `131` (65 code)                           | [`notebooks/npc-memory-state-benchmark.ipynb`](notebooks/npc-memory-state-benchmark.ipynb)     |
 | Evaluation figures               | `13`                                      | [`notebooks/outputs/plots`](notebooks/outputs/plots)                                           |
 | Evaluation run time              | `6.69` hours                              | [`notebooks/outputs/metrics/run_manifest.json`](notebooks/outputs/metrics/run_manifest.json)   |
-| JS bundle gzip size              | `128.63 kB`                               | `npm run build`, 2 October 2026                                                                |
-| CSS bundle gzip size             | `5.67 kB`                                 | `npm run build`, 2 October 2026                                                                |
+| JS bundle gzip size              | `128.84 kB`                               | `npm run build`, 8 October 2026                                                                |
+| CSS bundle gzip size             | `6.06 kB`                                 | `npm run build`, 8 October 2026                                                                |
 | Default ports                    | backend `8000`, frontend `8080`           | [`Backend/config.py`](Backend/config.py), [`Frontend/vite.config.ts`](Frontend/vite.config.ts) |
 
 ## Troubleshooting

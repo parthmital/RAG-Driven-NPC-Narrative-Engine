@@ -80,7 +80,7 @@ Dependency rules are enforced by [Backend/tests/test_architecture.py](Backend/te
 
 Inside `components/`:
 
-- `ui/` holds the custom primitives: `Button`, `IconButton`, `Tooltip`, `Modal` (dialog and side sheet with focus trap), `ChoiceGroup`, `Field`, `Stepper`, `EmptyState` and `SectionLabel`, and the themed `sonner` toaster.
+- `ui/` holds the custom primitives: `Button`, `IconButton`, `Tooltip`, `Modal` (dialog and side sheet with focus trap), `ChoiceGroup`, `Field`, `Stepper`, `EmptyState`, `SectionLabel` and `ArchFrame` (the arch that frames the emblem on the title and boot screens), and the themed `sonner` toaster.
 - `layout/` holds the game shell (`GameLayout`, `GameNavigation`), `BootGate`, and `MasterDetail`, which the Map and People pages share.
 - `game/` holds the transcript (`DialoguePanel`), the composer (`PlayerInputDock`), `TrustScale`, `PauseMenu`, and `scene/`, the room panel split into place, people, objects, and player sections.
 
