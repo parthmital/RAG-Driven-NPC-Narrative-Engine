@@ -41,4 +41,4 @@ export function Field({
 }
 
 export const inputClass =
-	"min-h-11 w-full rounded-md border bg-raised/40 px-3 text-body text-text transition-colors duration-150 hover:border-faint focus-visible:border-gilt focus-visible:outline-none aria-[invalid=true]:border-ember/70 disabled:opacity-50";
+	"min-h-11 fine:min-h-9 w-full rounded-md border bg-raised/40 px-3 text-body text-text transition-colors duration-150 hover:border-faint focus-visible:border-gilt focus-visible:outline-none aria-[invalid=true]:border-ember/70 disabled:opacity-50";

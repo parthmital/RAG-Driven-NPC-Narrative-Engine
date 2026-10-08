@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { apiClient } from "@/services/api";
+import { ArchFrame } from "@/components/ui/ArchFrame";
 
 const POLL_MS = 1000;
 const SLOW_AFTER_S = 8;
@@ -31,10 +32,12 @@ export function BootGate({ children }: { children: ReactNode }) {
 	if (ready) return <>{children}</>;
 
 	return (
-		<main className="flex h-dvh flex-col items-center justify-center gap-6 bg-ground px-6 text-center">
-			<img src="/favicon.png" alt="" className="size-20" />
+		<main className="girih flex h-dvh flex-col items-center justify-center gap-6 bg-ground px-6 text-center">
+			<ArchFrame className="w-24">
+				<img src="/favicon.png" alt="" className="w-full" />
+			</ArchFrame>
 			<div className="flex flex-col items-center gap-2" role="status">
-				<h1 className="text-headline">The Obsidian Flask</h1>
+				<h1 className="text-headline text-gilt">The Obsidian Flask</h1>
 				<p className="flex items-center gap-2 text-body text-muted">
 					<Loader2 aria-hidden className="size-4 animate-spin" />
 					Waking the storyteller

@@ -132,7 +132,7 @@ export function PlayerInputDock() {
 						aria-label="Send"
 						onClick={() => void send()}
 						disabled={!input.trim() || isProcessing}
-						className="inline-flex size-11 shrink-0 items-center justify-center press rounded-md bg-gilt text-gilt-ink hover:bg-gilt/90 active:bg-gilt/80 disabled:bg-raised disabled:text-faint"
+						className="inline-flex size-11 fine:size-9 shrink-0 items-center justify-center press rounded-md bg-gilt text-gilt-ink hover:bg-gilt/90 active:bg-gilt/80 disabled:bg-raised disabled:text-faint"
 					>
 						<SendHorizontal aria-hidden className="size-5" />
 					</button>

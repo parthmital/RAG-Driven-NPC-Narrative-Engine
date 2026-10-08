@@ -8,7 +8,7 @@ import type { DialogueMessage } from "@/types/game";
 
 /** Grid shared by entries: speaker gutter, then the line itself. */
 const ROW =
-	"grid gap-x-6 gap-y-1 sm:grid-cols-[7.5rem_minmax(0,1fr)] animate-in";
+	"grid gap-x-5 gap-y-1 sm:grid-cols-[6.5rem_minmax(0,1fr)] animate-in";
 
 function Speaker({ name, tone }: { name?: string; tone: string }) {
 	return (
@@ -146,7 +146,7 @@ export function DialoguePanel() {
 		<div ref={scrollRef} className="scroll-area min-h-0 flex-1">
 			<ol
 				aria-label="Conversation"
-				className="mx-auto flex max-w-3xl flex-col gap-7 px-4 py-8 sm:px-8"
+				className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-6 sm:px-8"
 			>
 				{visible.map((msg) => (
 					<Entry key={msg.id} msg={msg} />

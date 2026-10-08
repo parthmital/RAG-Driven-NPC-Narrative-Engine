@@ -26,7 +26,7 @@ function PersonDetail({ npc }: { npc: NPC }) {
 	return (
 		<>
 			<header className="flex flex-col gap-3">
-				<h1 className="text-headline text-arcane sm:text-hero">{npc.name}</h1>
+				<h1 className="text-headline text-arcane">{npc.name}</h1>
 				{npc.title && <p className="text-read text-muted">{npc.title}.</p>}
 				{isHere ? (
 					<Button

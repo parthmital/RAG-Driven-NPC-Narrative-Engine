@@ -47,7 +47,7 @@ export function ItemList({
 						onClick={() => run(item.id)}
 						disabled={disabled || busyId !== null}
 						aria-label={`${actionLabel} ${item.name}`}
-						className="inline-flex min-h-11 shrink-0 items-center gap-2 press rounded-md border px-3 text-label font-medium text-muted hover:border-faint hover:text-text disabled:opacity-50"
+						className="inline-flex min-h-11 fine:min-h-9 shrink-0 items-center gap-2 press rounded-md border px-3 text-label font-medium text-muted hover:border-faint hover:text-text disabled:opacity-50"
 					>
 						{busyId === item.id ? (
 							<Loader2 aria-hidden className="size-4 animate-spin" />

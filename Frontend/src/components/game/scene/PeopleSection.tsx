@@ -60,7 +60,7 @@ export function PeopleSection() {
 											closeModal();
 										}}
 										className={cn(
-											"press inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md px-3 text-label font-medium",
+											"press inline-flex min-h-11 fine:min-h-9 shrink-0 items-center gap-2 rounded-md px-3 text-label font-medium",
 											addressed
 												? "text-arcane"
 												: "text-muted hover:bg-raised hover:text-text",

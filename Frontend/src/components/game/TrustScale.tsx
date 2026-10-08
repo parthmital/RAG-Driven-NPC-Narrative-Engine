@@ -7,7 +7,7 @@ const toPercent = (value: number) =>
 	((Math.min(MAX, Math.max(MIN, value)) - MIN) / (MAX - MIN)) * 100;
 
 /**
- * Trust as a scale that grows out from neutral: violet towards trust,
+ * Trust as a scale that grows out from neutral: turquoise towards trust,
  * ember towards distrust, with relationship thresholds notched in.
  */
 export function TrustScale({

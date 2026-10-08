@@ -35,7 +35,7 @@ export default function ScenePage() {
 			</div>
 			<aside
 				aria-label="Scene"
-				className="hidden w-[380px] shrink-0 scroll-area border-l bg-surface xl:block"
+				className="hidden w-[340px] shrink-0 scroll-area border-l bg-surface xl:block"
 			>
 				<ScenePanel />
 			</aside>

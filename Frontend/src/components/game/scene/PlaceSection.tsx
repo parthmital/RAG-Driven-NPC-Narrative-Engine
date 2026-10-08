@@ -72,7 +72,7 @@ export function PlaceSection() {
 									onClick={() => travel(id)}
 									disabled={isProcessing || travellingTo !== null}
 									aria-busy={travellingTo === id || undefined}
-									className="group flex min-h-11 w-full items-center gap-3 rounded-md px-2 text-left text-body text-text transition-colors duration-150 hover:bg-raised active:bg-raised/70 disabled:cursor-not-allowed disabled:opacity-50"
+									className="group flex min-h-11 fine:min-h-9 w-full items-center gap-3 rounded-md px-2 text-left text-body text-text transition-colors duration-150 hover:bg-raised active:bg-raised/70 disabled:cursor-not-allowed disabled:opacity-50"
 								>
 									<DoorOpen
 										aria-hidden

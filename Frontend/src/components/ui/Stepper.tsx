@@ -28,7 +28,7 @@ export function Stepper({
 		onChange(String(Math.min(max, Math.max(min, base + delta))));
 	};
 	const buttonClass =
-		"inline-flex size-11 shrink-0 items-center justify-center press rounded-md border bg-raised/40 text-muted hover:border-faint hover:text-text active:bg-raised disabled:opacity-40";
+		"inline-flex size-11 fine:size-9 shrink-0 items-center justify-center press rounded-md border bg-raised/40 text-muted hover:border-faint hover:text-text active:bg-raised disabled:opacity-40";
 
 	return (
 		<div className="flex items-center gap-2">

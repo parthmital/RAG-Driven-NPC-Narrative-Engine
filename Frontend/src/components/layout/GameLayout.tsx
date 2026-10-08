@@ -17,7 +17,7 @@ function ConnectionStatus() {
 				tabIndex={0}
 				role="status"
 				aria-label={label}
-				className="inline-flex size-11 items-center justify-center rounded-md"
+				className="inline-flex size-11 fine:size-9 items-center justify-center rounded-md"
 			>
 				<span
 					aria-hidden
@@ -43,10 +43,10 @@ export function GameLayout() {
 
 	return (
 		<div className="flex h-dvh flex-col bg-ground">
-			<header className="flex h-14 shrink-0 items-center gap-4 border-b bg-surface px-2 sm:px-4">
+			<header className="girih flex h-14 shrink-0 items-center gap-4 border-b border-gilt/20 bg-surface px-2 fine:h-12 sm:px-4">
 				<div className="flex min-w-0 items-center gap-2 pl-2">
 					<img src="/favicon.png" alt="" className="size-7" />
-					<span className="hidden font-display text-title lg:inline">
+					<span className="hidden font-display text-title tracking-wide text-gilt lg:inline">
 						The Obsidian Flask
 					</span>
 				</div>

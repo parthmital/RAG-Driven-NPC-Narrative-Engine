@@ -79,7 +79,7 @@ export function ChoiceGroup({
 							className={cn(
 								"press rounded-md border text-left disabled:cursor-not-allowed disabled:opacity-50",
 								variant === "pills"
-									? "min-h-11 whitespace-nowrap px-4 text-label font-medium"
+									? "min-h-11 fine:min-h-9 whitespace-nowrap px-4 text-label font-medium"
 									: "flex min-h-24 flex-col gap-1 p-4",
 								checked
 									? "border-gilt bg-gilt/10 text-text"

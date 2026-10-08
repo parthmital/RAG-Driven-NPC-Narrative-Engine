@@ -9,7 +9,7 @@ export function ScenePanel() {
 	// A new room fades in rather than swapping in place.
 	const location = useGameStore((s) => s.currentLocation);
 	return (
-		<div key={location} className="flex animate-fade flex-col gap-8 p-5">
+		<div key={location} className="flex animate-fade flex-col gap-6 p-4">
 			<PlaceSection />
 			<PeopleSection />
 			<ObjectsSection />

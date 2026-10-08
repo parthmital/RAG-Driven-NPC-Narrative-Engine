@@ -43,7 +43,7 @@ export default function SessionPage() {
 					>
 						{inGame ? "Back to the game" : "Title screen"}
 					</Button>
-					<h1 className="text-headline sm:text-hero">Load game</h1>
+					<h1 className="text-headline">Load game</h1>
 				</div>
 
 				{isLoading ? (

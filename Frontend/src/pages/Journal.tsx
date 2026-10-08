@@ -13,9 +13,9 @@ export default function JournalPage() {
 
 	return (
 		<div className="h-full scroll-area">
-			<div className="mx-auto flex max-w-3xl flex-col gap-8 px-5 py-8 sm:px-10 sm:py-12">
+			<div className="mx-auto flex max-w-3xl flex-col gap-6 px-5 py-6 sm:px-8 sm:py-8">
 				<header className="flex flex-col gap-2">
-					<h1 className="text-headline sm:text-hero">Journal</h1>
+					<h1 className="text-headline">Journal</h1>
 					<p className="text-body text-muted">
 						What you have learned, newest first.
 					</p>

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { FolderOpen, Play, Plus } from "lucide-react";
 import { useGameStore } from "@/stores/gameStore";
 import { useSavedSessions } from "@/hooks/useSavedSessions";
+import { ArchFrame } from "@/components/ui/ArchFrame";
 import { Button } from "@/components/ui/Button";
 import { formatRelativeTime, splitPlaceName } from "@/lib/format";
 import { errorMessage } from "@/stores/mappers";
@@ -50,19 +51,21 @@ export default function MainMenu() {
 			: null;
 
 	return (
-		<main className="scroll-area h-dvh animate-fade bg-ground">
-			<div className="mx-auto grid min-h-dvh max-w-6xl items-center gap-10 px-6 py-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-16">
+		<main className="girih scroll-area h-dvh animate-fade bg-ground">
+			<div className="mx-auto grid min-h-dvh max-w-5xl items-center gap-8 px-6 py-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-14">
 				<div className="flex justify-center lg:justify-end">
-					<img
-						src="/favicon.png"
-						alt="A black glass flask with gilt edges, a violet constellation glowing inside"
-						className="w-40 sm:w-56 lg:w-80"
-					/>
+					<ArchFrame className="w-32 sm:w-48 lg:w-64">
+						<img
+							src="/favicon.png"
+							alt="A black glass flask with gilt edges, a violet constellation glowing inside"
+							className="w-full"
+						/>
+					</ArchFrame>
 				</div>
 
-				<div className="flex max-w-xl flex-col gap-8">
+				<div className="flex max-w-xl flex-col gap-7">
 					<div className="flex flex-col gap-4">
-						<h1 className="text-headline sm:text-hero">
+						<h1 className="text-headline text-gilt sm:text-hero">
 							{metadata?.title ?? "The Obsidian Flask"}
 						</h1>
 						<p className="text-body text-muted sm:text-read">
@@ -70,7 +73,7 @@ export default function MainMenu() {
 								"A dark fantasy text adventure where every character remembers you."}
 						</p>
 						{opening && (
-							<blockquote className="border-l-2 border-gilt/60 pl-4 font-read text-read italic text-text/80">
+							<blockquote className="border-l-2 border-gilt/60 pl-4 bg-surface/60 py-2 pr-3 font-read text-read italic text-text/80">
 								{opening}
 							</blockquote>
 						)}

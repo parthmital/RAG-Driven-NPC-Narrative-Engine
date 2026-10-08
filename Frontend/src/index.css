@@ -6,19 +6,23 @@
 	:root {
 		color-scheme: dark;
 
-		--ground: 262 16% 6%;
-		--surface: 262 13% 9%;
-		--raised: 262 11% 13%;
-		--line: 262 9% 20%;
+		/* Lapis night: a palace hall after dark. */
+		--ground: 224 34% 7%;
+		--surface: 223 30% 10%;
+		--raised: 222 26% 14%;
+		/* Sandstone and bronze, so every border reads as carved trim. */
+		--line: 34 20% 22%;
 
-		--text: 40 24% 89%;
-		--muted: 256 9% 68%;
-		--faint: 256 7% 50%;
+		--text: 38 40% 88%;
+		--muted: 35 18% 67%;
+		--faint: 33 11% 52%;
 
-		--gilt: 40 64% 62%;
-		--gilt-ink: 262 30% 8%;
-		--arcane: 262 58% 76%;
-		--ember: 356 68% 64%;
+		--gilt: 41 74% 58%;
+		--gilt-ink: 224 40% 8%;
+		/* Turquoise tilework. */
+		--arcane: 173 46% 56%;
+		/* Pomegranate. */
+		--ember: 354 66% 62%;
 	}
 
 	*,
@@ -126,6 +130,16 @@
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		-webkit-overflow-scrolling: touch;
+	}
+
+	/*
+	 * Girih: a faint eight-pointed star lattice, like carved palace screens.
+	 * Background texture only, on the header, tab bar, and title screens.
+	 */
+	.girih {
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48' fill='none' stroke='%23e0ad4c' stroke-opacity='.06' stroke-width='1'%3E%3Cpath d='M12 12h24v24H12zM24 7l17 17-17 17L7 24zM24 0v7M24 41v7M0 24h7M41 24h7'/%3E%3C/svg%3E");
+		background-size: 48px 48px;
+		background-position: center;
 	}
 
 	/* Compact controls: eased colour changes and an instant press-in. */

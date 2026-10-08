@@ -112,7 +112,7 @@ export default function NewGame() {
 					>
 						Title screen
 					</Button>
-					<h1 className="text-headline sm:text-hero">Who walks in?</h1>
+					<h1 className="text-headline">Who walks in?</h1>
 					<p className="text-body text-muted sm:text-read">
 						The people of the tavern judge you by what they see. Your background
 						shapes how they speak to you.

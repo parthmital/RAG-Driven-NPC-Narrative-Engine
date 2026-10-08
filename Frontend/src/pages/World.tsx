@@ -46,7 +46,7 @@ function PlaceDetail({
 		<>
 			<header className="flex flex-col gap-3">
 				{area && <p className="text-label text-faint">{area}</p>}
-				<h1 className="text-headline sm:text-hero">{title}</h1>
+				<h1 className="text-headline">{title}</h1>
 				{isHere ? (
 					<p className="flex items-center gap-2 text-label text-gilt">
 						<MapPin aria-hidden className="size-4" /> You are here

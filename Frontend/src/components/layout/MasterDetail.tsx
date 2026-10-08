@@ -25,7 +25,7 @@ export function MasterDetail({
 	onBack: () => void;
 }) {
 	return (
-		<div className="grid h-full min-h-0 lg:grid-cols-[22rem_minmax(0,1fr)]">
+		<div className="grid h-full min-h-0 lg:grid-cols-[20rem_minmax(0,1fr)]">
 			<nav
 				aria-label={listLabel}
 				className={cn(
@@ -39,7 +39,7 @@ export function MasterDetail({
 				key={detailKey}
 				className={cn("min-h-0 scroll-area", !detailOpen && "hidden lg:block")}
 			>
-				<div className="mx-auto flex max-w-3xl animate-fade flex-col gap-8 px-5 py-6 sm:px-10 sm:py-10">
+				<div className="mx-auto flex max-w-3xl animate-fade flex-col gap-6 px-5 py-6 sm:px-8 sm:py-8">
 					<Button
 						variant="ghost"
 						icon={<ArrowLeft aria-hidden className="size-4" />}

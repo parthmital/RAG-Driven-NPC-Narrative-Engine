@@ -18,7 +18,7 @@ export function GameNavigation({ variant }: { variant: "top" | "bottom" }) {
 			className={cn(
 				isTop
 					? "hidden items-center gap-1 md:flex"
-					: "grid shrink-0 grid-cols-4 border-t bg-surface px-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 md:hidden",
+					: "girih grid shrink-0 grid-cols-4 border-t border-gilt/20 bg-surface px-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 md:hidden",
 			)}
 		>
 			{NAV_ITEMS.map(({ to, label, icon: Icon }) => (
@@ -29,11 +29,11 @@ export function GameNavigation({ variant }: { variant: "top" | "bottom" }) {
 						cn(
 							"transition-colors duration-150",
 							isTop
-								? "inline-flex min-h-11 items-center gap-2 rounded-md px-3 text-label font-medium"
+								? "inline-flex min-h-11 fine:min-h-9 items-center gap-2 rounded-md px-3 text-label font-medium"
 								: "flex min-h-12 flex-col items-center justify-center gap-1 rounded-md text-caption font-medium active:bg-raised",
 							isActive
 								? isTop
-									? "bg-raised text-text"
+									? "bg-gilt/10 text-gilt"
 									: "text-gilt"
 								: "text-muted hover:text-text",
 						)
