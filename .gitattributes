@@ -1,5 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
-# Third-party IEEE template files are kept byte-identical to the upstream release.
-docs/IEEE-Transactions-LaTeX2e-templates-and-instructions/** -whitespace
+# The third-party IEEE class file is kept byte-identical to the upstream release.
 docs/paper/IEEEtran.cls -whitespace
