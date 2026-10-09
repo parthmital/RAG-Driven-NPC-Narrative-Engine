@@ -114,7 +114,7 @@ Further reading:
 - [ARCHITECTURE.md](ARCHITECTURE.md): module map, dependency rules, data flow, decisions, and operations.
 - [DESIGN.md](DESIGN.md): the frontend design system: palette, type, layout, breakpoints, components, motion, and copy.
 - [docs/research_article.md](docs/research_article.md): the research article, with the full method, results, and discussion.
-- [docs/paper/main.pdf](docs/paper/main.pdf): the same study as a LaTeX paper ([source](docs/paper/main.tex), [bibliography](docs/paper/references.bib)), with a formal model, an updated literature survey, and an audit of the results against the raw run outputs. Rebuild it with `npm run paper`.
+- [docs/paper/main.pdf](docs/paper/main.pdf): the same study as a LaTeX paper ([source](docs/paper/main.tex), [bibliography](docs/paper/references.bib)), with a formal model, an updated literature survey, and an audit of the results against the raw run outputs. It is typeset in the two-column IEEE Transactions journal format: [docs/paper/IEEEtran.cls](docs/paper/IEEEtran.cls) is an unmodified copy of the class from [docs/IEEE-Transactions-LaTeX2e-templates-and-instructions/](docs/IEEE-Transactions-LaTeX2e-templates-and-instructions/), and references use the IEEEtran bibliography style. Rebuild it with `npm run paper`.
 - [RESEARCH.md](RESEARCH.md): sources and search notes for the paper's literature survey.
 
 ## Problem statement
@@ -238,7 +238,6 @@ Evaluation notebook (versions from [`notebooks/outputs/metrics/run_manifest.json
 
 ```text
 RAG-Driven-NPC-Narrative-Engine/
-|-- .claude/skills/             # Repo-local agent skills: shell pitfalls, paper build, result facts, citations, doc links
 |-- Backend/
 |   |-- api/
 |   |   |-- app.py              # FastAPI factory, CORS, lifecycle, root health
@@ -299,7 +298,8 @@ RAG-Driven-NPC-Narrative-Engine/
 |   |-- vite.config.ts          # Dev server and proxy config
 |   `-- vitest.config.ts        # Vitest config
 |-- docs/
-|   |-- paper/                  # LaTeX paper: main.tex, references.bib, compiled main.pdf
+|   |-- IEEE-Transactions-LaTeX2e-templates-and-instructions/  # IEEE journal template: IEEEtran.cls, sample article, how-to guide
+|   |-- paper/                  # IEEE-format LaTeX paper: main.tex, references.bib, IEEEtran.cls, compiled main.pdf
 |   |-- research_article.md     # Research article with the evaluation results
 |   |-- screenshots/            # Game screenshots used in this README
 |   `-- tectonic.exe            # Tectonic 0.15 LaTeX engine (Windows) used by `npm run paper`

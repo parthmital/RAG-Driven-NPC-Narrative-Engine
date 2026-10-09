@@ -102,6 +102,13 @@ docs/paper/*.fls
 docs/paper/*.fdb_latexmk
 docs/paper/*.synctex.gz
 docs/paper/*.xdv
+docs/IEEE-Transactions-LaTeX2e-templates-and-instructions/*.aux
+docs/IEEE-Transactions-LaTeX2e-templates-and-instructions/*.bbl
+docs/IEEE-Transactions-LaTeX2e-templates-and-instructions/*.blg
+docs/IEEE-Transactions-LaTeX2e-templates-and-instructions/*.log
+docs/IEEE-Transactions-LaTeX2e-templates-and-instructions/*.out
+docs/IEEE-Transactions-LaTeX2e-templates-and-instructions/*.synctex.gz
+docs/IEEE-Transactions-LaTeX2e-templates-and-instructions/*.xdv
 
 # pyenv
 .python-version
