@@ -2,7 +2,7 @@
 
 The Obsidian Flask is a full stack text adventure game in which non-player characters (NPCs) talk through a large language model (LLM), while the world state stays under the control of code. Each player turn runs through a fixed LangGraph pipeline: it retrieves memories, builds a prompt, calls the LLM, parses a strict JSON reply, checks every proposed world change against the rules, and commits only the lawful changes to an append-only event log.
 
-The repository also contains a full evaluation of the engine's two mechanisms, scoped dual-tier memory and pre-commit state control. The evaluation is a Kaggle notebook with saved outputs, and its write-up is the research article in [docs/research_article.md](docs/research_article.md), with a LaTeX paper version in [docs/paper/main.pdf](docs/paper/main.pdf).
+The repository also contains a full evaluation of the engine's two mechanisms, scoped dual-tier memory and pre-commit state control. The evaluation is a Kaggle notebook with saved outputs, and its write-up is the LaTeX research paper in [docs/paper/main.pdf](docs/paper/main.pdf).
 
 ## Table of contents
 
@@ -113,8 +113,7 @@ Further reading:
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): module map, dependency rules, data flow, decisions, and operations.
 - [DESIGN.md](DESIGN.md): the frontend design system: palette, type, layout, breakpoints, components, motion, and copy.
-- [docs/research_article.md](docs/research_article.md): the research article, with the full method, results, and discussion.
-- [docs/paper/main.pdf](docs/paper/main.pdf): the same study as a LaTeX paper ([source](docs/paper/main.tex), [bibliography](docs/paper/references.bib)), with a formal model and an audit of the results against the raw run outputs. Its sections follow the project report format: Introduction, Literature Survey, Research Gap, Proposed Methodology, Dataset Description and Usage, Novelty, Algorithms, Implementation, and Comparison of Results. The base paper is Generative Agents (Park et al., UIST 2023), and the results section compares the engine with it. All 44 references are published papers, with no preprints. Secondary tables and figures are in a one-column Supplementary Results appendix. It is typeset in the two-column IEEE Transactions journal format: [docs/paper/IEEEtran.cls](docs/paper/IEEEtran.cls) is an unmodified copy of the class (V1.8b) from the IEEE Transactions LaTeX template, and references use the IEEEtran bibliography style. Rebuild it with `npm run paper`.
+- [docs/paper/main.pdf](docs/paper/main.pdf): the research paper on the study, written in LaTeX ([source](docs/paper/main.tex), [bibliography](docs/paper/references.bib)), with a formal model and an audit of the results against the raw run outputs. Its sections follow the project report format: Introduction, Literature Survey, Research Gap, Proposed Methodology, Dataset Description and Usage, Novelty, Algorithms, Implementation, and Comparison of Results. The base paper is Generative Agents (Park et al., UIST 2023), and the results section compares the engine with it. All 44 references are published papers, with no preprints. Secondary tables and figures are in a one-column Supplementary Results appendix. It is typeset in the two-column IEEE Transactions journal format: [docs/paper/IEEEtran.cls](docs/paper/IEEEtran.cls) is an unmodified copy of the class (V1.8b) from the IEEE Transactions LaTeX template, and references use the IEEEtran bibliography style. Rebuild it with `npm run paper`.
 - [RESEARCH.md](RESEARCH.md): sources and search notes for the paper's literature survey.
 
 ## Problem statement
@@ -299,7 +298,6 @@ RAG-Driven-NPC-Narrative-Engine/
 |   `-- vitest.config.ts        # Vitest config
 |-- docs/
 |   |-- paper/                  # IEEE-format LaTeX paper: main.tex, references.bib, IEEEtran.cls, compiled main.pdf
-|   |-- research_article.md     # Research article with the evaluation results
 |   |-- screenshots/            # Game screenshots used in this README
 |   `-- tectonic.exe            # Tectonic 0.15 LaTeX engine (Windows) used by `npm run paper`
 |-- notebooks/
@@ -663,7 +661,7 @@ There is no separate backend build step; the backend runs directly through Pytho
 
 ## Evaluation notebook
 
-[notebooks/npc-memory-state-benchmark.ipynb](notebooks/npc-memory-state-benchmark.ipynb) runs the complete evaluation protocol of the research article with no manual steps. It has 131 cells (65 code cells, each with a markdown explanation before it) in 11 sections.
+[notebooks/npc-memory-state-benchmark.ipynb](notebooks/npc-memory-state-benchmark.ipynb) runs the complete evaluation protocol of the research paper with no manual steps. It has 131 cells (65 code cells, each with a markdown explanation before it) in 11 sections.
 
 ### What it tests
 
@@ -847,7 +845,7 @@ Ladder plan from the pilot ([`metrics/budget_plan.csv`](notebooks/outputs/metric
 | 6     | 20                            | 45                           | 6                       | 17.89  | 8.51   | 3.97 | 0.66          | 35.68 |
 | 7     | 40                            | 60                           | 10                      | 35.84  | 11.37  | 6.93 | 0.66          | 63.03 |
 
-Level 7 matches the article's full targets. This run used level 2, so its samples are smaller than the article planned.
+Level 7 matches the study's full targets. This run used level 2, so its samples are smaller than the study planned.
 
 Stage wall times (`run_manifest.json`, minutes):
 
@@ -1221,7 +1219,7 @@ Both GPUs stay near 100% through the LLM stages. The short drops are server rest
 
 These are recorded by the notebook in [`metrics/article_tables.md`](notebooks/outputs/metrics/article_tables.md):
 
-- W3 was written by the notebook author, not by an independent contributor as the article requires.
+- W3 was written by the notebook author, not by an independent contributor as the study design requires.
 - Recall, leaks, and desynchronisation are scored automatically. The blinded sheets for two human raters are exported but not yet labelled, so Cohen's kappa is not available.
 - Token cost is in tokens only; latency was measured on 2 x T4 with vLLM, not on the hosted Groq endpoint the game uses.
 - Backend recovery defect: `SessionManager.load_session` ignores events logged after the snapshot (8.0 turns lost on average after a simulated crash).
@@ -1230,7 +1228,7 @@ These are recorded by the notebook in [`metrics/article_tables.md`](notebooks/ou
 - The prompt tells the model trust deltas are -10 to 10, while the validator allows +/-20; the oracle uses +/-20.
 - Live scripts keep addressing the scripted NPC even when a scripted move was not committed.
 - Baselines B4 (scripted state machine) and B5 (MemGPT-style memory) were not run.
-- Sample size is ladder level 2, the third of 8 levels numbered 0 to 7; the article's full targets are level 7.
+- Sample size is ladder level 2, the third of 8 levels numbered 0 to 7; the study's full targets are level 7.
 
 ## Evaluation output files
 
@@ -1313,7 +1311,7 @@ Request throughput, memory use, and WebSocket capacity of the game server: `Not 
 - Backend logs include request latency, the request ID that matches the `X-Request-ID` header, and one `turn complete` line per turn with LLM time and rejected-proposal count.
 - Session data can be inspected under `Backend/data/sessions`. Back up `Backend/data` if save files matter.
 - Run `npm run check` before submitting changes, and `npm audit` after frontend dependency changes.
-- To refresh the evaluation, rerun the notebook on Kaggle, replace [`notebooks/outputs/`](notebooks/outputs/), and update the results here and in the research article.
+- To refresh the evaluation, rerun the notebook on Kaggle, replace [`notebooks/outputs/`](notebooks/outputs/), and update the results here and in the research paper.
 
 ## Repository metrics
 

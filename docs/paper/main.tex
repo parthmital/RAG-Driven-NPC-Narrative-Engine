@@ -1130,17 +1130,6 @@ Level & Sessions/(world, $H$) & Probes/(world, cat.) & Live/world & Recall (h) &
 \end{adjustbox}
 \end{table}
 
-\section{Audit Notes}\label{app:audit}
-Auditing the code and raw outputs against the earlier project article (\msrc{docs/research_article.md}) found the following. All are corrected in this paper, and the article and the repository README have since been updated to match.
-\begin{itemize}[leftmargin=*]
-  \item The chosen ladder level, index 2 of levels 0 to 7, is the \emph{third} of eight levels, not the second.
-  \item Live probes have recorded fact ages of 30 to 34 turns (\code{age} column of \osrc{predictions/live_turns.csv}), not about 20 to 32; the configured \code{LIVE\_FACT\_AGES} are not used by the script generator.
-  \item Theft has lawful twins for 50 of 70 attacks per context (71\%).
-  \item Live violation rates above 100 per 100 transitions arise because the oracle re-flags persistent corruption on later turns (\cref{eq:viol}), not because one transition breaks several invariants: the numerator counts flagged turns.
-  \item The factorial model is a variational-Bayes mixed GLM; its ``SE'' and ``$p$'' are posterior summaries (\cref{sec:stats}).
-\end{itemize}
-All other values in the earlier article match the run outputs.
-
 \twocolumn
 \bibliographystyle{IEEEtran}
 \bibliography{references}
