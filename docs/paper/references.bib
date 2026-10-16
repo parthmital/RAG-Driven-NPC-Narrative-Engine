@@ -1,6 +1,7 @@
 % Bibliography for docs/paper/main.tex.
-% Every entry was checked on 2026-10-05 against the publisher page, ACL Anthology,
-% AAAI OJS, NeurIPS/PMLR proceedings, arXiv, or Crossref (see RESEARCH.md).
+% Every entry is a published (peer-reviewed) version, checked on 2026-10-05 and again on 2026-10-16
+% against the publisher page, ACL Anthology, AAAI OJS, NeurIPS/ICLR/PMLR proceedings, OpenReview,
+% or Crossref (see RESEARCH.md). No preprint is cited.
 % IEEEtran.bst ignores the doi field, so each DOI is repeated as a https://doi.org url.
 
 % ---------------------------------------------------------------- games and grounded dialogue
@@ -48,16 +49,6 @@
   url       = {https://doi.org/10.1609/aaai.v34i05.6297}
 }
 
-@misc{cui2025tales,
-  author        = {Cui, Christopher Zhang and Yuan, Xingdi and Xiao, Ziang and Ammanabrolu, Prithviraj and C{\^o}t{\'e}, Marc-Alexandre},
-  title         = {{TALES}: Text Adventure Learning Environment Suite},
-  year          = {2025},
-  eprint        = {2504.14128},
-  archiveprefix = {arXiv},
-  primaryclass  = {cs.AI},
-  howpublished  = {\href{https://arxiv.org/abs/2504.14128}{arXiv:2504.14128}}
-}
-
 @inproceedings{callisonburch2022dnd,
   author    = {Callison-Burch, Chris and Singh Tomar, Gaurav and Martin, Lara J. and Ippolito, Daphne and Bailis, Suma and Reitter, David},
   title     = {Dungeons and Dragons as a Dialog Challenge for Artificial Intelligence},
@@ -98,58 +89,51 @@
   url       = {https://doi.org/10.1609/aiide.v20i1.31876}
 }
 
-@misc{ma2026ncp,
-  author        = {Ma, Yingpeng and Yan, Jianhao and Shi, Bei and Kam, Ka Hou and Wang, Runnan and Liu, Xuebo and Chen, Yulong and Zhang, Yue and Wong, Derek F.},
-  title         = {Can {LLM} Agents Stick to the Script? {A} Benchmark for Long-Horizon Consistency in Interactive Narratives},
-  year          = {2026},
-  eprint        = {2608.08160},
-  archiveprefix = {arXiv},
-  howpublished  = {\href{https://arxiv.org/abs/2608.08160}{arXiv:2608.08160}; accepted at ICML 2026}
+@inproceedings{ma2026ncp,
+  author    = {Ma, Yingpeng and Yan, Jianhao and Shi, Bei and Kam, Ka Hou and Wang, Runnan and Liu, Xuebo and Chen, Yulong and Zhang, Yue and Wong, Derek F.},
+  title     = {Can {LLM} Agents Stick to the Script? {A} Benchmark for Long-Horizon Consistency in Interactive Narratives},
+  booktitle = {Proceedings of the 43rd International Conference on Machine Learning},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {306},
+  pages     = {85171--85192},
+  year      = {2026},
+  url       = {https://proceedings.mlr.press/v306/ma26ap.html}
 }
 
-@misc{kim2025astp,
-  author        = {Kim, Minkyung and Kim, Junsik and Yang, Woongcheol and Park, Sangdon and Bae, Sohee},
-  title         = {Aligning Large Language Models with Procedural Rules: An Autoregressive State-Tracking Prompting for In-Game Trading},
-  year          = {2025},
-  eprint        = {2510.25014},
-  archiveprefix = {arXiv},
-  howpublished  = {\href{https://arxiv.org/abs/2510.25014}{arXiv:2510.25014}}
+@article{phillips2025goal,
+  author  = {Phillips, Adon and Lang, Jochen and Mould, David},
+  title   = {Goal-Oriented Interactions in Games Using {LLMs}},
+  journal = {IEEE Transactions on Games},
+  volume  = {17},
+  number  = {2},
+  pages   = {510--521},
+  year    = {2025},
+  doi     = {10.1109/TG.2024.3515807},
+  url     = {https://doi.org/10.1109/TG.2024.3515807}
 }
 
-@misc{braas2025fixedpersona,
-  author        = {Braas, Martin and Esterle, Lukas},
-  title         = {Fixed-Persona {SLMs} with Modular Memory: Scalable {NPC} Dialogue on Consumer Hardware},
-  year          = {2025},
-  eprint        = {2511.10277},
-  archiveprefix = {arXiv},
-  howpublished  = {\href{https://arxiv.org/abs/2511.10277}{arXiv:2511.10277}}
+@inproceedings{kumaran2023scenecraft,
+  author    = {Kumaran, Vikram and Rowe, Jonathan and Mott, Bradford and Lester, James},
+  title     = {{SceneCraft}: Automating Interactive Narrative Scene Generation in Digital Games with Large Language Models},
+  booktitle = {Proceedings of the AAAI Conference on Artificial Intelligence and Interactive Digital Entertainment (AIIDE)},
+  volume    = {19},
+  number    = {1},
+  pages     = {86--96},
+  year      = {2023},
+  doi       = {10.1609/aiide.v19i1.27504},
+  url       = {https://doi.org/10.1609/aiide.v19i1.27504}
 }
 
-@misc{figueiredo2025scaffolded,
-  author        = {Figueiredo, Vanessa and Elumeze, David},
-  title         = {Symbolically Scaffolded Play: Designing Role-Sensitive Prompts for Generative {NPC} Dialogue},
-  year          = {2025},
-  eprint        = {2510.25820},
-  archiveprefix = {arXiv},
-  howpublished  = {\href{https://arxiv.org/abs/2510.25820}{arXiv:2510.25820}}
-}
-
-@misc{xu2026longlived,
-  author        = {Xu, Zimu},
-  title         = {Long-Lived Characters, Local Inference: Incremental Memory Maintenance for Game {NPCs}},
-  year          = {2026},
-  eprint        = {2609.18935},
-  archiveprefix = {arXiv},
-  howpublished  = {\href{https://arxiv.org/abs/2609.18935}{arXiv:2609.18935}}
-}
-
-@misc{chen2026persistent,
-  author        = {Chen, Yi-Chun},
-  title         = {Reconstructing Persistent Worlds from Narratives for Narrative-Grounded Interactive Experiences},
-  year          = {2026},
-  eprint        = {2608.04037},
-  archiveprefix = {arXiv},
-  howpublished  = {\href{https://arxiv.org/abs/2608.04037}{arXiv:2608.04037}}
+@inproceedings{zhu2023calypso,
+  author    = {Zhu, Andrew and Martin, Lara and Head, Andrew and Callison-Burch, Chris},
+  title     = {{CALYPSO}: {LLMs} as Dungeon Master's Assistants},
+  booktitle = {Proceedings of the AAAI Conference on Artificial Intelligence and Interactive Digital Entertainment (AIIDE)},
+  volume    = {19},
+  number    = {1},
+  pages     = {380--390},
+  year      = {2023},
+  doi       = {10.1609/aiide.v19i1.27534},
+  url       = {https://doi.org/10.1609/aiide.v19i1.27534}
 }
 
 % ---------------------------------------------------------------- memory for LLM agents
@@ -169,16 +153,17 @@
   booktitle = {Advances in Neural Information Processing Systems},
   volume    = {36},
   year      = {2023},
-  url       = {https://arxiv.org/abs/2303.11366}
+  url       = {https://proceedings.neurips.cc/paper_files/paper/2023/hash/1b44b878bb782e6954cd888628510e90-Abstract-Conference.html}
 }
 
-@misc{packer2023memgpt,
-  author        = {Packer, Charles and Wooders, Sarah and Lin, Kevin and Fang, Vivian and Patil, Shishir G. and Stoica, Ion and Gonzalez, Joseph E.},
-  title         = {{MemGPT}: Towards {LLMs} as Operating Systems},
-  year          = {2023},
-  eprint        = {2310.08560},
-  archiveprefix = {arXiv},
-  howpublished  = {\href{https://arxiv.org/abs/2310.08560}{arXiv:2310.08560}}
+@inproceedings{xu2022goldfish,
+  author    = {Xu, Jing and Szlam, Arthur and Weston, Jason},
+  title     = {Beyond Goldfish Memory: Long-Term Open-Domain Conversation},
+  booktitle = {Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)},
+  pages     = {5180--5197},
+  year      = {2022},
+  doi       = {10.18653/v1/2022.acl-long.356},
+  url       = {https://doi.org/10.18653/v1/2022.acl-long.356}
 }
 
 @inproceedings{zhong2024memorybank,
@@ -207,7 +192,7 @@
   title     = {{LongMemEval}: Benchmarking Chat Assistants on Long-Term Interactive Memory},
   booktitle = {The Thirteenth International Conference on Learning Representations (ICLR)},
   year      = {2025},
-  url       = {https://arxiv.org/abs/2410.10813}
+  url       = {https://proceedings.iclr.cc/paper_files/paper/2025/hash/d813d324dbf0598bbdc9c8e79740ed01-Abstract-Conference.html}
 }
 
 @inproceedings{gutierrez2024hipporag,
@@ -230,13 +215,25 @@
   url       = {https://doi.org/10.52202/085713-0593}
 }
 
-@misc{chhikara2025mem0,
-  author        = {Chhikara, Prateek and Khant, Dev and Aryan, Saket and Singh, Taranjeet and Yadav, Deshraj},
-  title         = {{Mem0}: Building Production-Ready {AI} Agents with Scalable Long-Term Memory},
-  year          = {2025},
-  eprint        = {2504.19413},
-  archiveprefix = {arXiv},
-  howpublished  = {\href{https://arxiv.org/abs/2504.19413}{arXiv:2504.19413}}
+@inproceedings{liu2026simplemem,
+  author    = {Liu, Jiaqi and Su, Yaofeng and Xia, Peng and Han, Siwei and Zheng, Zeyu and Xie, Cihang and Ding, Mingyu and Yao, Huaxiu},
+  title     = {{SimpleMem}: Efficient Lifelong Memory for {LLM} Agents},
+  booktitle = {Proceedings of the 43rd International Conference on Machine Learning},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {306},
+  pages     = {78500--78513},
+  year      = {2026},
+  url       = {https://proceedings.mlr.press/v306/liu26dx.html}
+}
+
+@inproceedings{tan2025rmm,
+  author    = {Tan, Zhen and Yan, Jun and Hsu, I-Hung and Han, Rujun and Wang, Zifeng and Le, Long and Song, Yiwen and Chen, Yanfei and Palangi, Hamid and Lee, George and Iyer, Anand Rajan and Chen, Tianlong and Liu, Huan and Lee, Chen-Yu and Pfister, Tomas},
+  title     = {In Prospect and Retrospect: Reflective Memory Management for Long-term Personalized Dialogue Agents},
+  booktitle = {Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)},
+  pages     = {8416--8439},
+  year      = {2025},
+  doi       = {10.18653/v1/2025.acl-long.413},
+  url       = {https://doi.org/10.18653/v1/2025.acl-long.413}
 }
 
 @article{zhang2025memorysurvey,
@@ -256,7 +253,7 @@
   title   = {Cognitive Architectures for Language Agents},
   journal = {Transactions on Machine Learning Research},
   year    = {2024},
-  url       = {https://arxiv.org/abs/2309.02427}
+  url       = {https://openreview.net/forum?id=1i6ZCvflQJ}
 }
 
 % ---------------------------------------------------------------- retrieval and long context
@@ -267,7 +264,7 @@
   volume    = {33},
   pages     = {9459--9474},
   year      = {2020},
-  url       = {https://arxiv.org/abs/2005.11401}
+  url       = {https://proceedings.neurips.cc/paper_files/paper/2020/hash/6b493230205f780e1bc26945df7481e5-Abstract.html}
 }
 
 @article{liu2024lost,
@@ -286,7 +283,7 @@
   title     = {{ReAct}: Synergizing Reasoning and Acting in Language Models},
   booktitle = {The Eleventh International Conference on Learning Representations (ICLR)},
   year      = {2023},
-  url       = {https://arxiv.org/abs/2210.03629}
+  url       = {https://openreview.net/forum?id=WE_vluYUL-X}
 }
 
 @inproceedings{gollapudi2023filtered,
@@ -351,12 +348,15 @@
   url       = {https://doi.org/10.1145/3605764.3623985}
 }
 
-@book{kleppmann2017ddia,
-  author    = {Kleppmann, Martin},
-  title     = {Designing Data-Intensive Applications},
-  publisher = {O'Reilly Media},
-  year      = {2017},
-  url       = {https://dataintensive.net/}
+@article{overeem2021eventsourcing,
+  author  = {Overeem, Michiel and Spoor, Marten and Jansen, Slinger and Brinkkemper, Sjaak},
+  title   = {An Empirical Characterization of Event Sourced Systems and Their Schema Evolution: Lessons from Industry},
+  journal = {Journal of Systems and Software},
+  volume  = {178},
+  pages   = {110970},
+  year    = {2021},
+  doi     = {10.1016/j.jss.2021.110970},
+  url     = {https://doi.org/10.1016/j.jss.2021.110970}
 }
 
 % ---------------------------------------------------------------- infrastructure
@@ -399,7 +399,7 @@
   volume    = {33},
   pages     = {5776--5788},
   year      = {2020},
-  url       = {https://arxiv.org/abs/2002.10957}
+  url       = {https://proceedings.neurips.cc/paper_files/paper/2020/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html}
 }
 
 @inproceedings{seabold2010statsmodels,

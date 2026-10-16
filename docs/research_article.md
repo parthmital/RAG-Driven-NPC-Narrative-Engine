@@ -2,7 +2,7 @@
 
 Source Code Repository: [https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine](https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine)
 
-Paper version: [docs/paper/main.pdf](paper/main.pdf) (LaTeX source [docs/paper/main.tex](paper/main.tex), build with `npm run paper`). The paper adds a formal model, an updated literature survey and an audit of these results against the raw run outputs; both documents report the same numbers.
+Paper version: [docs/paper/main.pdf](paper/main.pdf) (LaTeX source [docs/paper/main.tex](paper/main.tex), build with `npm run paper`). The paper adds a formal model, a literature survey restricted to published papers, a comparison with the base paper (Generative Agents, Park et al., UIST 2023) and an audit of these results against the raw run outputs; both documents report the same numbers. This article's own reference list is older and still includes arXiv preprints.
 
 ## Abstract
 
