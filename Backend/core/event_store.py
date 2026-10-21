@@ -42,23 +42,40 @@ class EventStore:
 
     def append(self, event: Event) -> int:
         """Persist event; returns assigned row id."""
+        self.append_many([event])
+        return event.id
+
+    def append_many(self, events: List[Event]) -> None:
+        """Persist events in one transaction, so a crash keeps all or none."""
         conn = self._connect()
-        cur = conn.execute(
-            "INSERT INTO events (turn, event_type, payload, timestamp) VALUES (?, ?, ?, ?)",
-            (
-                event.turn,
-                event.event_type.value,
-                json.dumps(event.payload, ensure_ascii=False),
-                event.timestamp,
-            ),
-        )
-        conn.commit()
-        event.id = cur.lastrowid
-        log.debug(
-            "event appended",
-            extra={"event_id": event.id, "type": event.event_type, "turn": event.turn},
-        )
-        return cur.lastrowid
+        with conn:
+            for event in events:
+                cur = conn.execute(
+                    "INSERT INTO events (turn, event_type, payload, timestamp) VALUES (?, ?, ?, ?)",
+                    (
+                        event.turn,
+                        event.event_type.value,
+                        json.dumps(event.payload, ensure_ascii=False),
+                        event.timestamp,
+                    ),
+                )
+                event.id = cur.lastrowid
+        for event in events:
+            log.debug(
+                "event appended",
+                extra={
+                    "event_id": event.id,
+                    "type": event.event_type,
+                    "turn": event.turn,
+                },
+            )
+
+    def truncate_after(self, event_id: int) -> int:
+        """Delete events logged after event_id; returns how many were removed."""
+        conn = self._connect()
+        with conn:
+            cur = conn.execute("DELETE FROM events WHERE id > ?", (event_id,))
+        return cur.rowcount
 
     def get_last_id(self) -> int:
         """Returns the ID of the most recent event, or 0 if empty."""
@@ -68,9 +85,17 @@ class EventStore:
 
     def load_all(self) -> List[Event]:
         """Replay full event log in order."""
+        return self._load("", ())
+
+    def load_after(self, event_id: int) -> List[Event]:
+        """Events logged after event_id, in order."""
+        return self._load("WHERE id > ?", (event_id,))
+
+    def _load(self, where: str, params: tuple) -> List[Event]:
         conn = self._connect()
         rows = conn.execute(
-            "SELECT id, turn, event_type, payload, timestamp FROM events ORDER BY id"
+            f"SELECT id, turn, event_type, payload, timestamp FROM events {where} ORDER BY id",
+            params,
         ).fetchall()
         events = []
         for row in rows:
@@ -89,23 +114,6 @@ class EventStore:
                     extra={"event_id": row["id"], "error": str(exc)},
                 )
         return events
-
-    def load_from_turn(self, since_turn: int) -> List[Event]:
-        conn = self._connect()
-        rows = conn.execute(
-            "SELECT id, turn, event_type, payload, timestamp FROM events WHERE turn >= ? ORDER BY id",
-            (since_turn,),
-        ).fetchall()
-        return [
-            Event(
-                id=r["id"],
-                turn=r["turn"],
-                event_type=EventType(r["event_type"]),
-                payload=json.loads(r["payload"]),
-                timestamp=r["timestamp"],
-            )
-            for r in rows
-        ]
 
     def close(self) -> None:
         if self._conn:

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import time
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import config
 from core.event_store import EventStore
@@ -14,7 +14,7 @@ from core.snapshot import save_snapshot
 from game.validator import validate_and_build_events
 from langgraph.graph import END, StateGraph
 from llm.groq_client import GroqClient
-from llm.prompt_builder import build_prompt
+from llm.prompt_builder import build_prompt, build_repair_prompt, pack_context
 from memory.embedder import Embedder
 from memory.faiss_index import FAISSMemory
 from memory.short_term import ShortTermMemory
@@ -41,6 +41,9 @@ class TurnState(TypedDict):
     npc_dialogue: str
     turn_errors: List[str]
     elapsed_ms: float
+    # set when the reply was rewritten after rejected proposals:
+    # status ("regenerated" or "fallback") and the draft it replaced
+    repair: Optional[Dict[str, str]]
 
 
 def node_input(state: TurnState) -> TurnState:
@@ -85,12 +88,16 @@ def make_node_prompt_assembly(
     short_term: ShortTermMemory, max_chars: int = config.MAX_CONTEXT_CHARS
 ):
     def node_prompt_assembly(state: TurnState) -> TurnState:
+        memories, history = pack_context(
+            state["retrieved_memories"], short_term.get_recent()
+        )
+        state["retrieved_memories"] = memories
         state["prompt"] = build_prompt(
             world=state["world"],
             active_npc_id=state["active_npc_id"],
             player_input=state["player_input"],
-            memories=state["retrieved_memories"],
-            history=short_term.format_for_prompt(),
+            memories=memories,
+            history=history,
             max_chars=max_chars,
         )
         log.debug("prompt built", extra={"chars": len(state["prompt"])})
@@ -160,6 +167,66 @@ def make_node_world_validation():
     return node_world_validation
 
 
+FALLBACK_NARRATION = "Nothing changes; what was described does not come to pass."
+
+
+def make_node_dialogue_repair(client: GroqClient):
+    """Rewrite the reply when the validator rejected proposals it may describe.
+
+    One extra LLM call on rejected turns only. If the rewrite does not parse,
+    the draft is replaced by a neutral narration and no speech, so the turn
+    never asserts a change that was not committed.
+    """
+
+    def node_dialogue_repair(state: TurnState) -> TurnState:
+        output = state.get("parsed_output")
+        rejected = state.get("validation_errors") or []
+        if output is None or not rejected:
+            return state
+
+        draft = {"npc_response": state["npc_dialogue"], "narration": state["narration"]}
+        prompt = build_repair_prompt(
+            world=state["world"],
+            active_npc_id=state["active_npc_id"],
+            player_input=state["player_input"],
+            narration=draft["narration"],
+            npc_response=draft["npc_response"],
+            accepted=state["valid_events"],
+            rejected=rejected,
+        )
+        try:
+            raw = client.generate(
+                prompt,
+                max_tokens=config.REPAIR_MAX_TOKENS,
+                temperature=config.TEMPERATURE,
+                stream=False,
+            )
+            fixed = GroqClient.extract_json(raw) or {}
+        except TimeoutError:
+            raise
+        except Exception as exc:
+            log.warning("dialogue repair failed", extra={"error": str(exc)})
+            fixed = {}
+
+        speech, narration = fixed.get("npc_response"), fixed.get("narration")
+        if isinstance(speech, str) and isinstance(narration, str):
+            status = "regenerated"
+            summary = fixed.get("memory_summary")
+            if isinstance(summary, str) and summary.strip():
+                output.memory_summary = summary.strip()
+        else:
+            status, speech, narration = "fallback", "", FALLBACK_NARRATION
+            output.memory_summary = ""
+        state["npc_dialogue"], state["narration"] = speech, narration
+        state["repair"] = {"status": status, **draft}
+        log.info(
+            "dialogue repaired", extra={"status": status, "rejected": len(rejected)}
+        )
+        return state
+
+    return node_dialogue_repair
+
+
 def make_node_event_commit(
     store: EventStore,
     memory: FAISSMemory,
@@ -181,10 +248,9 @@ def make_node_event_commit(
                 "text": state["npc_dialogue"][: config.DIALOGUE_EVENT_TRUNCATE_CHARS],
             },
         )
-        store.append(spoke_event)
-
-        for event in state["valid_events"]:
-            store.append(event)
+        events = [spoke_event, *state["valid_events"]]
+        store.append_many(events)
+        for event in events:
             world = apply_event(world, event)
 
         world.turn = turn
@@ -284,7 +350,12 @@ def build_graph(
     graph.add_edge("prompt", "llm")
     graph.add_edge("llm", "parse")
     graph.add_edge("parse", "validate")
-    graph.add_edge("validate", "commit")
+    if config.DIALOGUE_REPAIR:
+        graph.add_node("repair", make_node_dialogue_repair(client))
+        graph.add_edge("validate", "repair")
+        graph.add_edge("repair", "commit")
+    else:
+        graph.add_edge("validate", "commit")
     graph.add_edge("commit", "output")
     graph.add_edge("output", END)
 

@@ -70,12 +70,26 @@ MEMORY_PRUNE_THRESHOLD = 1000
 MEMORY_PRUNE_KEEP_RATIO = 0.5
 RETRIEVAL_MIN_CANDIDATES = 3
 
+# Context budget: retrieved memories and recent dialogue share this many prompt
+# characters; the newest MIN_RECENT_TURNS are always kept for coherence.
+MEMORY_CONTEXT_CHARS = 1600
+MIN_RECENT_TURNS = 2
+
 # Truncation
 DIALOGUE_EVENT_TRUNCATE_CHARS = 4096
 MEMORY_FALLBACK_TRUNCATE_CHARS = 512
 
 # Game logic
 INITIAL_MORAL_ALIGNMENT = 50
+# Per-turn invariants enforced by the validator (game/validator.py)
+MAX_TRUST_DELTA_PER_TURN = 20
+MAX_CURRENCY_GAIN_PER_TURN = 50
+# An NPC's secrets enter the prompt only once its trust in the player reaches this
+SECRET_REVEAL_TRUST = 60
+
+# Dialogue repair: regenerate the reply when the validator rejects a proposal
+DIALOGUE_REPAIR = True
+REPAIR_MAX_TOKENS = 1024
 
 # Prompt and context
 MAX_CONTEXT_CHARS = 16384

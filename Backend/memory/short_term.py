@@ -28,13 +28,21 @@ class ShortTermMemory:
         return list(self._buffer)
 
     def format_for_prompt(self) -> str:
-        if not self._buffer:
-            return "(no prior dialogue this session)"
-        lines = []
-        for r in self._buffer:
-            lines.append(f"[Turn {r.turn}] Player: {r.player_input}")
-            lines.append(f"[Turn {r.turn}] {r.npc_id}: {r.npc_response}")
-        return "\n".join(lines)
+        return format_turns(list(self._buffer))
 
     def clear(self) -> None:
         self._buffer.clear()
+
+
+NO_DIALOGUE = "(no prior dialogue this session)"
+
+
+def format_turns(records: List[TurnRecord]) -> str:
+    """Prompt lines for the given turns, oldest first."""
+    if not records:
+        return NO_DIALOGUE
+    lines = []
+    for r in records:
+        lines.append(f"[Turn {r.turn}] Player: {r.player_input}")
+        lines.append(f"[Turn {r.turn}] {r.npc_id}: {r.npc_response}")
+    return "\n".join(lines)

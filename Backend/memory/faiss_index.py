@@ -119,19 +119,28 @@ class FAISSMemory:
 
     def prune_oldest(self, keep: int) -> None:
         """Rebuild index keeping only the most recent `keep` entries."""
-        import faiss
-
         if len(self._entries) <= keep:
             return
         log.info(
             "memory index pruned", extra={"before": len(self._entries), "after": keep}
         )
-        keep_entries = self._entries[-keep:]
-        # Re-embed is expensive; we reconstruct from stored vecs
-        # Since IndexFlatIP supports reconstruct:
-        old_vecs = np.vstack([self._index.reconstruct(e.idx) for e in keep_entries])
+        self._rebuild(self._entries[-keep:])
+
+    def drop_after_turn(self, turn: int) -> None:
+        """Forget entries written after `turn`, as when rewinding to a save."""
+        keep_entries = [e for e in self._entries if e.turn <= turn]
+        if len(keep_entries) < len(self._entries):
+            self._rebuild(keep_entries)
+
+    def _rebuild(self, keep_entries: List[MemoryEntry]) -> None:
+        """Rebuild the index from the stored vectors of the kept entries."""
+        import faiss
+
         new_index = faiss.IndexFlatIP(self.dim)
-        new_index.add(old_vecs)
+        if keep_entries:
+            new_index.add(
+                np.vstack([self._index.reconstruct(e.idx) for e in keep_entries])
+            )
         for i, entry in enumerate(keep_entries):
             entry.idx = i
         self._index = new_index

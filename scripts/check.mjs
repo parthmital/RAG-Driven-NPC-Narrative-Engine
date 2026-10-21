@@ -53,6 +53,15 @@ const steps = [
 				quiet,
 			}),
 	],
+	[
+		"Notebook backend",
+		() =>
+			run(
+				VENV_PYTHON,
+				[path.join(ROOT, "scripts", "notebook_bundle.py"), "--check"],
+				{ what: "Notebook backend bundle", quiet },
+			),
+	],
 	...["format:check", "typecheck", "lint", "test", "build"].map((script) => [
 		`Frontend ${script}`,
 		() =>

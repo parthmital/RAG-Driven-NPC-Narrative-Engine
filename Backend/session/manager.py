@@ -11,7 +11,8 @@ from typing import Any, Dict, List, Optional
 
 import config
 from core.event_store import EventStore
-from core.reducer import apply_event, rebuild_state
+from core.recovery import recover_state
+from core.reducer import apply_event
 from core.snapshot import load_snapshot, save_snapshot
 from game.world_loader import load_world_seed
 from graph.definition import TurnState, build_graph
@@ -121,16 +122,19 @@ class SessionManager:
 
         def _create():
             store = EventStore(data_dir / config.EVENTS_DB_FILENAME)
-            world = self._seed.model_copy(deep=True)
-
-            world.player.name = name
-            world.player.gender = gender
-            world.player.age = age
-            world.player.occupation = occupation
-            world.player.moral_alignment = config.INITIAL_MORAL_ALIGNMENT
+            identity = {
+                "name": name,
+                "gender": gender,
+                "age": age,
+                "occupation": occupation,
+                "moral_alignment": config.INITIAL_MORAL_ALIGNMENT,
+            }
+            start = Event(
+                turn=0, event_type=EventType.SESSION_START, payload={"player": identity}
+            )
+            store.append(start)
+            world = apply_event(self._seed, start)
             world.active_npc_id = None
-
-            store.append(Event(turn=0, event_type=EventType.SESSION_START, payload={}))
             return self._open_session(session_id, data_dir, store, world, None)
 
         session = await asyncio.to_thread(_create)
@@ -168,21 +172,33 @@ class SessionManager:
 
         def _load():
             store = EventStore(data_dir / config.EVENTS_DB_FILENAME)
-            snap = load_snapshot(save_files.snapshot_path(data_dir, is_auto))
-            if snap:
-                world, _last_id = snap
+            snap_path = save_files.snapshot_path(data_dir, is_auto)
+            snap = None if is_auto else load_snapshot(snap_path)
+            rewind_turn = None
+            if snap is None:
+                # latest committed state: snapshot plus the events logged after it
+                world = recover_state(self._seed, store, snap_path)
             else:
-                world = rebuild_state(
-                    self._seed.model_copy(deep=True), store.load_all()
-                )
+                # a manual save is a save point: later progress is discarded so
+                # the event log keeps reproducing the loaded state
+                world, last_id = snap
+                if store.truncate_after(last_id):
+                    rewind_turn = world.turn
+                    log.info(
+                        "rewound to manual save",
+                        extra={"save": save_id, "turn": world.turn},
+                    )
 
             npc_id = world.active_npc_id or next(iter(world.npcs.keys()), None)
             dialogue_history = save_files.load_dialogue(
                 save_files.dialogue_path(data_dir, is_auto)
             )
-            return self._open_session(
+            session = self._open_session(
                 session_id, data_dir, store, world, npc_id, dialogue_history
             )
+            if rewind_turn is not None:
+                session.faiss_mem.drop_after_turn(rewind_turn)
+            return session
 
         try:
             session = await asyncio.to_thread(_load)
@@ -190,6 +206,7 @@ class SessionManager:
             log.exception("session load failed", extra={"save": save_id})
             return None
         self._sessions[session_id] = session
+        await self.save_session(session_id, is_auto=True)
         log.info("session loaded", extra={"save": save_id, "turn": session.world.turn})
         return session
 
@@ -260,6 +277,7 @@ class SessionManager:
                 "npc_dialogue": "",
                 "turn_errors": [],
                 "elapsed_ms": 0.0,
+                "repair": None,
             }
 
             result = await asyncio.to_thread(session.graph.invoke, turn_state)

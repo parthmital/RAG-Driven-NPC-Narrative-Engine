@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import config
+from core.snapshot import write_atomic
 
 log = logging.getLogger(__name__)
 
@@ -51,8 +52,7 @@ def load_dialogue(path: Path) -> list:
 
 
 def save_dialogue(path: Path, history: list) -> None:
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(history, f, ensure_ascii=False)
+    write_atomic(path, json.dumps(history, ensure_ascii=False))
 
 
 def list_saves() -> List[Dict[str, Any]]:

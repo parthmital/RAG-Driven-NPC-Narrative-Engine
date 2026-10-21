@@ -2,7 +2,9 @@
 
 The Obsidian Flask is a full stack text adventure game in which non-player characters (NPCs) talk through a large language model (LLM), while the world state stays under the control of code. Each player turn runs through a fixed LangGraph pipeline: it retrieves memories, builds a prompt, calls the LLM, parses a strict JSON reply, checks every proposed world change against the rules, and commits only the lawful changes to an append-only event log.
 
-The repository also contains a full evaluation of the engine's two mechanisms, scoped dual-tier memory and pre-commit state control. The evaluation is a Kaggle notebook with saved outputs, and its write-up is the LaTeX research paper in [docs/paper/main.pdf](docs/paper/main.pdf).
+The repository also contains a full evaluation of the engine's two mechanisms, scoped dual-tier memory and pre-commit state control. The evaluation is a Kaggle notebook, and its write-up is the LaTeX research paper in [docs/paper/main.pdf](docs/paper/main.pdf).
+
+**Status (22 October 2026).** The engine and the notebook were revised for the faculty's Review-03 feedback ([LLM Game Feedback.md](LLM%20Game%20Feedback.md)): the currency invariant, crash recovery, dialogue repair after rejected changes, budgeted memory, stronger baselines, independent model families, human evaluation sheets and a self-contained notebook. The saved outputs in [`notebooks/outputs/`](notebooks/outputs/), the results sections of this README and the paper are still from the **Review-02 run** (backend commit `0ea345f`, before these corrections). The revised notebook has not been run yet; see [Evaluation notebook](#evaluation-notebook).
 
 ## Table of contents
 
@@ -127,8 +129,9 @@ LLM-driven NPCs fail in three ways during long play:
 This project keeps the LLM for language and moves memory and state into code:
 
 - A canonical world seed and a structured JSON output contract for the LLM.
-- A validator that checks every proposed change before it is committed.
-- An append-only event log and a pure reducer, so the state can be rebuilt from the log.
+- A validator that checks every proposed change before it is committed, with per-turn limits (one move, +/-20 trust per NPC, spending within the opening balance, at most +50 currency).
+- Dialogue repair: when the validator rejects a change, the model rewrites the reply so it does not describe something that did not happen.
+- An append-only event log and a pure reducer, so the state can be rebuilt from the log, and a load path that replays the events logged after the last snapshot.
 - An 8-turn short term buffer plus FAISS long term memory, filtered by the current location and NPC.
 
 ## Key features
@@ -139,14 +142,14 @@ This project keeps the LLM for language and moves memory and state into code:
 - LangGraph turn pipeline with 8 nodes: input, retrieval, prompt, LLM, parse, validate, commit, and output.
 - Groq LLM client with a timeout, retries for transient errors only, temperature `0.35`, and a token limit.
 - Short term memory buffer of the last `8` turns and long term memory using sentence transformer embeddings and FAISS CPU.
-- SQLite append only event store per session, with snapshots every `16` turns and an auto-save after each turn.
+- SQLite append only event store per session (one transaction per turn), with atomic snapshots every `16` turns, an auto-save after each turn, and crash recovery from the snapshot plus the logged suffix.
 - Relationship and trust, emotional state, NPC switching, travel, inventory pickup and drop, currency, journal, and clue linking.
 - WebSocket endpoint for session connection, ping and pong, NPC response broadcast, and NPC switch broadcast.
-- A reproducible evaluation notebook with 7 worlds, 10 memory conditions, 7 adversarial probe categories, a 2 x 2 factorial, ablations, and pre-registered hypothesis tests.
+- A self-contained evaluation notebook with 7 worlds, 13 memory conditions, 7 adversarial probe categories, a 2 x 2 factorial, ablations, a paired before-and-after comparison with the Review-02 system, three model families, and pre-registered hypothesis tests.
 
 ## Evaluation at a glance
 
-The notebook ran end to end on Kaggle (2 x Tesla T4) in 6.69 hours, against backend commit `0ea345f`, with [`IFM/K2-Horizon-7B`](https://huggingface.co/IFM/K2-Horizon-7B) as the main LLM. Values are mean [95% bootstrap confidence interval]. Recall and token figures use the six held-out worlds (W2a to W4-128); probe, live, and replay figures pool all seven worlds. Full tables are in [Evaluation results](#evaluation-results).
+These are the **Review-02** results, from before the Review-03 corrections. The notebook ran end to end on Kaggle (2 x Tesla T4) in 6.69 hours, against backend commit `0ea345f`, with [`IFM/K2-Horizon-7B`](https://huggingface.co/IFM/K2-Horizon-7B) as the main LLM. Values are mean [95% bootstrap confidence interval]. Recall and token figures use the six held-out worlds (W2a to W4-128); probe, live, and replay figures pool all seven worlds. Full tables are in [Evaluation results](#evaluation-results).
 
 | Question                                                | Result                                                                                                                                                                                                           |
 | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -159,7 +162,7 @@ The notebook ran end to end on Kaggle (2 x Tesla T4) in 6.69 hours, against back
 | Are the two mechanisms independent (H6)?                | No. Memory and control interact significantly on recall (p < 0.001), so H6 is not supported                                                                                                                      |
 | Do the effects hold on unseen worlds?                   | Yes. Both effects point the same way on all three held-out world families and on a second 3.7B model                                                                                                             |
 
-Hypothesis verdicts: H2, H3, H4, H5, and H7 supported; H1 and H6 not supported.
+Hypothesis verdicts: H2, H3, H4, H5, and H7 supported; H1 and H6 not supported. The defects in the "still fail" and "rebuilt" rows are fixed in the current code; the revised notebook measures the fixes against the Review-02 code on the same scenarios.
 
 ## System architecture
 
@@ -248,13 +251,14 @@ RAG-Driven-NPC-Narrative-Engine/
 |   |-- core/
 |   |   |-- event_store.py      # SQLite append only event store
 |   |   |-- reducer.py          # Applies events to world state
-|   |   `-- snapshot.py         # JSON snapshot save and load helpers
+|   |   |-- recovery.py         # Snapshot plus logged suffix, or full replay
+|   |   `-- snapshot.py         # Atomic JSON snapshot save and load helpers
 |   |-- game/
 |   |   |-- validator.py        # Validates LLM proposed world updates
 |   |   |-- world_loader.py     # Loads world seed JSON
 |   |   `-- world_seed.json     # Canonical game world and metadata (world W1)
 |   |-- graph/
-|   |   `-- definition.py       # LangGraph turn pipeline (8 nodes)
+|   |   `-- definition.py       # LangGraph turn pipeline (9 nodes, including dialogue repair)
 |   |-- llm/
 |   |   |-- groq_client.py      # Groq wrapper and JSON extraction
 |   |   `-- prompt_builder.py   # Prompt construction
@@ -271,7 +275,7 @@ RAG-Driven-NPC-Narrative-Engine/
 |   |   |-- events.py           # Event enum and payload helper models
 |   |   |-- llm_output.py       # LLM JSON output schema
 |   |   `-- world_state.py      # World state models
-|   |-- tests/                  # API, architecture, LLM client, and logging tests
+|   |-- tests/                  # API, architecture, LLM client, logging, and state integrity tests
 |   |-- config.py               # Backend configuration and environment loading
 |   |-- log_config.py           # Log format, request and session context
 |   |-- requirements.txt        # Backend runtime dependencies
@@ -299,15 +303,17 @@ RAG-Driven-NPC-Narrative-Engine/
 |-- docs/
 |   |-- paper/                  # IEEE-format LaTeX paper: main.tex, references.bib, IEEEtran.cls, compiled main.pdf
 |   |-- screenshots/            # Game screenshots used in this README
+|   |-- human-evaluation.md     # Rating protocol for the notebook's blinded annotation sheets
 |   `-- tectonic.exe            # Tectonic 0.15 LaTeX engine (Windows) used by `npm run paper`
 |-- notebooks/
-|   |-- npc-memory-state-benchmark.ipynb  # Kaggle evaluation notebook, with saved outputs
+|   |-- npc-memory-state-benchmark.ipynb  # Kaggle evaluation notebook (Review-03 version, outputs cleared)
 |   |-- outputs/                # Extracted run outputs (see Evaluation output files)
 |   `-- outputs.zip             # The archive the notebook produced (16.7 MB)
 |-- scripts/
 |   |-- lib/workspace.mjs       # Repo-local environment, runtime checks, idempotent setup
 |   |-- dev.mjs                 # `npm run dev` launcher and service supervisor
 |   |-- check.mjs               # `npm run check` validation runner
+|   |-- notebook_bundle.py      # Embeds Backend/ in the notebook, or checks it is in sync
 |   `-- paper.mjs               # `npm run paper` LaTeX build with log checks
 |-- ARCHITECTURE.md             # Module map, dependency rules, data flow, operations
 |-- DESIGN.md                   # Frontend design system and UI decisions
@@ -420,7 +426,7 @@ Root ([package.json](package.json)):
 | Command             | Where to run    | Purpose                                                                                                                                                                                                                                                           |
 | ------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `npm run dev`       | Repository root | Runs complete setup, starts both services, and opens the browser                                                                                                                                                                                                  |
-| `npm run check`     | Repository root | Runs setup, clone detection, black, backend tests, frontend format check, typecheck, lint, tests, and build                                                                                                                                                       |
+| `npm run check`     | Repository root | Runs setup, clone detection, black, backend tests, the notebook backend-bundle check, frontend format check, typecheck, lint, tests, and build                                                                                                                    |
 | `npm run build`     | Repository root | Runs the frontend production build                                                                                                                                                                                                                                |
 | `npm run build:dev` | Repository root | Runs the frontend development build                                                                                                                                                                                                                               |
 | `npm run preview`   | Repository root | Serves the built frontend locally                                                                                                                                                                                                                                 |
@@ -575,13 +581,13 @@ No authentication or authorisation is implemented. Any caller who can reach the 
 
 ## Input validation
 
-| Layer                       | Source                                                   | Behaviour                                                                                                                                       |
-| --------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| API request validation      | [`Backend/api/schemas.py`](Backend/api/schemas.py)       | Pydantic validates body fields, minimum lengths, age, and action length                                                                         |
-| Route level checks          | [`Backend/api/routes/`](Backend/api/routes/)             | Checks active sessions, NPC availability, location connectivity, object ownership, and clue existence                                           |
-| LLM world update validation | [`Backend/game/validator.py`](Backend/game/validator.py) | Rejects unknown event types, non canonical entities, non-adjacent moves, impossible pickups and drops, trust changes above 20, and overspending |
+| Layer                       | Source                                                   | Behaviour                                                                                                                                                                                                                                                                                                                                                                                 |
+| --------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API request validation      | [`Backend/api/schemas.py`](Backend/api/schemas.py)       | Pydantic validates body fields, minimum lengths, age, and action length                                                                                                                                                                                                                                                                                                                   |
+| Route level checks          | [`Backend/api/routes/`](Backend/api/routes/)             | Checks active sessions, NPC availability, location connectivity, object ownership, and clue existence                                                                                                                                                                                                                                                                                     |
+| LLM world update validation | [`Backend/game/validator.py`](Backend/game/validator.py) | Checks a turn's proposals in order against a running state. Rejects unknown or engine-only event types, non canonical entities, a second move, non-adjacent moves, pickups and drops away from the player, items the actor does not hold, more than 20 trust change per NPC per turn, spending beyond the opening balance, more than 50 currency gained per turn, and non-integer amounts |
 
-The LLM must return a strict JSON object. The backend parses it and validates every proposed change before applying it. The rules, and the gaps the evaluation found in them, are listed in [ARCHITECTURE.md](ARCHITECTURE.md#known-gaps-and-recommended-changes).
+The LLM must return a strict JSON object. The backend parses it and validates every proposed change before applying it. The limits live in [`Backend/config.py`](Backend/config.py) and the prompt states them from the same constants. The gaps the Review-02 evaluation found, and their fixes, are listed in [ARCHITECTURE.md](ARCHITECTURE.md#known-gaps-and-recommended-changes).
 
 ## Error handling
 
@@ -618,15 +624,17 @@ JSON format (`LOG_FORMAT=json`) writes the same fields as one object per line, w
 
 ## Testing and verification
 
-Checks run for this revision of the README (8 October 2026, Windows 11, Python 3.11.9):
+Checks run for this revision of the README (22 October 2026, Windows 11, Python 3.11.9):
 
 | Check          | Command                                             | Result                                       |
 | -------------- | --------------------------------------------------- | -------------------------------------------- |
-| Backend tests  | `python -m unittest discover -s tests` in `Backend` | Passed, `18` tests                           |
+| Backend tests  | `python -m unittest discover -s tests` in `Backend` | Passed, `42` tests                           |
 | Frontend tests | `npm run test` in `Frontend`                        | Passed, `7` tests in `2` files               |
 | Frontend build | `npm run build` in `Frontend`                       | Passed, `2015` modules transformed, `1.65 s` |
 
-`npm run check` from the repository root also passed: all 8 steps (clone detection, backend format, backend tests, frontend format, typecheck, lint, tests, and build) in `26.4 s`.
+`npm run check` from the repository root runs 9 steps: clone detection, backend format, backend tests, the notebook backend-bundle check, frontend format, typecheck, lint, tests, and build.
+
+[`Backend/tests/test_state_integrity.py`](Backend/tests/test_state_integrity.py) holds the Review-03 tests: targeted currency-invariant cases; a seeded property test that commits 3,000 random multi-proposal turns and checks every invariant with a checker written independently of the validator; randomised crash points before and after event and snapshot writes, recovered through `recover_state` and through `SessionManager.load_session`; manual-save rewind; context packing; dialogue repair; and secret gating in the prompt.
 
 What the tests cover:
 
@@ -661,7 +669,7 @@ There is no separate backend build step; the backend runs directly through Pytho
 
 ## Evaluation notebook
 
-[notebooks/npc-memory-state-benchmark.ipynb](notebooks/npc-memory-state-benchmark.ipynb) runs the complete evaluation protocol of the research paper with no manual steps. It has 131 cells (65 code cells, each with a markdown explanation before it) in 11 sections.
+[notebooks/npc-memory-state-benchmark.ipynb](notebooks/npc-memory-state-benchmark.ipynb) runs the complete evaluation protocol of the research paper with no manual steps. The Review-03 version has 147 cells (73 code cells, each with a markdown explanation before it) in 11 sections, and its outputs are cleared until it is run.
 
 ### What it tests
 
@@ -670,34 +678,49 @@ The notebook asks whether the engine's two mechanisms beat independent baselines
 1. **Scoped dual-tier memory**: the 8-turn buffer plus FAISS retrieval filtered by location and NPC, with a fallback to unfiltered search when fewer than 3 results remain.
 2. **State control**: the pre-commit validation barrier in front of the event-sourced world state.
 
-It does not re-implement the system. It clones this repository at commit `0ea345fe140b359d7e82e77ffb2fdfa74caf0e7c`, asserts the hash, and imports the real `Backend` modules. Only the baselines, an independent rule checker (the oracle), and the benchmark generators are new code.
+It does not re-implement the system, and it does not clone this repository. The backend source is embedded in the notebook as a hashed bundle cell that [`scripts/notebook_bundle.py`](scripts/notebook_bundle.py) generates from `Backend/` (`npm run check` fails if it is stale). The bundle also holds the validator and prompt builder from the Review-02 commit `0ea345f`, which define the "before" condition F4v1. Only the baselines, an independent rule checker (the oracle), and the benchmark generators are new code.
+
+What the Review-03 version adds:
+
+- a paired before-and-after comparison (Table 8): every probe output committed by the Review-02 and the corrected validator, F4v1 against F4 in live sessions, draft against repaired replies on the same turns, and the Review-02 against the corrected load path on randomised crash points;
+- a contradiction judge from another model family (Qwen2.5-7B-Instruct), validated against human labels;
+- B4 (Generative-Agents-style scored memory stream) and B5 (MemoryBank-style forgetting curve), with every condition held to the same context budget, and a budget sweep;
+- simple effects and the interaction contrast for the memory x control factorial;
+- independent model families, Qwen2.5-7B-Instruct and Phi-4-mini-instruct;
+- blinded human-evaluation sheets ([docs/human-evaluation.md](docs/human-evaluation.md)) and ingestion of completed ratings;
+- exact package pins, resumable runs that reach larger sample sizes from attached response caches, and a cache-only mode that regenerates every result without a GPU.
 
 ### Conditions compared
 
-| Code     | Condition                                                                               | Used in                  |
-| -------- | --------------------------------------------------------------------------------------- | ------------------------ |
-| F4       | The proposed system: dual-tier memory plus the validation barrier                       | All stages               |
-| B0       | Full history in the prompt, cut only at the context limit                               | Recall, probes           |
-| B1, B1x2 | Rolling window of the newest turns that fit token budget B (440 tokens) or 2B           | Recall, probes (B1 only) |
-| B2       | Independent flat vector store of turn summaries, top 6 by cosine, no scoping, no buffer | Recall, probes           |
-| B3       | Independent generic RAG over raw dialogue chunks and world lore documents, top 6        | Recall, probes           |
-| A1 to A4 | Memory ablations: no long term memory, no short term buffer, no scoping, no fallback    | Recall                   |
-| A5       | No validation: schema-valid proposals become events without checks                      | Probes, live             |
-| A6       | Validator kept, but state is mutated in place with no event log                         | Live                     |
-| A7       | No snapshots: recovery by full replay                                                   | Replay                   |
-| F1 to F4 | 2 x 2 factorial: memory (rolling or dual-tier) x control (direct writes or barrier)     | Live                     |
+| Code     | Condition                                                                                                          | Used in                  |
+| -------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------ |
+| F4       | The proposed system: dual-tier memory packed into the context budget, the corrected validator, and dialogue repair | All stages               |
+| F4v1     | The Review-02 system: unbudgeted memory, the Review-02 validator and prompt, no repair                             | Recall, probes, live     |
+| B4       | Generative-Agents-style scored memory stream (recency plus relevance), filled to the budget                        | Recall                   |
+| B5       | MemoryBank-style forgetting-curve memory, filled to the budget                                                     | Recall                   |
+| B0       | Full history in the prompt, cut only at the context limit                                                          | Recall, probes           |
+| B1, B1x2 | Rolling window of the newest turns that fit token budget B (440 tokens) or 2B                                      | Recall, probes (B1 only) |
+| B2       | Independent flat vector store of turn summaries, top 6 by cosine, no scoping, no buffer                            | Recall, probes           |
+| B3       | Independent generic RAG over raw dialogue chunks and world lore documents, top 6                                   | Recall, probes           |
+| A1 to A4 | Memory ablations: no long term memory, no short term buffer, no scoping, no fallback                               | Recall                   |
+| A5       | No validation: schema-valid proposals become events without checks                                                 | Probes, live             |
+| A6       | Validator kept, but state is mutated in place with no event log                                                    | Live                     |
+| A7       | No snapshots: recovery by full replay                                                                              | Replay                   |
+| F1 to F4 | 2 x 2 factorial: memory (rolling or dual-tier) x control (direct writes or barrier)                                | Live                     |
 
 ### How to run it
 
 The notebook is designed for Kaggle and is never executed locally.
 
 1. Upload the notebook to Kaggle.
-2. In the sidebar, set **Accelerator** to **GPU T4 x2** and turn **Internet** on. Internet is needed to clone the repository, install vLLM, and download the models and the LIGHT file.
-3. Optional inputs: a `w3_world_seed.json` written by someone outside the project, which replaces the notebook-authored W3 world, and `llm_cache_*.jsonl` files from an earlier run, which let an interrupted run resume without repeating LLM calls.
+2. In the sidebar, set **Accelerator** to **GPU T4 x2** and turn **Internet** on. Internet is needed to install vLLM and the pinned packages and to download the models and the LIGHT file.
+3. Optional inputs: a `w3_world_seed.json` written by someone outside the project, which replaces the notebook-authored W3 world; `llm_cache_*.jsonl` files and `run_manifest.json` from an earlier run, which resume it and let the planner reach a larger sample size; and `human_ratings_*.csv` files completed by raters.
 4. Choose **Save Version**, then **Save & Run All**, so the 12-hour session limit applies.
 5. Download `outputs.zip` from the Output tab and extract it to [`notebooks/outputs/`](notebooks/outputs/).
 
-The notebook measures its own throughput with a pilot run and picks the largest pre-declared sample size that fits its 11.25-hour budget, so it always finishes and writes its outputs.
+The notebook measures its own throughput with a pilot run and picks the largest pre-declared sample size that fits its 11.25-hour budget, so it always finishes and writes its outputs. The article's full scale needs several sessions: after each run, publish its `predictions/llm_cache_*.jsonl` as a Kaggle dataset, attach it, and run again. To rebuild every table and figure from attached caches without a GPU, set `CACHE_ONLY=True` in the configuration cell.
+
+The walkthrough and results below describe the **Review-02 run** of the earlier notebook version (131 cells, backend commit `0ea345f`), whose outputs are in [`notebooks/outputs/`](notebooks/outputs/). They will be replaced by the revised notebook's outputs once it has run.
 
 ### Cell-by-cell walkthrough
 
@@ -882,7 +905,7 @@ Cells 10.1 to 10.14 draw the 13 figures in `plots/` with one fixed palette, in w
 
 ## Evaluation results
 
-All numbers below come from [`notebooks/outputs/metrics/`](notebooks/outputs/metrics/). Values are mean [95% cluster-bootstrap CI]. "Held-out" means W2a to W4-128; W1 is the development world. Backbone: K2-Horizon-7B, fp16, reasoning effort low, thinking budget 192 tokens.
+All numbers below come from the Review-02 run in [`notebooks/outputs/metrics/`](notebooks/outputs/metrics/), before the Review-03 corrections. Values are mean [95% cluster-bootstrap CI]. "Held-out" means W2a to W4-128; W1 is the development world. Backbone: K2-Horizon-7B, fp16, reasoning effort low, thinking budget 192 tokens.
 
 ### World suite
 
@@ -1323,15 +1346,15 @@ Request throughput, memory use, and WebSocket capacity of the game server: `Not 
 | HTTP endpoints                   | `18`                                      | Route decorators in [`Backend/api`](Backend/api)                                               |
 | WebSocket endpoints              | `1`                                       | Same                                                                                           |
 | Event types                      | `14`                                      | [`Backend/schemas/events.py`](Backend/schemas/events.py)                                       |
-| Turn graph nodes                 | `8`                                       | [`Backend/graph/definition.py`](Backend/graph/definition.py)                                   |
+| Turn graph nodes                 | `9`                                       | [`Backend/graph/definition.py`](Backend/graph/definition.py)                                   |
 | Frontend route pages             | `8`                                       | [`Frontend/src/pages`](Frontend/src/pages)                                                     |
 | Frontend scripts                 | `11`                                      | [`Frontend/package.json`](Frontend/package.json)                                               |
 | Backend runtime dependency lines | `14`                                      | [`Backend/requirements.txt`](Backend/requirements.txt)                                         |
-| Backend tests                    | `18` in `4` files                         | `python -m unittest discover -s tests`                                                         |
+| Backend tests                    | `42` in `5` files                         | `python -m unittest discover -s tests`                                                         |
 | Frontend tests                   | `7` in `2` files                          | `npm run test`                                                                                 |
 | Test coverage percentage         | `Not measured in the current repository.` | No coverage tooling output                                                                     |
 | World W1                         | 8 locations, 4 NPCs, 4 objects, 7 rules   | [`Backend/game/world_seed.json`](Backend/game/world_seed.json)                                 |
-| Notebook cells                   | `131` (65 code)                           | [`notebooks/npc-memory-state-benchmark.ipynb`](notebooks/npc-memory-state-benchmark.ipynb)     |
+| Notebook cells                   | `147` (73 code)                           | [`notebooks/npc-memory-state-benchmark.ipynb`](notebooks/npc-memory-state-benchmark.ipynb)     |
 | Evaluation figures               | `13`                                      | [`notebooks/outputs/plots`](notebooks/outputs/plots)                                           |
 | Evaluation run time              | `6.69` hours                              | [`notebooks/outputs/metrics/run_manifest.json`](notebooks/outputs/metrics/run_manifest.json)   |
 | JS bundle gzip size              | `128.84 kB`                               | `npm run build`, 8 October 2026                                                                |
@@ -1340,30 +1363,32 @@ Request throughput, memory use, and WebSocket capacity of the game server: `Not 
 
 ## Troubleshooting
 
-| Problem                                  | Likely cause                                                              | Diagnostic command                                                       | Resolution                                                                              |
-| ---------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
-| `npm run dev` reports a busy port        | Another process or earlier run holds the port                             | `netstat -ano`                                                           | Stop that process, then rerun `npm run dev`                                             |
-| First setup run is slow                  | Large ML dependencies or embedding model download                         | Check `.cache\pip` and `.cache\huggingface`                              | Let the setup finish. Later runs reuse the repository-local caches                      |
-| Backend import or package error          | Backend dependencies not installed in `.venv`                             | `.venv/Scripts/python.exe -m pip show fastapi`                           | Rerun `npm run dev`; setup reinstalls a broken `.venv`                                  |
-| Frontend loading screen does not proceed | Backend health endpoint not ready                                         | `Invoke-RestMethod http://127.0.0.1:8000/health`                         | Start the backend and wait for shared resources to load                                 |
-| Groq generation fails                    | Missing or invalid API key                                                | Check `Backend/.env`                                                     | Set `GROQ_API_KEY` in `Backend/.env` and restart                                        |
-| Session creation returns `422`           | Invalid request body                                                      | Check the browser network response                                       | Provide all required fields and use age `18` or higher                                  |
-| Travel returns `400`                     | Target location is not connected                                          | `Invoke-RestMethod http://127.0.0.1:8000/api/game/state/<session_id>`    | Travel only to a location listed in `connected_to`                                      |
-| A loaded save is missing recent turns    | `load_session` reads the snapshot only                                    | Compare the snapshot's turn with the last event in `events.db`           | Known defect; see [ARCHITECTURE.md](ARCHITECTURE.md#known-gaps-and-recommended-changes) |
-| `npm run check` fails                    | One validation step failed                                                | Read the first failed step in the output                                 | Fix that step locally, then rerun `npm run check`                                       |
-| Notebook stops at the hardware check     | Kaggle accelerator is not GPU T4 x2                                       | The cell's assertion message                                             | Set Accelerator to GPU T4 x2 and rerun                                                  |
-| Notebook fails to clone or download      | Kaggle internet is off                                                    | The error in section 1.5 or `logs/vllm_install.log`                      | Turn Internet on in the notebook settings                                               |
-| A vLLM server never becomes healthy      | Engine start-up failure on the T4s                                        | `logs/vllm_<tag>_<port>.log`                                             | The launcher retries with safer flags; read the last attempt's log tail                 |
-| Images in this README do not show        | [`notebooks/outputs/`](notebooks/outputs/) not extracted or not committed | Check that [`notebooks/outputs/plots/`](notebooks/outputs/plots/) exists | Extract `outputs.zip` into [`notebooks/outputs/`](notebooks/outputs/)                   |
+| Problem                                   | Likely cause                                                              | Diagnostic command                                                       | Resolution                                                                      |
+| ----------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `npm run dev` reports a busy port         | Another process or earlier run holds the port                             | `netstat -ano`                                                           | Stop that process, then rerun `npm run dev`                                     |
+| First setup run is slow                   | Large ML dependencies or embedding model download                         | Check `.cache\pip` and `.cache\huggingface`                              | Let the setup finish. Later runs reuse the repository-local caches              |
+| Backend import or package error           | Backend dependencies not installed in `.venv`                             | `.venv/Scripts/python.exe -m pip show fastapi`                           | Rerun `npm run dev`; setup reinstalls a broken `.venv`                          |
+| Frontend loading screen does not proceed  | Backend health endpoint not ready                                         | `Invoke-RestMethod http://127.0.0.1:8000/health`                         | Start the backend and wait for shared resources to load                         |
+| Groq generation fails                     | Missing or invalid API key                                                | Check `Backend/.env`                                                     | Set `GROQ_API_KEY` in `Backend/.env` and restart                                |
+| Session creation returns `422`            | Invalid request body                                                      | Check the browser network response                                       | Provide all required fields and use age `18` or higher                          |
+| Travel returns `400`                      | Target location is not connected                                          | `Invoke-RestMethod http://127.0.0.1:8000/api/game/state/<session_id>`    | Travel only to a location listed in `connected_to`                              |
+| A loaded manual save drops later turns    | Loading a manual save rewinds the event log to that save                  | Compare the save's turn with the last event in `events.db`               | Expected behaviour; load the auto save to continue from the latest turn         |
+| `npm run check` fails at Notebook backend | `Backend/` changed after the notebook bundle was generated                | `.venv/Scripts/python scripts/notebook_bundle.py --check`                | Run `.venv/Scripts/python scripts/notebook_bundle.py`, then commit the notebook |
+| `npm run check` fails                     | One validation step failed                                                | Read the first failed step in the output                                 | Fix that step locally, then rerun `npm run check`                               |
+| Notebook stops at the hardware check      | Kaggle accelerator is not GPU T4 x2                                       | The cell's assertion message                                             | Set Accelerator to GPU T4 x2 and rerun                                          |
+| Notebook fails to install or download     | Kaggle internet is off                                                    | The error in section 1.5 or `logs/vllm_install.log`                      | Turn Internet on in the notebook settings                                       |
+| A vLLM server never becomes healthy       | Engine start-up failure on the T4s                                        | `logs/vllm_<tag>_<port>.log`                                             | The launcher retries with safer flags; read the last attempt's log tail         |
+| Images in this README do not show         | [`notebooks/outputs/`](notebooks/outputs/) not extracted or not committed | Check that [`notebooks/outputs/plots/`](notebooks/outputs/plots/) exists | Extract `outputs.zip` into [`notebooks/outputs/`](notebooks/outputs/)           |
 
 ## Known limitations
 
 - No authentication, authorisation, or rate limiting.
 - Backend API tests stub the embedder, Groq client, and LangGraph pipeline; real LLM turns are tested only by the evaluation notebook.
 - Frontend tests cover the HTTP client and dialogue mapping, not route rendering or WebSocket flows.
-- Defects found by the evaluation and still present in the code: the validator accepts any currency gain and checks spending per proposal rather than per turn; `load_session` ignores events logged after the snapshot; `active_npc_id` is not event-sourced; the prompt's trust range (-10 to 10) differs from the validator's (+/-20); NPC secrets never reach the prompt, so the trust-60 reveal rule cannot be honoured. Details and suggested fixes are in [ARCHITECTURE.md](ARCHITECTURE.md#known-gaps-and-recommended-changes).
-- A rejected proposal does not change the NPC's dialogue, so the dialogue can describe a change that did not happen (18.7% of live turns with the barrier, by the automatic proxy).
-- The evaluation used ladder level 2 (the third of 8 levels numbered 0 to 7), a self-hosted K2-Horizon model rather than the game's Groq model, and automatic scoring without human labels yet.
+- The defects found by the Review-02 evaluation are fixed in the code (see [ARCHITECTURE.md](ARCHITECTURE.md#known-gaps-and-recommended-changes)), but the fixes have only been verified by unit and property tests. Their effect on the benchmark is measured by the revised notebook, which has not been run yet.
+- The validator checks structure, not plausibility: a lawful-sized trust change with no reason in the dialogue still passes.
+- Dialogue repair costs one extra LLM call on each turn with a rejected proposal.
+- The saved evaluation used ladder level 2 (the third of 8 levels numbered 0 to 7), a self-hosted K2-Horizon model rather than the game's Groq model, and automatic scoring. Human ratings need two raters to fill the sheets the revised notebook exports.
 - `SESSION_SECRET` is loaded but not used.
 
 ## Contribution guidelines

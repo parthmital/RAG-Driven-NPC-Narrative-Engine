@@ -10,6 +10,8 @@ from schemas.world_state import Clue, JournalEntry, WorldState
 
 log = logging.getLogger(__name__)
 
+PLAYER_IDENTITY_FIELDS = ("name", "gender", "age", "occupation", "moral_alignment")
+
 
 def apply_event(state: WorldState, event: Event) -> WorldState:
     """Return a new WorldState after applying one event."""
@@ -19,7 +21,11 @@ def apply_event(state: WorldState, event: Event) -> WorldState:
 
     try:
         if event_type == EventType.SESSION_START:
-            pass
+            # the player's identity is chosen at creation and logged with the start
+            identity = payload.get("player") or {}
+            for field in PLAYER_IDENTITY_FIELDS:
+                if field in identity:
+                    setattr(next_state.player, field, identity[field])
 
         elif event_type == EventType.PLAYER_MOVED:
             destination = payload.get("to_location_id")
@@ -48,6 +54,7 @@ def apply_event(state: WorldState, event: Event) -> WorldState:
                 obj = next_state.objects[obj_id]
                 obj.location_id = None
                 if taken_by == "player":
+                    obj.owner_id = None
                     if obj_id not in next_state.player.inventory:
                         next_state.player.inventory.append(obj_id)
                 else:
@@ -94,7 +101,9 @@ def apply_event(state: WorldState, event: Event) -> WorldState:
                 next_state.player.flags[key] = payload.get("value")
 
         elif event_type == EventType.NPC_SPOKE:
-            pass
+            # the speaker is the active NPC, so replay restores active_npc_id
+            npc_id = payload.get("npc_id")
+            next_state.active_npc_id = npc_id if npc_id in next_state.npcs else None
 
         elif event_type == EventType.JOURNAL_ENTRY_CREATED:
             entry = JournalEntry(
@@ -143,11 +152,16 @@ def apply_event(state: WorldState, event: Event) -> WorldState:
     return next_state
 
 
-def rebuild_state(seed: WorldState, events: List[Event]) -> WorldState:
-    """Replay all events from seed to current state."""
-    state = seed.model_copy(deep=True)
+def replay(state: WorldState, events: List[Event]) -> WorldState:
+    """Apply logged events in order to a state, advancing its turn counter."""
+    state = state.model_copy(deep=True)
     for event in events:
         state = apply_event(state, event)
     if events:
-        state.turn = max(event.turn for event in events)
+        state.turn = max(state.turn, max(event.turn for event in events))
     return state
+
+
+def rebuild_state(seed: WorldState, events: List[Event]) -> WorldState:
+    """Replay all events from seed to current state."""
+    return replay(seed, events)

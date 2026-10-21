@@ -3,6 +3,7 @@
 from __future__ import annotations
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -11,13 +12,23 @@ from schemas.world_state import WorldState
 log = logging.getLogger(__name__)
 
 
-def save_snapshot(state: WorldState, path: Path, last_event_id: int) -> None:
+def write_atomic(path: Path, text: str) -> None:
+    """Write text so a crash leaves either the old file or the new one, never a torn one."""
     path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write(text)
+        fh.flush()
+        os.fsync(fh.fileno())
+    os.replace(tmp, path)
+
+
+def save_snapshot(state: WorldState, path: Path, last_event_id: int) -> None:
     data = {
         "last_event_id": last_event_id,
         "world_state": state.model_dump(),
     }
-    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    write_atomic(path, json.dumps(data, indent=2))
     log.debug(
         "snapshot saved", extra={"turn": state.turn, "last_event_id": last_event_id}
     )

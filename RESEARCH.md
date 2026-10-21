@@ -1,5 +1,20 @@
 # Research Notes
 
+## Review-03 corrections: baselines, judge, model families and testing (decided 2026-10-22)
+
+**Brief.** Implement the faculty's Review-03 requirements ([`LLM Game Feedback.md`](LLM%20Game%20Feedback.md)) with the least new machinery: stronger memory baselines, dialogue repair, an evaluation of dialogue-state contradictions that does not rely on refusal words, independent model families that run on 2 x T4, property-based tests, and a self-contained reproducibility package. Tier: Quick (bounded choices in a familiar stack; the defects themselves were bug fixes with no research).
+
+**Decisions.**
+
+- **Memory baselines: Borrow.** B4 re-implements the Generative Agents retrieval rule (Park et al., UIST 2023, the base paper: min-max-normalised recency with decay 0.995 plus relevance; the LLM-rated importance term is omitted because it needs an LLM call per memory write). B5 re-implements the MemoryBank forgetting curve (Zhong et al., AAAI 2024: retention exp(-t/S), strength raised on each recall). Both are published; MemGPT and Mem0 were rejected because they are still arXiv-only (see the 2026-10-16 entry below), and their LLM-managed memories would add an LLM call per turn to every condition.
+- **Dialogue repair: Borrow.** The validator-feedback re-ask pattern (the rejected proposals and the committed state go back to the model, which rewrites only the reply), with a deterministic neutral fallback when the rewrite does not parse. Runner-up: always appending a fixed correction line, rejected because it leaves the contradicting speech in place.
+- **Independent families: Adopt.** [`Qwen/Qwen2.5-7B-Instruct`](https://huggingface.co/Qwen/Qwen2.5-7B-Instruct) (Apache-2.0, ungated, `Qwen2ForCausalLM`) and [`microsoft/Phi-4-mini-instruct`](https://huggingface.co/microsoft/Phi-4-mini-instruct) (MIT, ungated, `Phi3ForCausalLM`), both checked on the Hugging Face API on 2026-10-22 and served by vLLM. Runner-up: [`ibm-granite/granite-3.3-8b-instruct`](https://huggingface.co/ibm-granite/granite-3.3-8b-instruct) (Apache-2.0, ungated), left out for time. Gated families (Llama, Gemma, Mistral) were excluded because the notebook must run without an access token.
+- **Contradiction judge: Adopt** Qwen2.5-7B-Instruct as an LLM judge from a different family than the generator, validated against blinded human labels on shared items; the cue-word proxy is kept for comparability with Review-02.
+- **Property-based tests: Build** with seeded `random` generators in `unittest` (3,000 random turns per run). Hypothesis was not added because the project's rules require asking before adopting a copyleft (MPL-2.0) dependency; the seeded tests already detect the Review-02 defects (472 of 3,000 random turns committed a violation under the old validator, 0 under the new one).
+- **Reproducibility: Build** a hashed, compressed backend bundle inside the notebook ([`scripts/notebook_bundle.py`](scripts/notebook_bundle.py)) instead of a network clone, with exact package pins and a cache-only regeneration mode.
+
+**Sources.** Park et al. (UIST 2023, [10.1145/3586183.3606763](https://doi.org/10.1145/3586183.3606763)); Zhong et al., MemoryBank ([AAAI 29946](https://ojs.aaai.org/index.php/AAAI/article/view/29946)); Hugging Face model API pages above (2026-10-22).
+
 ## Published-only references and base paper for the project submission (searched 2026-10-16)
 
 **Brief.** The project submission requires a base paper, reference papers that are all published (no preprints), and a paper with the sections Introduction, Literature Survey, Research Gap, Proposed Methodology, Dataset Description and Usage, Novelty, Algorithms, Implementation and Comparison of Results. Replace every arXiv-only reference in [`docs/paper/references.bib`](docs/paper/references.bib) with a published version or a published substitute, choose the base paper, and collect the reference PDFs.
