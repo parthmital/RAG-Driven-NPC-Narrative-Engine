@@ -1,7 +1,8 @@
 {
-	"created_utc": "2026-10-02T02:03:34Z",
-	"repo": "https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine.git",
-	"commit": "0ea345fe140b359d7e82e77ffb2fdfa74caf0e7c",
+	"created_utc": "2026-10-22T23:51:16Z",
+	"repo": "https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine",
+	"backend_bundle_sha256": "9f7d7e7bbb0dea242b497ea3a06e234df60349a50bba258beb765978fe294af1",
+	"legacy_commit": "0ea345fe140b359d7e82e77ffb2fdfa74caf0e7c",
 	"hardware": {
 		"gpus": [
 			{
@@ -22,30 +23,46 @@
 		"ram_total_gb": 33.7,
 		"ram_available_gb": 32.0,
 		"disk_working_free_gb": 20.9,
-		"disk_tmp_free_gb": 1201.7,
-		"torch_kernel": "2.10.0+cu128",
-		"python": "3.12.13"
+		"disk_tmp_free_gb": 1126.1,
+		"torch_kernel": "2.11.0+cu128",
+		"python": "3.13.15"
 	},
 	"packages": {
-		"torch": "2.10.0+cu128",
+		"torch": "2.11.0+cu128",
 		"sentence-transformers": "5.4.1",
 		"faiss-cpu": "1.15.1",
 		"langgraph": "0.6.11",
-		"pydantic": "2.12.3",
-		"numpy": "2.0.2",
+		"pydantic": "2.13.5",
+		"numpy": "2.1.3",
 		"pandas": "2.3.3",
 		"scipy": "1.16.3",
-		"statsmodels": "0.14.6",
-		"tokenizers": "0.22.2",
-		"huggingface-hub": "1.11.0"
+		"statsmodels": "0.15.0",
+		"tokenizers": "0.23.1",
+		"huggingface-hub": "1.29.0"
 	},
 	"vllm_env": "0.30.0 2.13.0+cu132",
 	"config": {
-		"REPO_URL": "https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine.git",
-		"REPO_COMMIT": "0ea345fe140b359d7e82e77ffb2fdfa74caf0e7c",
+		"REPO_URL": "https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine",
+		"LEGACY_COMMIT": "0ea345fe140b359d7e82e77ffb2fdfa74caf0e7c",
+		"KERNEL_PACKAGES": [
+			"faiss-cpu==1.15.1",
+			"langgraph==0.6.11",
+			"langchain-core==0.3.86",
+			"groq==1.7.0",
+			"python-dotenv==1.2.4",
+			"sentence-transformers==5.4.1",
+			"uv==0.13.4"
+		],
 		"PRIMARY_MODEL": "IFM/K2-Horizon-7B",
 		"SECONDARY_MODEL": "IFM/K2-Horizon-3.7B",
 		"RUN_SECONDARY": true,
+		"INDEPENDENT_MODELS": [
+			["Qwen/Qwen2.5-7B-Instruct", "qwen2.5-7b", 2],
+			["microsoft/Phi-4-mini-instruct", "phi4-mini", 1]
+		],
+		"RUN_INDEPENDENT": true,
+		"CACHE_ONLY": false,
+		"FORCE_LEVEL": null,
 		"VLLM_VERSION": "0.30.0",
 		"MAX_MODEL_LEN": 16384,
 		"GPU_MEM_UTIL": 0.88,
@@ -109,6 +126,10 @@
 		],
 		"SWEEP_SESSIONS": 10,
 		"REPLAY_SESSIONS": 6,
+		"CRASH_TRIALS": 300,
+		"BUDGET_SWEEP": [0.25, 0.5, 1, 2, 4],
+		"MEMORYBANK_TAU": 50,
+		"GA_RECENCY_DECAY": 0.995,
 		"LATENCY_TURNS": 12,
 		"SEED_VARIANCE_REPS": [1, 2],
 		"SECONDARY_WORLDS": ["W1", "W2a", "W3", "W4-32"],
@@ -161,7 +182,8 @@
 		"ALPHA": 0.05,
 		"TIME_BUDGET_HOURS": 11.25,
 		"ANALYSIS_RESERVE_MIN": 30,
-		"SECONDARY_RESERVE_MIN": 80,
+		"SECONDARY_RESERVE_MIN": 45,
+		"INDEPENDENT_RESERVE_MIN": 110,
 		"LATENCY_RESERVE_MIN": 15,
 		"SAFETY_MIN": 15,
 		"COST_PROMPT_WEIGHT": 0.12,
@@ -176,28 +198,33 @@
 		"RETRIEVAL_MIN_CANDIDATES": 3,
 		"SNAPSHOT_INTERVAL": 16,
 		"MAX_CONTEXT_CHARS": 16384,
+		"MEMORY_CONTEXT_CHARS": 1600,
+		"MIN_RECENT_TURNS": 2,
+		"MAX_TRUST_DELTA_PER_TURN": 20,
+		"MAX_CURRENCY_GAIN_PER_TURN": 50,
+		"DIALOGUE_REPAIR": true,
 		"TEMPERATURE": 0.35,
 		"EMBEDDING_MODEL": "sentence-transformers/all-MiniLM-L12-v2",
 		"EMBEDDING_DIM": 384,
 		"MEMORY_PRUNE_THRESHOLD": 1000
 	},
-	"budget_b_tokens": 440,
-	"ladder_level": 2,
+	"budget_b_tokens": 389,
+	"ladder_level": 1,
 	"plan": {
-		"level": 2,
-		"available_h": 8.46515500538879,
-		"s_per_unit": 0.004409593295241921,
-		"s_per_unit_wall": 0.004981401553572585,
-		"chars_per_token": 4.07395103037642,
+		"level": 1,
+		"available_h": 7.045852505366007,
+		"s_per_unit": 0.0036527460252476496,
+		"s_per_unit_wall": 0.004604563875076667,
+		"chars_per_token": 4.139879159662546,
 		"mean_output_tokens": {
-			"recall": 152.81203007518798,
-			"probe": 187.65853658536585
+			"recall": 143.93333333333334,
+			"probe": 199.04716981132074
 		},
-		"median_llm_ms": 89163.31326299996,
-		"pilot_wall_s": 423.31950402259827,
+		"median_llm_ms": 79224.534898,
+		"pilot_wall_s": 402.64903497695923,
 		"pilot_jobs": 256,
-		"pilot_probe_jobs": 123,
-		"cached_jobs_discounted": 316
+		"pilot_probe_jobs": 106,
+		"cached_jobs_discounted": 390
 	},
 	"plan_table": [
 		{
@@ -205,88 +232,88 @@
 			"n_rec": 1,
 			"n_probe": 4,
 			"n_live": 1,
-			"recall_h": 0.8357196849105425,
-			"probe_h": 0.6972823350916301,
-			"live_h": 0.9907034806999996,
-			"seedvar_h": 0.6613819601647671,
-			"total_h": 3.66285057999698
+			"recall_h": 0.8972269268479073,
+			"probe_h": 0.6095446539386812,
+			"live_h": 0.8802726099777778,
+			"seedvar_h": 0.5426695292772784,
+			"total_h": 3.3691707780478914
 		},
 		{
 			"level": 1,
 			"n_rec": 2,
 			"n_probe": 6,
 			"n_live": 1,
-			"recall_h": 1.733774667324265,
-			"probe_h": 1.078476476597558,
-			"live_h": 0.9907034806999996,
-			"seedvar_h": 0.6613819601647671,
-			"total_h": 5.133987072504579
+			"recall_h": 1.855427213179178,
+			"probe_h": 0.9511677014134459,
+			"live_h": 0.8802726099777778,
+			"seedvar_h": 0.5426695292772784,
+			"total_h": 4.863967611924831
 		},
 		{
 			"level": 2,
 			"n_rec": 3,
 			"n_probe": 10,
 			"n_live": 2,
-			"recall_h": 2.6318296497379867,
-			"probe_h": 1.8408647596094145,
-			"live_h": 1.9814069613999992,
-			"seedvar_h": 0.6613819601647671,
-			"total_h": 8.182805830548991
+			"recall_h": 2.8136274995104498,
+			"probe_h": 1.6344137963629757,
+			"live_h": 1.7605452199555556,
+			"seedvar_h": 0.5426695292772784,
+			"total_h": 7.763944451872197
 		},
 		{
 			"level": 3,
 			"n_rec": 4,
 			"n_probe": 14,
 			"n_live": 2,
-			"recall_h": 3.5298846321517097,
-			"probe_h": 2.603253042621271,
-			"live_h": 1.9814069613999992,
-			"seedvar_h": 0.6613819601647671,
-			"total_h": 10.092315585788409
+			"recall_h": 3.7718277858417197,
+			"probe_h": 2.3176598913125055,
+			"live_h": 1.7605452199555556,
+			"seedvar_h": 0.5426695292772784,
+			"total_h": 9.651607790345118
 		},
 		{
 			"level": 4,
 			"n_rec": 6,
 			"n_probe": 20,
 			"n_live": 3,
-			"recall_h": 5.325994596979154,
-			"probe_h": 3.746835467139055,
-			"live_h": 1.9841458804943015,
-			"seedvar_h": 0.6613819601647671,
-			"total_h": 13.476111590493868
+			"recall_h": 5.688228358504262,
+			"probe_h": 3.3425290337368,
+			"live_h": 2.6408178299333334,
+			"seedvar_h": 0.5426695292772784,
+			"total_h": 14.046381464169423
 		},
 		{
 			"level": 5,
 			"n_rec": 10,
 			"n_probe": 30,
 			"n_live": 4,
-			"recall_h": 8.918214526634044,
-			"probe_h": 5.6528061746686955,
-			"live_h": 2.9721104420999986,
-			"seedvar_h": 0.6613819601647671,
-			"total_h": 20.93519006910263
+			"recall_h": 9.521029503829343,
+			"probe_h": 5.050644271110625,
+			"live_h": 3.521090439911111,
+			"seedvar_h": 0.5426695292772784,
+			"total_h": 21.430748805747612
 		},
 		{
 			"level": 6,
 			"n_rec": 20,
 			"n_probe": 45,
 			"n_live": 6,
-			"recall_h": 17.88685547919639,
-			"probe_h": 8.511762235963156,
-			"live_h": 3.968291760988603,
-			"seedvar_h": 0.6613819601647671,
-			"total_h": 35.68253515175985
+			"recall_h": 19.09008085842346,
+			"probe_h": 7.61281712717136,
+			"live_h": 4.401363049888889,
+			"seedvar_h": 0.5426695292772784,
+			"total_h": 36.39397014947514
 		},
 		{
 			"level": 7,
 			"n_rec": 40,
 			"n_probe": 60,
 			"n_live": 10,
-			"recall_h": 35.84001587975425,
-			"probe_h": 11.370718297257618,
-			"live_h": 6.934924364899997,
-			"seedvar_h": 0.6613819601647671,
-			"total_h": 63.02809657738812
+			"recall_h": 38.245452245903145,
+			"probe_h": 10.174989983232097,
+			"live_h": 7.042180879822222,
+			"seedvar_h": 0.5426695292772784,
+			"total_h": 64.40608653396994
 		}
 	],
 	"servers": "stopped (see logs/vllm_*.log)",
@@ -295,66 +322,90 @@
 		"answer": "\n{\"answer\": 42}"
 	},
 	"selftest": {
-		"recall_rows": 80,
+		"recall_rows": 104,
 		"probe_rows": 70,
-		"mock_attack_success_direct": 0.5285714285714286,
-		"mock_attack_success_barrier": 0.2,
-		"live_sessions": 6,
+		"mock_attack_success_direct": 0.4714285714285714,
+		"mock_attack_success_barrier_v1": 0.12857142857142856,
+		"mock_attack_success_barrier": 0.0,
+		"repairs": {
+			"regenerated": 8
+		},
+		"live_sessions": 7,
 		"replay": {
 			"sid": "W1-H200-000",
 			"world": "W1",
 			"turns": 200,
 			"events": 352,
-			"live_hash": "874db7e50bba1b66",
+			"live_hash": "440eb678de46b2af",
 			"full_fold": true,
 			"snapshot_suffix": true,
 			"restart_full": true,
 			"restart_snapshot": true,
-			"backend_load_after_crash": false,
-			"backend_crash_turns_lost": 8,
+			"backend_load_after_crash": true,
+			"backend_crash_turns_lost": 0,
+			"legacy_load_after_crash": false,
+			"legacy_crash_turns_lost": 8,
 			"backend_load_autosaved": true
 		},
+		"crash_trials_consistent": 10,
 		"live_violations_by_cond": {
 			"A5": 0.44,
-			"A6": 0.22,
+			"A6": 0.0,
 			"F1": 1.0,
-			"F2": 0.22,
+			"F2": 0.0,
 			"F3": 1.0,
-			"F4": 0.22
+			"F4": 0.0,
+			"F4v1": 0.22
 		}
 	},
 	"stage_minutes": {
 		"kernel packages": 0.17,
-		"clone repository": 0.02,
-		"LIGHT worlds": 0.03,
-		"generate recall sessions": 0.05,
-		"generate adversarial probes": 0.41,
-		"embeddings (GPU)": 2.96,
-		"budget B calibration": 0.02,
-		"self-test (mock LLM)": 0.21,
-		"replay and recovery (CPU)": 9.42,
-		"sensitivity sweeps (CPU)": 0.06,
+		"unpack backend bundle": 0.0,
+		"LIGHT worlds": 0.02,
+		"generate recall sessions": 0.06,
+		"generate adversarial probes": 0.32,
+		"embeddings (GPU)": 1.93,
+		"budget calibration": 0.06,
+		"self-test (mock LLM)": 0.33,
+		"replay and recovery (CPU)": 14.34,
+		"crash consistency (CPU)": 6.36,
+		"sensitivity and budget sweeps (CPU)": 0.1,
 		"wait for vLLM install and primary weights": 0.0,
-		"start primary server": 4.44,
-		"pilot": 7.56,
-		"recall (primary)": 154.78,
-		"adversarial probes (primary)": 52.53,
-		"live sessions (primary)": 96.76,
-		"seed variance": 23.94,
-		"latency benchmark (single stream)": 10.03,
-		"secondary backbone": 35.67
+		"start primary server": 4.09,
+		"pilot": 6.74,
+		"recall (primary)": 126.05,
+		"adversarial probes (primary)": 27.37,
+		"dialogue repair (primary)": 0.33,
+		"live sessions (primary)": 37.68,
+		"seed variance": 27.42,
+		"latency benchmark (single stream)": 10.27,
+		"secondary backbone": 30.87,
+		"independent family qwen2.5-7b": 11.36,
+		"independent family phi4-mini": 12.11
 	},
 	"engine_stats": {
 		"primary": {
-			"generated": 14448,
-			"cached": 1953,
-			"skipped": 80
+			"generated": 10539,
+			"cached": 1850,
+			"skipped": 33
 		},
 		"secondary": {
-			"generated": 1270
+			"generated": 1049
 		}
 	},
-	"embedder_cpu_misses": 1018,
+	"independent": {
+		"qwen2.5-7b": "run on ['W1', 'W2a', 'W3', 'W4-32'] (horizon 100)",
+		"phi4-mini": "run on ['W1', 'W2a', 'W3', 'W4-32'] (horizon 100)"
+	},
+	"judge": "qwen2.5-7b: 181 items judged",
+	"human_evaluation": "pending (no human_ratings_*.csv attached)",
+	"crash_trials": {
+		"n": 300,
+		"fixed_consistent": 300,
+		"legacy_consistent": 77
+	},
+	"cache_only": false,
+	"embedder_cpu_misses": 533,
 	"worlds": [
 		{
 			"world": "W1",
@@ -474,22 +525,52 @@
 	"coverage": [
 		{
 			"stage": "recall (primary)",
-			"rows": 6300,
+			"rows": 5460,
 			"missing": 0
 		},
 		{
 			"stage": "probes (primary)",
-			"rows": 4800,
+			"rows": 2875,
 			"missing": 0
 		},
 		{
 			"stage": "live turns (primary)",
-			"rows": 3276,
+			"rows": 1911,
 			"missing": 0
 		},
 		{
 			"stage": "seed variance",
 			"rows": 1680,
+			"missing": 0
+		},
+		{
+			"stage": "repairs (primary)",
+			"rows": 31,
+			"missing": 0
+		},
+		{
+			"stage": "judge",
+			"rows": 181,
+			"missing": 0
+		},
+		{
+			"stage": "recall (qwen2.5-7b)",
+			"rows": 560,
+			"missing": 0
+		},
+		{
+			"stage": "recall (phi4-mini)",
+			"rows": 560,
+			"missing": 0
+		},
+		{
+			"stage": "probes (qwen2.5-7b)",
+			"rows": 329,
+			"missing": 0
+		},
+		{
+			"stage": "probes (phi4-mini)",
+			"rows": 329,
 			"missing": 0
 		},
 		{
@@ -499,7 +580,7 @@
 		},
 		{
 			"stage": "probes (secondary)",
-			"rows": 550,
+			"rows": 329,
 			"missing": 0
 		}
 	],
@@ -516,21 +597,20 @@
 		"10_per_world_effects.png",
 		"11_live_violation_codes.png",
 		"12_seed_and_backbone.png",
-		"13_gpu_utilisation.png"
+		"13_gpu_utilisation.png",
+		"14_before_after.png",
+		"15_budget_tradeoff.png"
 	],
 	"limitations": [
 		"W3 authorship: notebook author (not independent; see caveat). The article requires an independent author; attach w3_world_seed.json to satisfy it.",
-		"Recall, leaks and desynchronisation are scored automatically (key-word match, secret keywords, refusal/arrival cues). Blinded sheets for two human raters are in annotation/; Cohen's kappa and judge agreement need those labels.",
+		"Recall, leaks and the desync proxy are scored automatically (key-word match, secret keywords, refusal/arrival cues); the judge (qwen2.5-7b: 181 items judged) is an LLM. Human evaluation: pending (no human_ratings_*.csv attached).",
 		"Token cost is reported in tokens only; the models are self-hosted, so no provider list price applies.",
-		"Latency was measured on 2x T4 with vLLM; the article's hosted-endpoint latency is not reproduced.",
-		"Backend recovery defect: SessionManager.load_session (manager.py:171-177) loads the snapshot only and ignores logged events after it. After a crash between commit and auto-save it was consistent in 0% of CPU replay sessions (mean 8.0 turns lost); snapshot plus event suffix was consistent in 100%.",
-		"Backend parse defect at the pinned commit: GroqClient.extract_json can return a bare JSON string or list, which node_json_parsing does not handle. Such outputs count as JSON parse failures in recall and probes; in live sessions the node raised on 3 of 3276 turns, which were recorded as failed turns that commit nothing.",
-		"active_npc_id is set outside the event log (process_action) and is excluded from replay hashes.",
-		"The prompt advertises trust deltas of -10..10 while the validator allows +/-20; the oracle uses the article's +/-20 bound.",
+		"Latency was measured on 2x T4 with vLLM; hosted-endpoint latency is not reproduced.",
+		"F4v1 reuses the corrected reducer, event store and commit node; it differs from F4 in the validator, the prompt builder, the unbudgeted memory assembly and the absence of dialogue repair, which are the components Review-03 changed.",
 		"Live sessions address scripted NPCs even when a scripted move was not committed; this divergence is measured as desynchronisation.",
-		"B4 (scripted FSM) and B5 (MemGPT-style memory) were not run.",
-		"Sample size: ladder level 2 of 7 ({'n_rec': 3, 'n_probe': 10, 'n_live': 2}), chosen by the time-budget planner; the article's full targets correspond to level 7.",
-		"Second backbone: run on ['W1', 'W2a', 'W3', 'W4-32']."
+		"B4 omits the Generative Agents importance score (an LLM call per memory write); B4 and B5 are re-implementations of the retrieval rules, not the original systems.",
+		"Sample size: ladder level 1 of 7 ({'n_rec': 2, 'n_probe': 6, 'n_live': 1}); the article's full targets correspond to level 7. Attach this run's llm_cache_*.jsonl and rerun to reach a larger level.",
+		"Second backbone: run on ['W1', 'W2a', 'W3', 'W4-32']. Independent families: {'qwen2.5-7b': \"run on ['W1', 'W2a', 'W3', 'W4-32'] (horizon 100)\", 'phi4-mini': \"run on ['W1', 'W2a', 'W3', 'W4-32'] (horizon 100)\"}."
 	],
-	"total_hours": 6.69
+	"total_hours": 5.36
 }

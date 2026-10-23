@@ -2,7 +2,7 @@
 
 ## Review-03 corrections: baselines, judge, model families and testing (decided 2026-10-22)
 
-**Brief.** Implement the faculty's Review-03 requirements ([`LLM Game Feedback.md`](LLM%20Game%20Feedback.md)) with the least new machinery: stronger memory baselines, dialogue repair, an evaluation of dialogue-state contradictions that does not rely on refusal words, independent model families that run on 2 x T4, property-based tests, and a self-contained reproducibility package. Tier: Quick (bounded choices in a familiar stack; the defects themselves were bug fixes with no research).
+**Brief.** Implement the faculty's Review-03 requirements with the least new machinery: stronger memory baselines, dialogue repair, an evaluation of dialogue-state contradictions that does not rely on refusal words, independent model families that run on 2 x T4, property-based tests, and a self-contained reproducibility package. Tier: Quick (bounded choices in a familiar stack; the defects themselves were bug fixes with no research).
 
 **Decisions.**
 

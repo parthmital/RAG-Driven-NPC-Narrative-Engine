@@ -13,6 +13,8 @@ The sheets list items in a shuffled order with no condition names. The mapping f
 
 ## Sheets and scales
 
+The Review-03 run exported 200 dialogue-quality, 142 contradiction and 1,560 recall items to [`notebooks/outputs/annotation/`](../notebooks/outputs/annotation/). None has been rated yet.
+
 ### `dialogue_quality_sheet.csv`
 
 One live game turn per row: the NPC's name and persona, what the player said, the game's reply, and the changes the engine committed and rejected that turn. Rate three columns from 1 (worst) to 5 (best):

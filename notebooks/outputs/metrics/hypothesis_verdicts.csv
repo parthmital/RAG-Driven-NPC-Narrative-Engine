@@ -1,8 +1,12 @@
 hypothesis,verdict,evidence
-H1 Memory,not supported (recall) but token-cost condition vs B2/B3 not met,"F4 input tokens 1399 vs B2 1102, B3 1209"
-H2 Retrieval,supported,"per-probe reciprocal rank, Wilcoxon"
-H3 State control,supported,probes McNemar + live Wilcoxon
-H4 Cost of control,supported,"false rejection 0.0 [0.0, 0.0]%; validate P95 0.039 ms"
-H5 Replay,supported,"live event-sourced sessions all consistent: True; CPU replay (full, snapshot, restart) all consistent: True; backend load path after crash consistent in 0% (see limitations)"
-H6 Separability,not supported,"memory->recall coef 3.57 (p=6.08e-68); control->violation coef -6.77 (p=1.01e-109); interaction p recall=4.91e-05, violation=0.689"
-H7 Generalisation,supported,"W2 LIGHT-derived: dRecall=+0.889, dAttack=+0.114; W3 held-out genre: dRecall=+0.796, dAttack=+0.086; W4 procedural: dRecall=+0.898, dAttack=+0.121"
+H1 Memory,not supported,"F4 input tokens 1445 vs B2 1451, B3 1506"
+H2 Retrieval,not supported,"per-probe reciprocal rank, Wilcoxon"
+H3 State control,not supported,probes McNemar + live Wilcoxon
+H4 Cost of control,supported,"false rejection 1.2 [0.0, 4.2]%; validate P95 1.604 ms"
+H5 Replay,supported,"live event-sourced sessions all consistent: True; CPU replay, restart, backend load path after a crash and 300 randomised crash trials all consistent: True"
+H6 Separability,not supported,"memory->recall coef 2.57 (p=2.19e-18); control->violation coef -7.48 (p=2.7e-27); interaction p recall=0.00486, violation=0.147"
+H7 Generalisation,not supported,"W2 LIGHT-derived: dRecall=+0.870, dAttack=+0.063; W3 held-out genre: dRecall=+0.694, dAttack=+0.024; W4 procedural: dRecall=+0.819, dAttack=+0.000; backbone qwen2.5-7b: dRecall=+0.938, dAttack=+0.440; backbone phi4-mini: dRecall=+0.833, dAttack=+0.238"
+R1 Currency invariant,confirmed (no failure after the correction),"v2 currency validator gap 0.0 [0.0, 0.0]%"
+R2 Snapshot recovery,confirmed (no failure after the correction),300/300 crash trials consistent after the correction
+R3 Dialogue repair,not confirmed,"draft vs repaired (judge, proxy) and F4v1 vs F4"
+R4 Committed violations,not confirmed,"F4v1 vs F4, live, per session"

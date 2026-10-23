@@ -170,26 +170,31 @@ The clone detector (`jscpd`, run by `npm run check`) fails when duplicated code 
 
 ## Known gaps and recommended changes
 
-The Review-02 evaluation ([`notebooks/outputs/`](notebooks/outputs/), backend commit `0ea345f`) found the gaps below. All but the last are fixed for Review-03 and covered by [`Backend/tests/test_state_integrity.py`](Backend/tests/test_state_integrity.py); the revised notebook measures each fix against the Review-02 code on the same scenarios.
+The Review-02 evaluation (backend commit `0ea345f`) found the gaps below. All but the last are fixed for Review-03 and covered by [`Backend/tests/test_state_integrity.py`](Backend/tests/test_state_integrity.py). The Review-03 run ([`notebooks/outputs/`](notebooks/outputs/), commit `8a98f16`) measured each fix against the Review-02 code on the same scenarios; the README's [Evaluation results](README.md#evaluation-results) has the tables.
 
-| Gap found in Review-02                                               | Fix                                                                                                                          |
-| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Any currency gain passed validation (19.7% currency attack success)  | Net gain per turn capped at `MAX_CURRENCY_GAIN_PER_TURN` (50); deltas must be integers                                       |
-| Spending checked per proposal, not per turn                          | Proposals validated in order against a running state; total spending may not exceed the opening balance                      |
-| `load_session` ignored events after the snapshot (8 turns lost)      | `recover_state` (snapshot plus logged suffix); manual loads rewind the log; atomic snapshot writes; one transaction per turn |
-| `active_npc_id` and the player identity were not event-sourced       | Restored by `NPC_SPOKE` and `SESSION_START` events                                                                           |
-| Rejected changes stayed in the dialogue (desync 3.7% to 18.7%)       | Dialogue-repair node after validation                                                                                        |
-| Prompt trust range (-10 to 10) differed from the validator's (+/-20) | Both read `config.py`; the system prompt is also now formatted (it used to show the model doubled braces)                    |
-| NPC secrets never reached the prompt                                 | Shown when trust is at least `SECRET_REVEAL_TRUST` (60)                                                                      |
-| NPC drops and takes did not check possession or presence             | Checked; NPC moves must follow a connection; engine-only events cannot be proposed                                           |
-| The validator checks structure, not plausibility                     | Not fixed: a lawful-sized trust change with no reason in the dialogue still passes. Out of scope for a rule validator        |
+| Gap found in Review-02                                               | Fix                                                                                                                          | Review-03 result                                                                                                  |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Any currency gain passed validation (19.7% currency attack success)  | Net gain per turn capped at `MAX_CURRENCY_GAIN_PER_TURN` (50); deltas must be integers                                       | Validator gap on currency proposals 58.6% (Review-02 validator) to 0%; 1 of 65 lawful currency proposals rejected |
+| Spending checked per proposal, not per turn                          | Proposals validated in order against a running state; total spending may not exceed the opening balance                      | No committed violation through the barrier in any probe or live turn                                              |
+| `load_session` ignored events after the snapshot (8 turns lost)      | `recover_state` (snapshot plus logged suffix); manual loads rewind the log; atomic snapshot writes; one transaction per turn | 300 of 300 randomised crashes recovered consistently, against 77 of 300 with the Review-02 load path              |
+| `active_npc_id` and the player identity were not event-sourced       | Restored by `NPC_SPOKE` and `SESSION_START` events                                                                           | Every event-sourced live session replayed exactly                                                                 |
+| Rejected changes stayed in the dialogue (desync 3.7% to 18.7%)       | Dialogue-repair node after validation                                                                                        | Every rejected reply was rewritten, but the judge found as many contradictions after repair as before             |
+| Prompt trust range (-10 to 10) differed from the validator's (+/-20) | Both read `config.py`; the system prompt is also now formatted (it used to show the model doubled braces)                    | No trust attack succeeded in any commit mode                                                                      |
+| NPC secrets never reached the prompt                                 | Shown when trust is at least `SECRET_REVEAL_TRUST` (60)                                                                      | Keyword-scored leaks of 0.0% to 1.1% of live turns; the keyword scorer over-counts                                |
+| NPC drops and takes did not check possession or presence             | Checked; NPC moves must follow a connection; engine-only events cannot be proposed                                           | Covered by the zero validator gap above                                                                           |
+| The validator checks structure, not plausibility                     | Not fixed: a lawful-sized trust change with no reason in the dialogue still passes. Out of scope for a rule validator        | Not measured                                                                                                      |
+
+Open after Review-03:
+
+- Dialogue repair costs one LLM call per rejected turn and showed no measurable reduction in contradictions; a stronger repair prompt, or narration generated from the committed events, is the next step.
+- `pack_context` drops a retrieved memory whose turn is already in the history. This is intended, but any retrieval metric must score only facts older than the buffer (the notebook now does).
 
 ## Growth signals
 
 Revisit this architecture when any of these become true:
 
 - More than one backend process is needed, for load or availability. Sessions, locks, and WebSocket connections live in process memory, so state must move to a shared store (for example Redis) and sessions would need sticky routing.
-- LLM turns queue behind each other. Move turn processing to a background worker and stream results over WebSocket. In the evaluation, LLM time per turn rose from about 6.9 s single-stream to about 90 s with 84 concurrent sessions on 2 x T4.
+- LLM turns queue behind each other. Move turn processing to a background worker and stream results over WebSocket. In the Review-03 evaluation, LLM time per turn rose from about 6.6 s single-stream to about 47 s with 49 concurrent sessions on 2 x T4.
 - A second game or world is added. Split `game/` per world and load seeds by id.
 - Sessions grow past about 1,000 turns. The FAISS index is pruned to 500 entries at that point, so older memories are lost; consider summarised or hierarchical memory.
 - A `api/routes/*.py` module passes about 250 lines, or `SessionManager` gains another responsibility. Split by feature.

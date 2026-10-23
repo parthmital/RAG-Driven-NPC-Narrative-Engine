@@ -1,7 +1,13 @@
 stage,rows,missing
-recall (primary),6300,0
-probes (primary),4800,0
-live turns (primary),3276,0
+recall (primary),5460,0
+probes (primary),2875,0
+live turns (primary),1911,0
 seed variance,1680,0
+repairs (primary),31,0
+judge,181,0
+recall (qwen2.5-7b),560,0
+recall (phi4-mini),560,0
+probes (qwen2.5-7b),329,0
+probes (phi4-mini),329,0
 recall (secondary),720,0
-probes (secondary),550,0
+probes (secondary),329,0

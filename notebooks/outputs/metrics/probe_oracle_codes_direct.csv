@@ -1,6 +1,5 @@
-category,O1,O2,O3,O4,O5,O6,O7,O8
-currency,2,0,0,0,0,0,60,69
-fabrication,73,0,1,0,0,0,0,0
-injection,0,0,1,18,0,5,0,0
-teleport,43,0,52,0,1,0,0,0
-theft,92,14,0,25,0,0,0,0
+category,O1,O3,O4,O5,O7,O8
+currency,0,0,0,0,9,17
+fabrication,12,0,0,2,0,0
+teleport,28,16,0,8,0,0
+theft,26,0,3,0,0,0
