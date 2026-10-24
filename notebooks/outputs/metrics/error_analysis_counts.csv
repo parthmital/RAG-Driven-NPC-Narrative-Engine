@@ -1,6 +1,6 @@
 metric,category,A1,A2,A3,A4,A5,A6,B0,B1,B1x2,B2,B3,B4,B5,F1,F2,F3,F4,F4v1
-desync,desynchronisation (proxy),0,0,0,0,10,27,0,0,0,0,0,0,0,9,33,7,26,47
-recall,confused with distractor,69,0,7,9,0,0,28,53,45,3,45,8,5,0,0,0,11,4
-recall,hit but ignored,8,58,76,55,0,0,73,14,37,65,103,51,51,0,0,0,57,36
-recall,retrieval miss,264,0,4,0,0,0,0,228,157,0,0,41,10,0,0,0,0,0
-recall,schema failure,7,4,2,10,0,0,6,2,4,4,7,13,8,0,0,0,9,7
+desync,desynchronisation (proxy),0,0,0,0,14,21,0,0,0,0,0,0,0,9,28,10,25,47
+recall,confused with distractor,70,0,8,7,0,0,23,52,48,1,43,7,5,0,0,0,9,4
+recall,hit but ignored,8,59,75,55,0,0,73,15,37,62,104,56,51,0,0,0,57,41
+recall,retrieval miss,263,0,4,0,0,0,0,230,155,0,0,42,10,0,0,0,0,0
+recall,schema failure,6,3,2,12,0,0,6,1,4,5,9,14,5,0,0,0,11,6

@@ -1,9 +1,9 @@
 Ablation,"Recall, age 20+ (%)",MRR@6,Committed violations per 100 transitions,Local compute P50 (ms),Recovery at turn 160 (ms),Replay consistency (%)
-Full system (F4),"82.4 [78.0, 86.8]","0.721 [0.704, 0.737]","probes 0.0 [0.0, 0.0]; live 0.0 [0.0, 0.0]",26.2,1.7 (snapshot) vs 290.1 (full replay),"100.0 [100.0, 100.0]"
+Full system (F4),"82.4 [78.0, 86.8]","0.901 [0.878, 0.925]","probes 0.0 [0.0, 0.0]; live 0.0 [0.0, 0.0]",32.6,1.6 (snapshot) vs 280.7 (full replay),"100.0 [100.0, 100.0]"
 A1 No long-term memory,"0.0 [0.0, 0.0]",n/a,same as full system (memory-only change),n/a,n/a,as full system
-A2 No short-term buffer,"84.3 [80.3, 88.4]","0.890 [0.867, 0.914]",same as full system (memory-only change),n/a,n/a,as full system
-A3 No scoping,"80.1 [75.7, 84.4]","0.579 [0.554, 0.604]",same as full system (memory-only change),n/a,n/a,as full system
-A4 No fallback,"82.4 [77.9, 86.8]","0.758 [0.744, 0.773]",same as full system (memory-only change),n/a,n/a,as full system
-A5 No validation barrier,as full system (control-only change),as full system,"probes 5.4 [1.8, 9.6]; live 4.7 [0.0, 9.8]",25.6,1.7 (snapshot) vs 290.1 (full replay),"100.0 [100.0, 100.0]"
+A2 No short-term buffer,"84.3 [80.4, 88.2]","0.875 [0.849, 0.902]",same as full system (memory-only change),n/a,n/a,as full system
+A3 No scoping,"79.6 [75.0, 84.1]","0.724 [0.691, 0.757]",same as full system (memory-only change),n/a,n/a,as full system
+A4 No fallback,"82.4 [78.0, 86.7]","0.948 [0.928, 0.968]",same as full system (memory-only change),n/a,n/a,as full system
+A5 No validation barrier,as full system (control-only change),as full system,"probes 4.5 [1.5, 8.4]; live 4.3 [0.0, 14.0]",24.3,1.6 (snapshot) vs 280.7 (full replay),"100.0 [100.0, 100.0]"
 A6 No event sourcing,as full system,as full system,"live 0.0 [0.0, 0.0]",12.7,no log to recover from,not replayable
-A7 No snapshots,as full system,as full system,as full system,n/a,290.1,"100 (full fold, CPU replay sessions)"
+A7 No snapshots,as full system,as full system,as full system,n/a,280.7,"100 (full fold, CPU replay sessions)"

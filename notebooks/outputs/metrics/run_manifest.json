@@ -1,5 +1,5 @@
 {
-	"created_utc": "2026-10-22T23:51:16Z",
+	"created_utc": "2026-10-24T15:50:54Z",
 	"repo": "https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine",
 	"backend_bundle_sha256": "9f7d7e7bbb0dea242b497ea3a06e234df60349a50bba258beb765978fe294af1",
 	"legacy_commit": "0ea345fe140b359d7e82e77ffb2fdfa74caf0e7c",
@@ -183,8 +183,8 @@
 		"TIME_BUDGET_HOURS": 11.25,
 		"ANALYSIS_RESERVE_MIN": 30,
 		"SECONDARY_RESERVE_MIN": 45,
-		"INDEPENDENT_RESERVE_MIN": 110,
-		"LATENCY_RESERVE_MIN": 15,
+		"INDEPENDENT_RESERVE_MIN": 60,
+		"LATENCY_RESERVE_MIN": 25,
 		"SAFETY_MIN": 15,
 		"COST_PROMPT_WEIGHT": 0.12,
 		"WORK": "/kaggle/working",
@@ -212,16 +212,16 @@
 	"ladder_level": 1,
 	"plan": {
 		"level": 1,
-		"available_h": 7.045852505366007,
-		"s_per_unit": 0.0036527460252476496,
-		"s_per_unit_wall": 0.004604563875076667,
+		"available_h": 7.717338945402039,
+		"s_per_unit": 0.0037701294349763432,
+		"s_per_unit_wall": 0.0045138303716531275,
 		"chars_per_token": 4.139879159662546,
 		"mean_output_tokens": {
-			"recall": 143.93333333333334,
-			"probe": 199.04716981132074
+			"recall": 146.46666666666667,
+			"probe": 196.0
 		},
-		"median_llm_ms": 79224.534898,
-		"pilot_wall_s": 402.64903497695923,
+		"median_llm_ms": 81858.58681750007,
+		"pilot_wall_s": 394.97207403182983,
 		"pilot_jobs": 256,
 		"pilot_probe_jobs": 106,
 		"cached_jobs_discounted": 390
@@ -232,88 +232,88 @@
 			"n_rec": 1,
 			"n_probe": 4,
 			"n_live": 1,
-			"recall_h": 0.8972269268479073,
-			"probe_h": 0.6095446539386812,
-			"live_h": 0.8802726099777778,
-			"seedvar_h": 0.5426695292772784,
-			"total_h": 3.3691707780478914
+			"recall_h": 0.9328225424024931,
+			"probe_h": 0.623679059081709,
+			"live_h": 0.9095398535277786,
+			"seedvar_h": 0.564565704362681,
+			"total_h": 3.485198233280861
 		},
 		{
 			"level": 1,
 			"n_rec": 2,
 			"n_probe": 6,
 			"n_live": 1,
-			"recall_h": 1.855427213179178,
-			"probe_h": 0.9511677014134459,
-			"live_h": 0.8802726099777778,
-			"seedvar_h": 0.5426695292772784,
-			"total_h": 4.863967611924831
+			"recall_h": 1.9290580663102974,
+			"probe_h": 0.9732200537766104,
+			"live_h": 0.9095398535277786,
+			"seedvar_h": 0.564565704362681,
+			"total_h": 5.032841229673972
 		},
 		{
 			"level": 2,
 			"n_rec": 3,
 			"n_probe": 10,
 			"n_live": 2,
-			"recall_h": 2.8136274995104498,
-			"probe_h": 1.6344137963629757,
-			"live_h": 1.7605452199555556,
-			"seedvar_h": 0.5426695292772784,
-			"total_h": 7.763944451872197
+			"recall_h": 2.9252935902181036,
+			"probe_h": 1.6723020431664135,
+			"live_h": 1.819079707055557,
+			"seedvar_h": 0.564565704362681,
+			"total_h": 8.028427201523169
 		},
 		{
 			"level": 3,
 			"n_rec": 4,
 			"n_probe": 14,
 			"n_live": 2,
-			"recall_h": 3.7718277858417197,
-			"probe_h": 2.3176598913125055,
-			"live_h": 1.7605452199555556,
-			"seedvar_h": 0.5426695292772784,
-			"total_h": 9.651607790345118
+			"recall_h": 3.921529114125907,
+			"probe_h": 2.3713840325562163,
+			"live_h": 1.819079707055557,
+			"seedvar_h": 0.564565704362681,
+			"total_h": 9.978042341815414
 		},
 		{
 			"level": 4,
 			"n_rec": 6,
 			"n_probe": 20,
 			"n_live": 3,
-			"recall_h": 5.688228358504262,
-			"probe_h": 3.3425290337368,
-			"live_h": 2.6408178299333334,
-			"seedvar_h": 0.5426695292772784,
-			"total_h": 14.046381464169423
+			"recall_h": 5.914000161941519,
+			"probe_h": 3.4200070166409207,
+			"live_h": 2.7286195605833354,
+			"seedvar_h": 0.564565704362681,
+			"total_h": 14.521271310057726
 		},
 		{
 			"level": 5,
 			"n_rec": 10,
 			"n_probe": 30,
 			"n_live": 4,
-			"recall_h": 9.521029503829343,
-			"probe_h": 5.050644271110625,
-			"live_h": 3.521090439911111,
-			"seedvar_h": 0.5426695292772784,
-			"total_h": 21.430748805747612
+			"recall_h": 9.89894225757274,
+			"probe_h": 5.167711990115428,
+			"live_h": 3.638159414111114,
+			"seedvar_h": 0.564565704362681,
+			"total_h": 22.159786271086258
 		},
 		{
 			"level": 6,
 			"n_rec": 20,
 			"n_probe": 45,
 			"n_live": 6,
-			"recall_h": 19.09008085842346,
-			"probe_h": 7.61281712717136,
-			"live_h": 4.401363049888889,
-			"seedvar_h": 0.5426695292772784,
-			"total_h": 36.39397014947514
+			"recall_h": 19.847826313524575,
+			"probe_h": 7.789269450327189,
+			"live_h": 4.547699267638892,
+			"seedvar_h": 0.564565704362681,
+			"total_h": 37.661764846231335
 		},
 		{
 			"level": 7,
 			"n_rec": 40,
 			"n_probe": 60,
 			"n_live": 10,
-			"recall_h": 38.245452245903145,
-			"probe_h": 10.174989983232097,
-			"live_h": 7.042180879822222,
-			"seedvar_h": 0.5426695292772784,
-			"total_h": 64.40608653396994
+			"recall_h": 39.76355600292986,
+			"probe_h": 10.410826910538953,
+			"live_h": 7.276318828222228,
+			"seedvar_h": 0.564565704362681,
+			"total_h": 66.71755756296177
 		}
 	],
 	"servers": "stopped (see logs/vllm_*.log)",
@@ -336,7 +336,7 @@
 			"world": "W1",
 			"turns": 200,
 			"events": 352,
-			"live_hash": "440eb678de46b2af",
+			"live_hash": "95a1963316f3ffa5",
 			"full_fold": true,
 			"snapshot_suffix": true,
 			"restart_full": true,
@@ -359,35 +359,34 @@
 		}
 	},
 	"stage_minutes": {
-		"kernel packages": 0.17,
+		"kernel packages": 0.23,
 		"unpack backend bundle": 0.0,
 		"LIGHT worlds": 0.02,
-		"generate recall sessions": 0.06,
-		"generate adversarial probes": 0.32,
-		"embeddings (GPU)": 1.93,
-		"budget calibration": 0.06,
-		"self-test (mock LLM)": 0.33,
-		"replay and recovery (CPU)": 14.34,
-		"crash consistency (CPU)": 6.36,
+		"generate recall sessions": 0.05,
+		"generate adversarial probes": 0.45,
+		"embeddings (GPU)": 2.08,
+		"budget calibration": 0.04,
+		"self-test (mock LLM)": 0.41,
+		"replay and recovery (CPU)": 13.52,
+		"crash consistency (CPU)": 6.71,
 		"sensitivity and budget sweeps (CPU)": 0.1,
 		"wait for vLLM install and primary weights": 0.0,
-		"start primary server": 4.09,
-		"pilot": 6.74,
-		"recall (primary)": 126.05,
-		"adversarial probes (primary)": 27.37,
-		"dialogue repair (primary)": 0.33,
-		"live sessions (primary)": 37.68,
-		"seed variance": 27.42,
-		"latency benchmark (single stream)": 10.27,
-		"secondary backbone": 30.87,
-		"independent family qwen2.5-7b": 11.36,
-		"independent family phi4-mini": 12.11
+		"start primary server": 4.08,
+		"pilot": 6.6,
+		"recall (primary)": 127.77,
+		"adversarial probes (primary)": 27.72,
+		"dialogue repair (primary)": 0.35,
+		"live sessions (primary)": 38.12,
+		"seed variance": 27.7,
+		"latency benchmark (single stream)": 19.32,
+		"secondary backbone": 30.89,
+		"independent family qwen2.5-7b": 11.53,
+		"independent family phi4-mini": 11.75
 	},
 	"engine_stats": {
 		"primary": {
-			"generated": 10539,
-			"cached": 1850,
-			"skipped": 33
+			"generated": 10583,
+			"cached": 1819
 		},
 		"secondary": {
 			"generated": 1049
@@ -397,7 +396,7 @@
 		"qwen2.5-7b": "run on ['W1', 'W2a', 'W3', 'W4-32'] (horizon 100)",
 		"phi4-mini": "run on ['W1', 'W2a', 'W3', 'W4-32'] (horizon 100)"
 	},
-	"judge": "qwen2.5-7b: 181 items judged",
+	"judge": "qwen2.5-7b: 182 items judged",
 	"human_evaluation": "pending (no human_ratings_*.csv attached)",
 	"crash_trials": {
 		"n": 300,
@@ -405,7 +404,7 @@
 		"legacy_consistent": 77
 	},
 	"cache_only": false,
-	"embedder_cpu_misses": 533,
+	"embedder_cpu_misses": 543,
 	"worlds": [
 		{
 			"world": "W1",
@@ -500,7 +499,7 @@
 			"diameter": 9,
 			"connected": true,
 			"secrets": 16,
-			"secret_keywords": 31,
+			"secret_keywords": 30,
 			"light_join_edges": 0
 		},
 		{
@@ -516,7 +515,7 @@
 			"diameter": 12,
 			"connected": true,
 			"secrets": 32,
-			"secret_keywords": 64,
+			"secret_keywords": 63,
 			"light_join_edges": 0
 		}
 	],
@@ -545,12 +544,12 @@
 		},
 		{
 			"stage": "repairs (primary)",
-			"rows": 31,
+			"rows": 28,
 			"missing": 0
 		},
 		{
 			"stage": "judge",
-			"rows": 181,
+			"rows": 182,
 			"missing": 0
 		},
 		{
@@ -571,6 +570,11 @@
 		{
 			"stage": "probes (phi4-mini)",
 			"rows": 329,
+			"missing": 0
+		},
+		{
+			"stage": "latency (recall prompts)",
+			"rows": 108,
 			"missing": 0
 		},
 		{
@@ -603,7 +607,7 @@
 	],
 	"limitations": [
 		"W3 authorship: notebook author (not independent; see caveat). The article requires an independent author; attach w3_world_seed.json to satisfy it.",
-		"Recall, leaks and the desync proxy are scored automatically (key-word match, secret keywords, refusal/arrival cues); the judge (qwen2.5-7b: 181 items judged) is an LLM. Human evaluation: pending (no human_ratings_*.csv attached).",
+		"Recall, leaks and the desync proxy are scored automatically (key-word match, secret keywords, refusal/arrival cues); the judge (qwen2.5-7b: 182 items judged) is an LLM. Human evaluation: pending (no human_ratings_*.csv attached).",
 		"Token cost is reported in tokens only; the models are self-hosted, so no provider list price applies.",
 		"Latency was measured on 2x T4 with vLLM; hosted-endpoint latency is not reproduced.",
 		"F4v1 reuses the corrected reducer, event store and commit node; it differs from F4 in the validator, the prompt builder, the unbudgeted memory assembly and the absence of dialogue repair, which are the components Review-03 changed.",
@@ -612,5 +616,5 @@
 		"Sample size: ladder level 1 of 7 ({'n_rec': 2, 'n_probe': 6, 'n_live': 1}); the article's full targets correspond to level 7. Attach this run's llm_cache_*.jsonl and rerun to reach a larger level.",
 		"Second backbone: run on ['W1', 'W2a', 'W3', 'W4-32']. Independent families: {'qwen2.5-7b': \"run on ['W1', 'W2a', 'W3', 'W4-32'] (horizon 100)\", 'phi4-mini': \"run on ['W1', 'W2a', 'W3', 'W4-32'] (horizon 100)\"}."
 	],
-	"total_hours": 5.36
+	"total_hours": 5.55
 }

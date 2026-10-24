@@ -1,5 +1,19 @@
 # Research Notes
 
+## Paper fact-check after the second Review-03 run (checked 2026-10-24)
+
+**Brief.** Re-verify every reference and every number the paper attributes to other work before publishing the results of the 24 October 2026 run. Scope: the 44 entries of [docs/paper/references.bib](docs/paper/references.bib), the Crossref REST API, the publishers' and proceedings' pages, and the arXiv HTML copy of the base paper.
+
+**Findings.**
+
+- All 34 DOIs resolve in Crossref with the same title and year as the bibliography (`.agent-local/scripts/verify_bib_crossref.py`, git-ignored). The 10 entries without a DOI (PMLR, NeurIPS, ICLR, OpenReview, JSTOR) return HTTP 200. Publisher DOI links that answer 403 or time out (ACM, Wiley, MIT Press, Elsevier) are bot blocks, not dead links; Crossref confirms them.
+- Generative Agents (Park et al., UIST 2023), checked in the full text: recency decay 0.995 per sandbox game hour; importance on a 1 to 10 scale; reflection when summed importance exceeds 150; recency, importance and relevance min-max scaled with all weights 1; 100 Prolific evaluators; TrueSkill 29.89 for the full architecture against 21.21 with no memory, planning or reflection, d = 8.16; 1.3% (6 of 453) of awareness answers hallucinated; agents "embellish their knowledge"; `gpt3.5-turbo`; 25 agents for two game days "costing thousands of dollars in token credits". All match the paper.
+- NCP-Bench (Ma et al., PMLR 306): the abstract reports a 42% survival rate after 20 turns for the best model and fact-conflict rates of 40% to 68% across models. Matches the paper.
+
+**Recommendation.** No reference or attributed claim needs to change.
+
+**Sources.** [api.crossref.org](https://api.crossref.org/) (2026-10-24); [arXiv HTML of Generative Agents](https://arxiv.org/html/2304.03442), the preprint of the cited UIST paper, used only to check the cited numbers (2026-10-24); [PMLR v306 ma26ap](https://proceedings.mlr.press/v306/ma26ap.html) (2026-10-24).
+
 ## Review-03 corrections: baselines, judge, model families and testing (decided 2026-10-22)
 
 **Brief.** Implement the faculty's Review-03 requirements with the least new machinery: stronger memory baselines, dialogue repair, an evaluation of dialogue-state contradictions that does not rely on refusal words, independent model families that run on 2 x T4, property-based tests, and a self-contained reproducibility package. Tier: Quick (bounded choices in a familiar stack; the defects themselves were bug fixes with no research).

@@ -1,7 +1,7 @@
 hypothesis,test,n,effect,p_raw,direction_ok,p_holm
 H1,recall 20+ F4 vs B1 (McNemar),216,0.8240740740740741,5.22024357439882e-54,True,3.132146144639292e-53
-H1,recall 20+ F4 vs B2 (McNemar),216,0.01851851851851849,0.617719317029696,True,1.0
-H1,recall 20+ F4 vs B3 (McNemar),216,0.2314814814814815,3.169950413273171e-12,True,1.5849752066365855e-11
-H2,"MRR@6 F4 vs B2 (Wilcoxon, per probe)",360,-0.02398809523809523,0.6744660434202523,False,1.0
-H3,"attack success direct vs barrier, F4 context (McNemar)",294,0.05782312925170068,1.52587890625e-05,True,6.103515625e-05
-H3,"live violations per transition F3 vs F4 (Wilcoxon, per session)",7,4.225170068027211,0.03125,True,0.09375
+H1,recall 20+ F4 vs B2 (McNemar),216,0.01388888888888884,0.735878800856881,True,0.735878800856881
+H1,recall 20+ F4 vs B3 (McNemar),216,0.23611111111111116,4.2901793229077607e-13,True,1.7160717291631043e-12
+H2,"MRR@6 F4 vs B2 (Wilcoxon, per probe)",288,0.17441302910052914,4.285032976707394e-15,True,2.142516488353697e-14
+H3,"attack success direct vs barrier, F4 context (McNemar)",294,0.05102040816326531,6.103515625e-05,True,0.00018310546875
+H3,"live violations per transition F3 vs F4 (Wilcoxon, per session)",7,3.740321583178726,0.03125,True,0.0625

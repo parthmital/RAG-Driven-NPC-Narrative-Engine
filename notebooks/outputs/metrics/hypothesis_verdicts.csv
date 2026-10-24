@@ -1,11 +1,11 @@
 hypothesis,verdict,evidence
 H1 Memory,not supported,"F4 input tokens 1445 vs B2 1451, B3 1506"
-H2 Retrieval,not supported,"per-probe reciprocal rank, Wilcoxon"
+H2 Retrieval,supported,"per-probe reciprocal rank, Wilcoxon"
 H3 State control,not supported,probes McNemar + live Wilcoxon
-H4 Cost of control,supported,"false rejection 1.2 [0.0, 4.2]%; validate P95 1.604 ms"
+H4 Cost of control,supported,"false rejection 1.1 [0.0, 3.9]%; validate P95 1.365 ms"
 H5 Replay,supported,"live event-sourced sessions all consistent: True; CPU replay, restart, backend load path after a crash and 300 randomised crash trials all consistent: True"
-H6 Separability,not supported,"memory->recall coef 2.57 (p=2.19e-18); control->violation coef -7.48 (p=2.7e-27); interaction p recall=0.00486, violation=0.147"
-H7 Generalisation,not supported,"W2 LIGHT-derived: dRecall=+0.870, dAttack=+0.063; W3 held-out genre: dRecall=+0.694, dAttack=+0.024; W4 procedural: dRecall=+0.819, dAttack=+0.000; backbone qwen2.5-7b: dRecall=+0.938, dAttack=+0.440; backbone phi4-mini: dRecall=+0.833, dAttack=+0.238"
+H6 Separability,not supported,"memory->recall coef 3.17 (p=1.59e-28); control->violation coef -7.63 (p=8.46e-29); interaction p recall=0.0137, violation=0.195"
+H7 Generalisation,not supported,"W2 LIGHT-derived: dRecall=+0.861, dAttack=+0.056; W3 held-out genre: dRecall=+0.694, dAttack=+0.000; W4 procedural: dRecall=+0.833, dAttack=+0.000; backbone qwen2.5-7b: dRecall=+0.938, dAttack=+0.440; backbone phi4-mini: dRecall=+0.854, dAttack=+0.244"
 R1 Currency invariant,confirmed (no failure after the correction),"v2 currency validator gap 0.0 [0.0, 0.0]%"
 R2 Snapshot recovery,confirmed (no failure after the correction),300/300 crash trials consistent after the correction
 R3 Dialogue repair,not confirmed,"draft vs repaired (judge, proxy) and F4v1 vs F4"
