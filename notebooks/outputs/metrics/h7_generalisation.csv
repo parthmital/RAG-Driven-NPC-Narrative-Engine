@@ -1,6 +1,6 @@
 family,recall_F4_minus_B1,attack_direct_minus_barrier,h1_dir,h3_dir
-W2 LIGHT-derived,0.8611111111111112,0.05555555555555555,True,True
-W3 held-out genre,0.6944444444444444,0.0,True,False
+W2 LIGHT-derived,0.8395061728395061,0.047619047619047616,True,True
+W3 held-out genre,0.7962962962962963,0.07142857142857142,True,True
 W4 procedural,0.8333333333333334,0.0,True,False
-backbone qwen2.5-7b,0.9375,0.44047619047619047,True,True
-backbone phi4-mini,0.8541666666666666,0.24404761904761904,True,True
+backbone qwen2.5-7b,0.9444444444444444,0.4392857142857143,True,True
+backbone phi4-mini,0.8055555555555556,0.2392857142857143,True,True

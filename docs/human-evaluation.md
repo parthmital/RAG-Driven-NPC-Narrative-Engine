@@ -13,7 +13,7 @@ The sheets list items in a shuffled order with no condition names. The mapping f
 
 ## Sheets and scales
 
-The second Review-03 run (24 October 2026) exported 200 dialogue-quality, 133 contradiction and 1,560 recall items to [`notebooks/outputs/annotation/`](../notebooks/outputs/annotation/). None has been rated yet.
+The third Review-03 run (24 to 25 October 2026) exported 200 dialogue-quality, 194 contradiction and 1,560 recall items to [`notebooks/outputs/annotation/`](../notebooks/outputs/annotation/). None has been rated yet.
 
 ### `dialogue_quality_sheet.csv`
 

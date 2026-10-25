@@ -1,5 +1,5 @@
 {
-	"created_utc": "2026-10-24T15:50:54Z",
+	"created_utc": "2026-10-25T02:38:37Z",
 	"repo": "https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine",
 	"backend_bundle_sha256": "9f7d7e7bbb0dea242b497ea3a06e234df60349a50bba258beb765978fe294af1",
 	"legacy_commit": "0ea345fe140b359d7e82e77ffb2fdfa74caf0e7c",
@@ -21,7 +21,7 @@
 		"driver": "580.178.04",
 		"cpu_count": 4,
 		"ram_total_gb": 33.7,
-		"ram_available_gb": 32.0,
+		"ram_available_gb": 31.9,
 		"disk_working_free_gb": 20.9,
 		"disk_tmp_free_gb": 1126.1,
 		"torch_kernel": "2.11.0+cu128",
@@ -209,19 +209,19 @@
 		"MEMORY_PRUNE_THRESHOLD": 1000
 	},
 	"budget_b_tokens": 389,
-	"ladder_level": 1,
+	"ladder_level": 2,
 	"plan": {
-		"level": 1,
-		"available_h": 7.717338945402039,
-		"s_per_unit": 0.0037701294349763432,
-		"s_per_unit_wall": 0.0045138303716531275,
+		"level": 2,
+		"available_h": 7.739099994169342,
+		"s_per_unit": 0.003650541441415454,
+		"s_per_unit_wall": 0.004669235641925259,
 		"chars_per_token": 4.139879159662546,
 		"mean_output_tokens": {
-			"recall": 146.46666666666667,
-			"probe": 196.0
+			"recall": 145.26666666666668,
+			"probe": 196.54716981132074
 		},
-		"median_llm_ms": 81858.58681750007,
-		"pilot_wall_s": 394.97207403182983,
+		"median_llm_ms": 79738.92411299994,
+		"pilot_wall_s": 408.00079870224,
 		"pilot_jobs": 256,
 		"pilot_probe_jobs": 106,
 		"cached_jobs_discounted": 390
@@ -232,88 +232,88 @@
 			"n_rec": 1,
 			"n_probe": 4,
 			"n_live": 1,
-			"recall_h": 0.9328225424024931,
-			"probe_h": 0.623679059081709,
-			"live_h": 0.9095398535277786,
-			"seedvar_h": 0.564565704362681,
-			"total_h": 3.485198233280861
+			"recall_h": 0.9001317946896347,
+			"probe_h": 0.6048442855776317,
+			"live_h": 0.8859880456999993,
+			"seedvar_h": 0.5446134537010406,
+			"total_h": 2.935577579668306
 		},
 		{
 			"level": 1,
 			"n_rec": 2,
 			"n_probe": 6,
 			"n_live": 1,
-			"recall_h": 1.9290580663102974,
-			"probe_h": 0.9732200537766104,
-			"live_h": 0.9095398535277786,
-			"seedvar_h": 0.564565704362681,
-			"total_h": 5.032841229673972
+			"recall_h": 1.8614448703913202,
+			"probe_h": 0.9438299901682453,
+			"live_h": 0.8859880456999993,
+			"seedvar_h": 0.5446134537010406,
+			"total_h": 4.2358763599606055
 		},
 		{
 			"level": 2,
 			"n_rec": 3,
 			"n_probe": 10,
 			"n_live": 2,
-			"recall_h": 2.9252935902181036,
-			"probe_h": 1.6723020431664135,
-			"live_h": 1.819079707055557,
-			"seedvar_h": 0.564565704362681,
-			"total_h": 8.028427201523169
+			"recall_h": 2.822757946093007,
+			"probe_h": 1.621801399349473,
+			"live_h": 1.7719760913999987,
+			"seedvar_h": 0.5446134537010406,
+			"total_h": 6.761148890543519
 		},
 		{
 			"level": 3,
 			"n_rec": 4,
 			"n_probe": 14,
 			"n_live": 2,
-			"recall_h": 3.921529114125907,
-			"probe_h": 2.3713840325562163,
-			"live_h": 1.819079707055557,
-			"seedvar_h": 0.564565704362681,
-			"total_h": 9.978042341815414
+			"recall_h": 3.784071021794691,
+			"probe_h": 2.2997728085307005,
+			"live_h": 1.7719760913999987,
+			"seedvar_h": 0.5446134537010406,
+			"total_h": 8.40043337542643
 		},
 		{
 			"level": 4,
 			"n_rec": 6,
 			"n_probe": 20,
 			"n_live": 3,
-			"recall_h": 5.914000161941519,
-			"probe_h": 3.4200070166409207,
-			"live_h": 2.7286195605833354,
-			"seedvar_h": 0.564565704362681,
-			"total_h": 14.521271310057726
+			"recall_h": 5.706697173198064,
+			"probe_h": 3.316729922302542,
+			"live_h": 2.657964137099998,
+			"seedvar_h": 0.5446134537010406,
+			"total_h": 12.226004686301644
 		},
 		{
 			"level": 5,
 			"n_rec": 10,
 			"n_probe": 30,
 			"n_live": 4,
-			"recall_h": 9.89894225757274,
-			"probe_h": 5.167711990115428,
-			"live_h": 3.638159414111114,
-			"seedvar_h": 0.564565704362681,
-			"total_h": 22.159786271086258
+			"recall_h": 9.551949476004806,
+			"probe_h": 5.011658445255611,
+			"live_h": 3.5439521827999974,
+			"seedvar_h": 0.5446134537010406,
+			"total_h": 18.652173557761454
 		},
 		{
 			"level": 6,
 			"n_rec": 20,
 			"n_probe": 45,
 			"n_live": 6,
-			"recall_h": 19.847826313524575,
-			"probe_h": 7.789269450327189,
-			"live_h": 4.547699267638892,
-			"seedvar_h": 0.564565704362681,
-			"total_h": 37.661764846231335
+			"recall_h": 19.15208381103308,
+			"probe_h": 7.554051229685214,
+			"live_h": 4.429940228499997,
+			"seedvar_h": 0.5446134537010406,
+			"total_h": 31.68068872291933
 		},
 		{
 			"level": 7,
 			"n_rec": 40,
 			"n_probe": 60,
 			"n_live": 10,
-			"recall_h": 39.76355600292986,
-			"probe_h": 10.410826910538953,
-			"live_h": 7.276318828222228,
-			"seedvar_h": 0.564565704362681,
-			"total_h": 66.71755756296177
+			"recall_h": 38.369681043741075,
+			"probe_h": 10.096444014114818,
+			"live_h": 7.087904365599995,
+			"seedvar_h": 0.5446134537010406,
+			"total_h": 56.09864287715693
 		}
 	],
 	"servers": "stopped (see logs/vllm_*.log)",
@@ -336,7 +336,7 @@
 			"world": "W1",
 			"turns": 200,
 			"events": 352,
-			"live_hash": "95a1963316f3ffa5",
+			"live_hash": "48800e4a76952398",
 			"full_fold": true,
 			"snapshot_suffix": true,
 			"restart_full": true,
@@ -359,44 +359,44 @@
 		}
 	},
 	"stage_minutes": {
-		"kernel packages": 0.23,
+		"kernel packages": 0.14,
 		"unpack backend bundle": 0.0,
-		"LIGHT worlds": 0.02,
-		"generate recall sessions": 0.05,
-		"generate adversarial probes": 0.45,
-		"embeddings (GPU)": 2.08,
-		"budget calibration": 0.04,
-		"self-test (mock LLM)": 0.41,
-		"replay and recovery (CPU)": 13.52,
-		"crash consistency (CPU)": 6.71,
-		"sensitivity and budget sweeps (CPU)": 0.1,
+		"LIGHT worlds": 0.03,
+		"generate recall sessions": 0.06,
+		"generate adversarial probes": 0.66,
+		"embeddings (GPU)": 1.77,
+		"budget calibration": 0.03,
+		"self-test (mock LLM)": 0.35,
+		"replay and recovery (CPU)": 13.1,
+		"crash consistency (CPU)": 6.19,
+		"sensitivity and budget sweeps (CPU)": 0.09,
 		"wait for vLLM install and primary weights": 0.0,
-		"start primary server": 4.08,
-		"pilot": 6.6,
-		"recall (primary)": 127.77,
-		"adversarial probes (primary)": 27.72,
-		"dialogue repair (primary)": 0.35,
-		"live sessions (primary)": 38.12,
-		"seed variance": 27.7,
-		"latency benchmark (single stream)": 19.32,
-		"secondary backbone": 30.89,
-		"independent family qwen2.5-7b": 11.53,
-		"independent family phi4-mini": 11.75
+		"start primary server": 3.75,
+		"pilot": 6.84,
+		"recall (primary)": 183.06,
+		"adversarial probes (primary)": 44.81,
+		"dialogue repair (primary)": 0.4,
+		"live sessions (primary)": 74.62,
+		"seed variance": 26.77,
+		"latency benchmark (single stream)": 17.87,
+		"secondary backbone": 44.8,
+		"independent family qwen2.5-7b": 14.76,
+		"independent family phi4-mini": 15.53
 	},
 	"engine_stats": {
 		"primary": {
-			"generated": 10583,
-			"cached": 1819
+			"generated": 16220,
+			"cached": 2860
 		},
 		"secondary": {
-			"generated": 1049
+			"generated": 1630
 		}
 	},
 	"independent": {
 		"qwen2.5-7b": "run on ['W1', 'W2a', 'W3', 'W4-32'] (horizon 100)",
 		"phi4-mini": "run on ['W1', 'W2a', 'W3', 'W4-32'] (horizon 100)"
 	},
-	"judge": "qwen2.5-7b: 182 items judged",
+	"judge": "qwen2.5-7b: 364 items judged",
 	"human_evaluation": "pending (no human_ratings_*.csv attached)",
 	"crash_trials": {
 		"n": 300,
@@ -404,7 +404,7 @@
 		"legacy_consistent": 77
 	},
 	"cache_only": false,
-	"embedder_cpu_misses": 543,
+	"embedder_cpu_misses": 1056,
 	"worlds": [
 		{
 			"world": "W1",
@@ -524,17 +524,17 @@
 	"coverage": [
 		{
 			"stage": "recall (primary)",
-			"rows": 5460,
+			"rows": 8190,
 			"missing": 0
 		},
 		{
 			"stage": "probes (primary)",
-			"rows": 2875,
+			"rows": 4800,
 			"missing": 0
 		},
 		{
 			"stage": "live turns (primary)",
-			"rows": 1911,
+			"rows": 3822,
 			"missing": 0
 		},
 		{
@@ -544,32 +544,32 @@
 		},
 		{
 			"stage": "repairs (primary)",
-			"rows": 28,
+			"rows": 48,
 			"missing": 0
 		},
 		{
 			"stage": "judge",
-			"rows": 182,
+			"rows": 364,
 			"missing": 0
 		},
 		{
 			"stage": "recall (qwen2.5-7b)",
-			"rows": 560,
+			"rows": 840,
 			"missing": 0
 		},
 		{
 			"stage": "recall (phi4-mini)",
-			"rows": 560,
+			"rows": 840,
 			"missing": 0
 		},
 		{
 			"stage": "probes (qwen2.5-7b)",
-			"rows": 329,
+			"rows": 550,
 			"missing": 0
 		},
 		{
 			"stage": "probes (phi4-mini)",
-			"rows": 329,
+			"rows": 550,
 			"missing": 0
 		},
 		{
@@ -579,12 +579,12 @@
 		},
 		{
 			"stage": "recall (secondary)",
-			"rows": 720,
+			"rows": 1080,
 			"missing": 0
 		},
 		{
 			"stage": "probes (secondary)",
-			"rows": 329,
+			"rows": 550,
 			"missing": 0
 		}
 	],
@@ -607,14 +607,14 @@
 	],
 	"limitations": [
 		"W3 authorship: notebook author (not independent; see caveat). The article requires an independent author; attach w3_world_seed.json to satisfy it.",
-		"Recall, leaks and the desync proxy are scored automatically (key-word match, secret keywords, refusal/arrival cues); the judge (qwen2.5-7b: 182 items judged) is an LLM. Human evaluation: pending (no human_ratings_*.csv attached).",
+		"Recall, leaks and the desync proxy are scored automatically (key-word match, secret keywords, refusal/arrival cues); the judge (qwen2.5-7b: 364 items judged) is an LLM. Human evaluation: pending (no human_ratings_*.csv attached).",
 		"Token cost is reported in tokens only; the models are self-hosted, so no provider list price applies.",
 		"Latency was measured on 2x T4 with vLLM; hosted-endpoint latency is not reproduced.",
 		"F4v1 reuses the corrected reducer, event store and commit node; it differs from F4 in the validator, the prompt builder, the unbudgeted memory assembly and the absence of dialogue repair, which are the components Review-03 changed.",
 		"Live sessions address scripted NPCs even when a scripted move was not committed; this divergence is measured as desynchronisation.",
 		"B4 omits the Generative Agents importance score (an LLM call per memory write); B4 and B5 are re-implementations of the retrieval rules, not the original systems.",
-		"Sample size: ladder level 1 of 7 ({'n_rec': 2, 'n_probe': 6, 'n_live': 1}); the article's full targets correspond to level 7. Attach this run's llm_cache_*.jsonl and rerun to reach a larger level.",
+		"Sample size: ladder level 2 of 7 ({'n_rec': 3, 'n_probe': 10, 'n_live': 2}); the article's full targets correspond to level 7. Attach this run's llm_cache_*.jsonl and rerun to reach a larger level.",
 		"Second backbone: run on ['W1', 'W2a', 'W3', 'W4-32']. Independent families: {'qwen2.5-7b': \"run on ['W1', 'W2a', 'W3', 'W4-32'] (horizon 100)\", 'phi4-mini': \"run on ['W1', 'W2a', 'W3', 'W4-32'] (horizon 100)\"}."
 	],
-	"total_hours": 5.55
+	"total_hours": 7.65
 }

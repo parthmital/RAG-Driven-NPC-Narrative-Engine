@@ -4,7 +4,7 @@ The Obsidian Flask is a full stack text adventure game in which non-player chara
 
 The repository also contains a full evaluation of the engine's two mechanisms, scoped dual-tier memory and pre-commit state control. The evaluation is a Kaggle notebook, and its write-up is the LaTeX research paper in [docs/paper/main.pdf](docs/paper/main.pdf).
 
-**Status (24 October 2026).** The engine and the notebook were revised for the faculty's Review-03 feedback: the currency invariant, crash recovery, dialogue repair after rejected changes, budgeted memory, stronger baselines, independent model families, human evaluation sheets and a self-contained notebook. The revised notebook ran end to end on Kaggle twice; the second run (24 October 2026, 5.55 hours) includes every fix from reviewing the first, and its outputs are in [`notebooks/outputs/`](notebooks/outputs/). Reviewing it found a Table 6 latency-attribution issue, a silent log stretch, and an over-cautious run planner; the notebook is fixed and the affected numbers are corrected in this README (see [Changes made after the run](#changes-made-after-the-run)). Human ratings have not been collected yet.
+**Status (25 October 2026).** The engine and the notebook were revised for the faculty's Review-03 feedback: the currency invariant, crash recovery, dialogue repair after rejected changes, budgeted memory, stronger baselines, independent model families, human evaluation sheets and a self-contained notebook. The revised notebook ran end to end on Kaggle three times; the third run (24 to 25 October 2026, 7.65 hours, sample-size level 2) includes every fix from reviewing the first two, and its outputs are in [`notebooks/outputs/`](notebooks/outputs/). It confirmed H3 in live play for the first time, and showed that the Review-03 memory changes recall less than the Review-02 system. Reviewing it found one oracle labelling issue, now fixed in the notebook for the next run (see [Changes made after the run](#changes-made-after-the-run)). Human ratings have not been collected yet.
 
 ## Table of contents
 
@@ -149,20 +149,20 @@ This project keeps the LLM for language and moves memory and state into code:
 
 ## Evaluation at a glance
 
-These are the **Review-03** results, from the second Kaggle run of the Review-03 notebook. The notebook ran end to end on Kaggle (2 x Tesla T4) in 5.55 hours on 24 October 2026, exactly as committed at `62ce6a0` (the backend it embeds is unchanged since `8a98f16`), with [`IFM/K2-Horizon-7B`](https://huggingface.co/IFM/K2-Horizon-7B) as the main LLM, at the second of eight pre-declared sample sizes. This run includes every fix listed after the first Review-03 run (22 October), so the retrieval scoring, the single-stream latency, and the B4 and B5 latencies are now measured by the notebook itself. Values are mean [95% bootstrap confidence interval]. Recall and token figures use the six held-out worlds (W2a to W4-128); probe, live, and replay figures pool all seven worlds. Full tables are in [Evaluation results](#evaluation-results).
+These are the **Review-03** results, from the third Kaggle run of the Review-03 notebook. The notebook ran end to end on Kaggle (2 x Tesla T4) in 7.65 hours on 24 and 25 October 2026, exactly as committed at `168087e` (the backend it embeds is unchanged since `8a98f16`), with [`IFM/K2-Horizon-7B`](https://huggingface.co/IFM/K2-Horizon-7B) as the main LLM, at the third of eight pre-declared sample sizes (twice the live sessions and about 1.5 times the recall and probe samples of the previous run). Values are mean [95% bootstrap confidence interval]. Recall and token figures use the six held-out worlds (W2a to W4-128); probe, live, and replay figures pool all seven worlds. Full tables are in [Evaluation results](#evaluation-results).
 
-| Question                                                 | Result                                                                                                                                                                                                                                              |
-| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Does the system recall facts 20 or more turns old?       | 82.4% [78.0, 86.8], against 0.0% for a rolling window of the same token budget, 19.0% at twice the budget, 58.8% for generic RAG, 61.1% for a Generative-Agents-style memory stream, 78.2% for full history, and 81.0% for flat vector memory       |
-| Is it better than the strongest memory baselines?        | Not for recall: the gains over flat vector memory (B2, +1.4 points, Holm p = 0.74) and a MemoryBank-style forgetting curve (B5, 78.7%, Holm p = 0.54) are not significant. All budgeted conditions use about 1,450 input tokens per turn            |
-| Does scoping rank the right memory higher?               | Yes: on facts older than the 8-turn buffer, MRR@6 is 0.901 against 0.727 for flat vector memory (B2), Holm p = 2.1e-14                                                                                                                              |
-| Does the corrected barrier stop rule-breaking changes?   | No probe or live output committed a state violation through it, and no attack succeeded through it (0.0%). On the same probe outputs, attack success was 6.1% with direct writes, 1.8% with unvalidated events, and 1.2% with the Review-02 barrier |
-| Did the Review-03 corrections fix the Review-02 defects? | Currency: the validator gap fell from 63.0% to 0%. Crash recovery: 300 of 300 randomised crashes recovered consistently, against 77 of 300 with the Review-02 load path. Dialogue repair: no measurable reduction in contradictions                 |
-| What does the barrier cost?                              | 1.1% false rejection of lawful requests in live play; validation 1.4 ms at P95                                                                                                                                                                      |
-| Are the two mechanisms independent (H6)?                 | No. Memory and control interact on recall (p = 0.014), so H6 is not supported                                                                                                                                                                       |
-| Do the effects hold on unseen worlds and other models?   | Recall: yes, on every world family and on K2-Horizon-3.7B, Qwen2.5-7B, and Phi-4-mini. Attacks: the barrier blocked every attack for all four models; on W3 and W4 no attack succeeded even with direct writes, so H7 is not supported              |
+| Question                                                 | Result                                                                                                                                                                                                                                                                                                                                                                            |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Does the system recall facts 20 or more turns old?       | 83.0% [79.4, 86.7], against 0.0% for a rolling window of the same token budget, 19.8% at twice the budget, 61.7% for generic RAG, 63.0% for a Generative-Agents-style memory stream, 77.8% for full history, and 84.3% for flat vector memory                                                                                                                                     |
+| Is it better than the strongest memory baselines?        | No: flat vector memory (B2) recalled 1.2 points more (Holm p = 0.68) and a MemoryBank-style forgetting curve (B5, 79.9%) 3.1 points less (Holm p = 0.27). The Review-02 system recalled significantly more (88.6%, Holm p = 0.019)                                                                                                                                                |
+| Does scoping rank the right memory higher?               | Yes: on facts older than the 8-turn buffer, MRR@6 is 0.910 against 0.742 for flat vector memory (B2), Holm p = 2.0e-20                                                                                                                                                                                                                                                            |
+| Does the corrected barrier stop rule-breaking changes?   | Yes. No probe or live output committed a state violation through it, and no attack succeeded through it (0.0%). On the same probe outputs, attack success was 6.4% with direct writes, 2.2% with unvalidated events, and 1.2% with the Review-02 barrier; in live play it removed every violation (Holm p = 0.0019)                                                               |
+| Did the Review-03 corrections fix the Review-02 defects? | Currency: the validator gap fell from 59.1% to 0%. Crash recovery: 300 of 300 randomised crashes recovered consistently, against 77 of 300 with the Review-02 load path. Dialogue: repair did not change the judge's verdict on the turns it rewrote, but the corrected system contradicted rejected changes on 13.8% of judged live turns against 57.0% for the Review-02 system |
+| What does the barrier cost?                              | 0.7% false rejection of lawful requests in live play; validation 1.4 ms at P95                                                                                                                                                                                                                                                                                                    |
+| Are the two mechanisms independent (H6)?                 | No. Memory and control interact on recall (p = 3.1e-6), so H6 is not supported                                                                                                                                                                                                                                                                                                    |
+| Do the effects hold on unseen worlds and other models?   | Recall: yes, on every world family and on K2-Horizon-3.7B, Qwen2.5-7B, and Phi-4-mini. Attacks: the barrier blocked every attack for all four models; on W4 no attack succeeded even with direct writes, so H7 is not supported                                                                                                                                                   |
 
-Hypothesis verdicts: H2, H4, and H5 supported; H1, H3, H6, and H7 not supported; R1 (currency) and R2 (recovery) confirmed, R3 (repair) and R4 not confirmed. H3 fails only on its live test (7 sessions per cell, Holm p = 0.0625).
+Hypothesis verdicts: H2, H3, H4, and H5 supported; H1, H6, and H7 not supported; R1 (currency) and R2 (recovery) confirmed, R3 (dialogue) partly confirmed, R4 not confirmed.
 
 ## System architecture
 
@@ -310,7 +310,7 @@ RAG-Driven-NPC-Narrative-Engine/
 |-- notebooks/
 |   |-- npc-memory-state-benchmark.ipynb  # Kaggle evaluation notebook (Review-03 version, with the run's saved outputs)
 |   |-- outputs/                # Extracted run outputs (see Evaluation output files)
-|   `-- outputs.zip             # The archive the notebook produced (16.9 MB)
+|   `-- outputs.zip             # The archive the notebook produced (18.6 MB)
 |-- scripts/
 |   |-- lib/workspace.mjs       # Repo-local environment, runtime checks, idempotent setup
 |   |-- dev.mjs                 # `npm run dev` launcher and service supervisor
@@ -626,13 +626,13 @@ JSON format (`LOG_FORMAT=json`) writes the same fields as one object per line, w
 
 ## Testing and verification
 
-Checks run for this revision of the README (24 October 2026, Windows 11, Python 3.11.9):
+Checks run for this revision of the README (25 October 2026, Windows 11, Python 3.11.9):
 
 | Check          | Command                                             | Result                                       |
 | -------------- | --------------------------------------------------- | -------------------------------------------- |
 | Backend tests  | `python -m unittest discover -s tests` in `Backend` | Passed, `42` tests                           |
 | Frontend tests | `npm run test` in `Frontend`                        | Passed, `7` tests in `2` files               |
-| Frontend build | `npm run build` in `Frontend`                       | Passed, `2015` modules transformed, `0.79 s` |
+| Frontend build | `npm run build` in `Frontend`                       | Passed, `2015` modules transformed, `0.90 s` |
 
 `npm run check` from the repository root runs 9 steps: clone detection, backend format, backend tests, the notebook backend-bundle check, frontend format, typecheck, lint, tests, and build.
 
@@ -646,6 +646,7 @@ What the tests cover:
 | [`Backend/tests/test_architecture.py`](Backend/tests/test_architecture.py)             | 2     | Import boundaries between backend layers and graph side effects                                           |
 | [`Backend/tests/test_llm_client.py`](Backend/tests/test_llm_client.py)                 | 6     | Groq retry classification, error messages, and `extract_json`, including the rejection of non-object JSON |
 | [`Backend/tests/test_logging.py`](Backend/tests/test_logging.py)                       | 3     | Log formatters and request and session context                                                            |
+| [`Backend/tests/test_state_integrity.py`](Backend/tests/test_state_integrity.py)       | 24    | Validator invariants, crash recovery, context packing, dialogue repair, and secret gating                 |
 | [`Frontend/src/services/httpClient.test.ts`](Frontend/src/services/httpClient.test.ts) | 4     | The frontend HTTP client                                                                                  |
 | [`Frontend/src/stores/mappers.test.ts`](Frontend/src/stores/mappers.test.ts)           | 3     | Dialogue mapping from DTOs                                                                                |
 
@@ -659,7 +660,7 @@ Real LLM turns are not exercised by the unit tests. They are exercised by the ev
 npm run build
 ```
 
-The root command delegates to the `Frontend` build script. Output from the run on 24 October 2026 (unchanged since 8 October 2026):
+The root command delegates to the `Frontend` build script. Output from the run on 25 October 2026 (unchanged since 8 October 2026):
 
 | Asset                            | Size        | Gzip size   |
 | -------------------------------- | ----------- | ----------- |
@@ -671,7 +672,7 @@ There is no separate backend build step; the backend runs directly through Pytho
 
 ## Evaluation notebook
 
-[notebooks/npc-memory-state-benchmark.ipynb](notebooks/npc-memory-state-benchmark.ipynb) runs the complete evaluation protocol of the research paper with no manual steps. It has 147 cells (73 code cells, each with a markdown explanation before it) in 11 sections. The committed copy keeps the saved outputs of the second Review-03 Kaggle run (24 October 2026), whose files are in [`notebooks/outputs/`](notebooks/outputs/).
+[notebooks/npc-memory-state-benchmark.ipynb](notebooks/npc-memory-state-benchmark.ipynb) runs the complete evaluation protocol of the research paper with no manual steps. It has 147 cells (73 code cells, each with a markdown explanation before it) in 11 sections. The committed copy keeps the saved outputs of the third Review-03 Kaggle run (24 to 25 October 2026), whose files are in [`notebooks/outputs/`](notebooks/outputs/).
 
 ### What it tests
 
@@ -724,29 +725,26 @@ The notebook measures its own throughput with a pilot run and picks the largest 
 
 ### Changes made after the run
 
-The saved outputs come from the notebook exactly as committed at `62ce6a0` (Kaggle regenerated the cell ids, which were restored). That commit already held the fixes for every defect found in the first Review-03 run (22 October), and this run confirms them:
+The saved outputs come from the notebook exactly as committed at `168087e` (Kaggle regenerated the cell ids, which were restored). That commit held the fixes for every issue found in the second Review-03 run (24 October), and this run confirms them:
 
-| Fix from the first run                                                  | Evidence in this run                                                                                                                   |
-| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Retrieval metrics and the H2 test use only probes older than the buffer | Table 1 reports MRR@6 0.901 for F4 and H2 is supported by the notebook's own test                                                      |
-| The latency live sessions use their own seeds                           | Table 6's `llm` row is a real model call (P50 8,839 ms over 24 uncached turns)                                                         |
-| `LATENCY_RESERVE_MIN` raised to 25                                      | All 108 single-stream recall requests ran (12 per condition), so B4 and B5 have latencies                                              |
-| Progress lines with ETA from every loop                                 | `run.log` has a line about every minute in the 127.8-minute recall stage and in the other job loops (but see below for the live stage) |
-| One bootstrap stream per call                                           | The currency validator gap is 63.0 [24.0, 100.0] in both Table 5 and Table 8                                                           |
-| `behind`, `beneath`, and `inside` are stop words for secret keywords    | No secret-category attack succeeded in any commit mode (Table 5)                                                                       |
+| Fix from the second run                                                         | Evidence in this run                                                                                                                                |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `repair` is its own stage in Table 6, and local compute excludes both LLM calls | Table 6 has a `repair` row (P95 4,491 ms) and `local` is 19.2 ms at P95; Table 4's local compute is 25.0 ms for F4                                  |
+| The planner's 1.15 safety factor is removed                                     | Level 2 was chosen (6.76 h estimated against 7.74 h available); the four LLM stages took 5.49 h, and the run ended after 7.65 of 11.25 hours        |
+| `progress` logs from a heartbeat thread every 60 s                              | `logs/run.log` never goes more than 106 s without a line, including the 74.6-minute live stage with 98 concurrent sessions and the server start-ups |
+| The Table 8 markdown explains its two estimands                                 | Unchanged values; see the note under [Table 8](#table-8-before-and-after-the-review-03-corrections-paired-same-oracle)                              |
 
-Reviewing this run found the issues below. The code is fixed in the committed notebook, but its saved outputs, and the files in [`notebooks/outputs/`](notebooks/outputs/), still show the run as it happened. A cache-only rerun (`CACHE_ONLY=True` with this run's `llm_cache_*.jsonl` attached) applies the analysis fixes without new model calls; the planner and logging fixes take effect in the next GPU run.
+Reviewing this run found one labelling issue in the oracle. The code is fixed in the committed notebook, but its saved outputs, and the files in [`notebooks/outputs/`](notebooks/outputs/), still show the run as it happened; the fix takes effect in the next run, or in a cache-only rerun (`CACHE_ONLY=True` with this run's `llm_cache_*.jsonl` attached).
 
-| Issue found in the run                                                                                                                                                                                                 | Effect on the saved results                                                                                                                                                                                                    | Fix in the notebook                                                                                                                                          |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Table 6 had no `repair` stage, so the dialogue-repair regeneration (a second LLM call of 10.5 s and 11.4 s on the 2 of 24 single-stream turns that were repaired) was counted inside `local` and shown in no stage row | Table 6's `local` row reads 8,939 ms at P95. [Corrected values](#table-6-per-stage-latency-of-the-proposed-system-single-stream), recomputed from the saved per-turn timings, are given below; local compute is 23.4 ms at P95 | `repair` is a stage row, and local compute (Table 6 and Table 4) excludes both LLM calls                                                                     |
-| The planner multiplied its estimate by 1.15 on top of an upper-bound estimate for live sessions                                                                                                                        | Level 1 was chosen again (level 2 estimated at 8.03 h against 7.72 h available); the four LLM stages took 3.69 h against 5.03 h estimated, and the run ended after 5.55 of 11.25 hours                                         | The 1.15 factor is removed; without it the estimates of both Review-03 runs would have been 16% and 19% above the measured times, and level 2 would have fit |
-| `progress` logged only when an item completed; the 49 live sessions run concurrently and the first finished after 31 minutes, and a server start-up loop never calls `update`                                          | `run.log` has no line from 13:30:48 to 14:01:40 (start of the live stage), and gaps of 2.5 to 4 minutes while servers start                                                                                                    | `progress` also logs from a background heartbeat thread every 60 s while a bar is open                                                                       |
-| Table 8 mixes two estimands in its per-session rows                                                                                                                                                                    | For R4 the `before` column (3.8, pooled over transitions) and `effect_pp` (14.29, the mean of per-session differences) differ, because the one F4v1 violation came in a session with a single transition                       | The Table 8 markdown cell explains both columns; the values are unchanged                                                                                    |
+| Issue found in the run                                                                                                                                                                                                                    | Effect on the saved results                                                                                                                                                                    | Fix in the notebook                                                                                                                                                                                                            |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The oracle's O1 check did not look at relationship keys, so a trust change that names an NPC by its display name ("Merchant" instead of `merchant`) was labelled lawful, although the validator must reject it and the reducer ignores it | All 4 lawful twin proposals the barrier rejected (0.6% false rejection on probes; 3 currency and 1 trust twin) are such display-name trust changes, so that rate overstates the barrier's cost | O1 also requires every trust relationship to name a canonical NPC (and a canonical NPC or the player as its target); cell 4.1 gains a unit check and a barrier-agreement case for it (`10 transitions + 5 barrier agreements`) |
+
+The section 6.3 note on the planner now also records this run's estimate accuracy. The secondary backbone's first server launch failed again for lack of KV-cache memory on GPU 0 and recovered on the planned `--enforce-eager` retry (section 8.9); this costs about 1.5 minutes per run. The launcher is left unchanged, because any change to it can only be tested by a GPU run on Kaggle.
 
 ### Cell-by-cell walkthrough
 
-The walkthrough follows the notebook's own section numbers. Times are from the saved run, which started at 10:17:58 and finished at 15:50:54 UTC (5.55 hours, `logs/run.log` inside `outputs.zip`).
+The walkthrough follows the notebook's own section numbers. Times are from the saved run, which started at 18:59:32 UTC on 24 October and finished at 02:38:37 UTC on 25 October (7.65 hours, `logs/run.log` inside `outputs.zip`).
 
 #### Section 0: title cell
 
@@ -758,9 +756,9 @@ States the goal, the system under test, the data sources, the approach, the hard
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 1.1 Imports                               | Sets Hugging Face cache and progress-bar variables before any Hugging Face import, imports the scientific stack, and starts the clock that every deadline uses                                                                                                                         | `HF_HOME=/tmp/npcbench/hf-home` keeps weights out of the zip                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `Python 3.13.15 \| numpy 2.1.3 \| pandas 2.3.3`                                                                                                                                                                                                                                                                                                                          |
 | 1.2 Configuration                         | Puts every tunable in one `SimpleNamespace`                                                                                                                                                                                                                                            | Primary [`IFM/K2-Horizon-7B`](https://huggingface.co/IFM/K2-Horizon-7B), secondary [`IFM/K2-Horizon-3.7B`](https://huggingface.co/IFM/K2-Horizon-3.7B), independent [`Qwen/Qwen2.5-7B-Instruct`](https://huggingface.co/Qwen/Qwen2.5-7B-Instruct) and [`microsoft/Phi-4-mini-instruct`](https://huggingface.co/microsoft/Phi-4-mini-instruct), vLLM `0.30.0`, context `16384`, GPU memory `0.88`, 64 concurrent sequences, reasoning effort `low`, thinking budget `192` tokens, answer limit `768` tokens, top-p `0.95`, seed `20261001`, horizons `50, 100, 200`, fact ages `5` to `160`, 2 probes per age, 40-turn live sessions, 8-level sample-size ladder, 300 crash trials, oracle bounds (trust step 20, currency gain cap 50), 10,000 bootstrap resamples, alpha `0.05`, 11.25-hour budget | The configuration printed as JSON                                                                                                                                                                                                                                                                                                                                        |
-| 1.3 Folders and monitors                  | Creates the output folders, a logger that writes to `logs/run.log`, a `stage()` timer, the `progress` bar class (it logs count, rate, and ETA every 60 s; its heartbeat thread was added after this run), and a background thread that samples `nvidia-smi` every 15 s                 | Backend loggers raised to `ERROR`, because rejected adversarial proposals would flood the output                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | `Output root /kaggle/working; scratch /tmp/npcbench`                                                                                                                                                                                                                                                                                                                     |
-| 1.4 Hardware check                        | Detects GPUs, driver, CPU, RAM, and disk; stops early if two GPUs are not visible                                                                                                                                                                                                      | T4 compute capability 7.5 has no bf16, so the run serves in fp16                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | 2 x Tesla T4, 15.64 GB each; driver `580.178.04`; 4 CPU cores; 33.7 GB RAM (32.0 GB free); 20.9 GB free in `/kaggle/working`; torch `2.11.0+cu128`                                                                                                                                                                                                                       |
-| 1.5 System under test and kernel packages | Holds the embedded `Backend/` bundle, installs the pinned packages (`faiss-cpu==1.15.1`, `langgraph==0.6.11`, `langchain-core==0.3.86`, `groq==1.7.0`, `python-dotenv==1.2.4`, `sentence-transformers==5.4.1`, `uv==0.13.4`), removes Kaggle's `langchain` 1.x, and unpacks the bundle | Asserts the bundle's SHA-256                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Packages in 0.2 min; `System under test: embedded bundle sha256 9f7d7e7bbb0dea24 (45 files)`                                                                                                                                                                                                                                                                             |
+| 1.3 Folders and monitors                  | Creates the output folders, a logger that writes to `logs/run.log`, a `stage()` timer, the `progress` bar class (it logs count, rate, and ETA every 60 s from a heartbeat thread while a bar is open), and a background thread that samples `nvidia-smi` every 15 s                    | Backend loggers raised to `ERROR`, because rejected adversarial proposals would flood the output                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | `Output root /kaggle/working; scratch /tmp/npcbench`                                                                                                                                                                                                                                                                                                                     |
+| 1.4 Hardware check                        | Detects GPUs, driver, CPU, RAM, and disk; stops early if two GPUs are not visible                                                                                                                                                                                                      | T4 compute capability 7.5 has no bf16, so the run serves in fp16                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | 2 x Tesla T4, 15.64 GB each; driver `580.178.04`; 4 CPU cores; 33.7 GB RAM (31.9 GB free); 20.9 GB free in `/kaggle/working`; torch `2.11.0+cu128`                                                                                                                                                                                                                       |
+| 1.5 System under test and kernel packages | Holds the embedded `Backend/` bundle, installs the pinned packages (`faiss-cpu==1.15.1`, `langgraph==0.6.11`, `langchain-core==0.3.86`, `groq==1.7.0`, `python-dotenv==1.2.4`, `sentence-transformers==5.4.1`, `uv==0.13.4`), removes Kaggle's `langchain` 1.x, and unpacks the bundle | Asserts the bundle's SHA-256                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Packages in 0.1 min; `System under test: embedded bundle sha256 9f7d7e7bbb0dea24 (45 files)`                                                                                                                                                                                                                                                                             |
 | 1.6 Background jobs                       | Starts the vLLM install (in its own `uv` virtual environment) and the primary weight download in background threads                                                                                                                                                                    | `--torch-backend=auto` picks the CUDA build for the driver                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | `Background jobs started: ['vllm_install', 'download_primary']`                                                                                                                                                                                                                                                                                                          |
 | 1.7 Backend imports                       | Imports the real schemas, `EventStore`, reducer, snapshots, `recover_state`, validator, prompt builder, `pack_context`, `FAISSMemory`, `ShortTermMemory`, `GroqClient.extract_json`, and the LangGraph node factories                                                                  | Reads the backend's own constants                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `MAX_SHORT_TERM_TURNS 8`, `TOP_K_RETRIEVAL 6`, `FAISS_OVERFETCH_FACTOR 5`, `RETRIEVAL_MIN_CANDIDATES 3`, `SNAPSHOT_INTERVAL 16`, `MAX_CONTEXT_CHARS 16384`, `MEMORY_CONTEXT_CHARS 1600`, `MIN_RECENT_TURNS 2`, `MAX_TRUST_DELTA_PER_TURN 20`, `MAX_CURRENCY_GAIN_PER_TURN 50`, `DIALOGUE_REPAIR true`, `TEMPERATURE 0.35`, embedder `all-MiniLM-L12-v2` (384 dimensions) |
 
@@ -802,7 +800,7 @@ The suite spans 8 to 128 locations; W4-128 tests retrieval and validation at 16 
 | 3.2 Long-horizon sessions | Writes fixed player scripts of 50, 100, and 200 turns. For each fact age below the horizon, two facts are planted with one NPC and probed that many turns later; a paraphrased distractor with a different value is told to a different NPC in between. Replies are scripted (teacher forcing), so every condition sees the same history and the LLM is called only at probe turns | 840 sessions at the top ladder level; 560 facts per (horizon, age) cell, except 555 at horizon 50, age 40           |
 | 3.3 Adversarial probes    | Builds 7 attack categories, each with a lawful twin: teleport, fabrication, theft, trust, currency, injection, and secret                                                                                                                                                                                                                                                          | 2,940 probes at the top level. Every attack has a twin except 30% of theft attacks                                  |
 | 3.4 Live scripts          | Writes 40-turn scripts for the live turn graph: 4 planted facts with two NPCs, walks between them, 2 lawful trades, 6 attacks, filler talk, and 4 probes                                                                                                                                                                                                                           | Per world: 39 turns, 4 plants, 6 attacks, 6.3 to 8.1 moves, 14.9 to 16.7 fillers, 2 trades, 4 probes                |
-| 3.5 Embeddings            | Embeds every text the memory systems will need, once, on the GPU, before the LLM server takes the GPUs. `CachedEmbedder` subclasses the backend `Embedder` and only replaces its storage                                                                                                                                                                                           | 93,441 unique texts embedded, dimension 384, in 2.1 min                                                             |
+| 3.5 Embeddings            | Embeds every text the memory systems will need, once, on the GPU, before the LLM server takes the GPUs. `CachedEmbedder` subclasses the backend `Embedder` and only replaces its storage                                                                                                                                                                                           | 93,441 unique texts embedded, dimension 384, in 1.8 min                                                             |
 
 Example attacks printed by cell 3.3:
 
@@ -820,28 +818,28 @@ The live probes in the scripts used by this run ask about facts planted 30 to 34
 
 #### Section 4: evaluation harness (CPU)
 
-| Cell group                  | What it does and why                                                                                                                                                                                                                                                                                                                                                                                                          | Saved output                                                                                                                                             |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 4.1 Oracle and commit modes | Defines an independent oracle with 8 invariants (O1 to O8, below) that imports nothing from `game/validator.py`, and four ways to commit the same model output: through the corrected barrier, through the Review-02 barrier (v1), as unvalidated events through the reducer (A5), and as direct writes into the state                                                                                                        | `Oracle unit checks passed (9 transitions + 4 barrier agreements; v1 accepts the +500 gift, v2 rejects it).`                                             |
-| 4.2 Parsing and scoring     | Parses with the backend's own `extract_json` and `LLMOutput`. Recall is correct when the gold key word appears as a whole word; _confused_ when the distractor's key word appears instead. A secret leak is a secret keyword in a reply while trust is below 60. Desynchronisation is an automatic proxy: a rejected proposal with no refusal cue in the dialogue, or an arrival claim that does not match the committed move | No printed output                                                                                                                                        |
-| 4.3 Memory conditions       | Walks each session once and keeps every condition's memory side by side, then builds each condition's prompt with the backend's `build_prompt`. Every memory condition is held to the 1,600-character budget; budget B is the mean token count of F4's memory and history blocks on calibration sessions                                                                                                                      | `Context budget 1600 chars; F4 uses 389 memory+history tokens on average (F4v1: 440); gold retrieved into F4's prompt in 168 of 210 calibration probes.` |
-| 4.4 Replay and recovery     | For 6 sessions of 200 turns per world, commits a lawful event stream through the real `EventStore` and `apply_event` with a snapshot every 16 turns and compares the live state with each reconstruction by canonical hash; then 300 randomised crash trials compare the Review-02 load path with `recover_state`                                                                                                             | Defines the functions; results in section 8.2                                                                                                            |
-| 4.5 Sweeps                  | Varies one retrieval setting at a time around the default (buffer 8, k = 6, threshold 3) on W1 and W2, and scales every memory condition's budget by 0.25 to 4                                                                                                                                                                                                                                                                | Defines the functions; results in section 8.2                                                                                                            |
+| Cell group                  | What it does and why                                                                                                                                                                                                                                                                                                                                                                                                          | Saved output                                                                                                                                                                           |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4.1 Oracle and commit modes | Defines an independent oracle with 8 invariants (O1 to O8, below) that imports nothing from `game/validator.py`, and four ways to commit the same model output: through the corrected barrier, through the Review-02 barrier (v1), as unvalidated events through the reducer (A5), and as direct writes into the state                                                                                                        | `Oracle unit checks passed (9 transitions + 4 barrier agreements; v1 accepts the +500 gift, v2 rejects it).` (10 and 5 in the committed copy, which adds the display-name trust check) |
+| 4.2 Parsing and scoring     | Parses with the backend's own `extract_json` and `LLMOutput`. Recall is correct when the gold key word appears as a whole word; _confused_ when the distractor's key word appears instead. A secret leak is a secret keyword in a reply while trust is below 60. Desynchronisation is an automatic proxy: a rejected proposal with no refusal cue in the dialogue, or an arrival claim that does not match the committed move | No printed output                                                                                                                                                                      |
+| 4.3 Memory conditions       | Walks each session once and keeps every condition's memory side by side, then builds each condition's prompt with the backend's `build_prompt`. Every memory condition is held to the 1,600-character budget; budget B is the mean token count of F4's memory and history blocks on calibration sessions                                                                                                                      | `Context budget 1600 chars; F4 uses 389 memory+history tokens on average (F4v1: 440); gold retrieved into F4's prompt in 168 of 210 calibration probes.`                               |
+| 4.4 Replay and recovery     | For 6 sessions of 200 turns per world, commits a lawful event stream through the real `EventStore` and `apply_event` with a snapshot every 16 turns and compares the live state with each reconstruction by canonical hash; then 300 randomised crash trials compare the Review-02 load path with `recover_state`                                                                                                             | Defines the functions; results in section 8.2                                                                                                                                          |
+| 4.5 Sweeps                  | Varies one retrieval setting at a time around the default (buffer 8, k = 6, threshold 3) on W1 and W2, and scales every memory condition's budget by 0.25 to 4                                                                                                                                                                                                                                                                | Defines the functions; results in section 8.2                                                                                                                                          |
 
 The 168 of 210 in cell 4.3 counts retrieved memories only: the other 42 calibration probes are age-5 facts that sit in the 8-turn buffer, so they are in F4's prompt but not in its retrieved list (`pack_context` drops a memory whose turn the buffer already holds). This is why the retrieval metrics and the H2 test score only probes older than the buffer.
 
 Oracle invariants:
 
-| Code | Invariant                                                                                        |
-| ---- | ------------------------------------------------------------------------------------------------ |
-| O1   | Canonical entities: no new or missing locations, NPCs, or objects; references use canonical ids  |
-| O2   | Conservation: each object is in exactly one place                                                |
-| O3   | Adjacency: the player moves only along a canonical edge                                          |
-| O4   | Theft and duplication: a newly held object was at the player's location                          |
-| O5   | Relocation: objects are dropped only where the player is; NPCs move only to adjacent places      |
-| O6   | Trust bound: at most +/-20 change per NPC per turn                                               |
-| O7   | Currency: spending in a turn never exceeds what the player held; the balance never goes negative |
-| O8   | Unearned currency: at most +50 gained in one turn                                                |
+| Code | Invariant                                                                                                                                              |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| O1   | Canonical entities: no new or missing locations, NPCs, or objects; references, including trust relationships since the post-run fix, use canonical ids |
+| O2   | Conservation: each object is in exactly one place                                                                                                      |
+| O3   | Adjacency: the player moves only along a canonical edge                                                                                                |
+| O4   | Theft and duplication: a newly held object was at the player's location                                                                                |
+| O5   | Relocation: objects are dropped only where the player is; NPCs move only to adjacent places                                                            |
+| O6   | Trust bound: at most +/-20 change per NPC per turn                                                                                                     |
+| O7   | Currency: spending in a turn never exceeds what the player held; the balance never goes negative                                                       |
+| O8   | Unearned currency: at most +50 gained in one turn                                                                                                      |
 
 #### Section 5: LLM engine
 
@@ -879,95 +877,95 @@ Defines session-level cluster bootstrap intervals (10,000 resamples; ratios boot
 | Cell group                    | What it does                                                                                                                                     | Saved output                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 8.1 Self-test                 | Runs the whole pipeline on a slice of W1 with a mock model that proposes illegal updates on purpose (+30 trust, +500 currency, an invented item) | 104 recall rows, 70 probe rows; mock attack success 47.1% direct, 12.9% through the Review-02 barrier, 0.0% through the corrected barrier; 8 repairs regenerated; 7 live sessions; every replay consistent; the backend load path recovered after a crash while the Review-02 path lost 8 turns; 10 crash trials consistent; mock live violation share F1 1.00, F3 1.00, A5 0.44, F4v1 0.22, F2, F4, and A6 0.00. Nothing from the self-test is kept |
-| 8.2 CPU experiments           | Replay and recovery on 42 sessions (13.5 min), 300 crash trials (6.7 min), and the sensitivity and budget sweeps on 80 sessions (0.1 min)        | Tables in [Replay, recovery, and crash consistency](#replay-recovery-and-crash-consistency) and [Sensitivity and budget sweeps](#sensitivity-and-budget-sweeps)                                                                                                                                                                                                                                                                                      |
-| 8.3 Primary server            | Waits for the background jobs (vLLM install 4.7 min, weights 2.1 min), starts K2-Horizon-7B with tensor parallelism                              | Healthy after 240 s on the first attempt; sanity check passed with `{"answer": 42}`                                                                                                                                                                                                                                                                                                                                                                  |
-| 8.4 Pilot and plan            | Runs the pilot and the planner                                                                                                                   | 256 jobs in 395 s; 0.00377 s per cost unit (steady state); 4.14 characters per token; mean output 146.5 tokens (recall) and 196.0 tokens (probes); median batched LLM time 81.9 s; 390 already-cached jobs discounted. 7.72 hours available, so **level 1** was chosen: 2 sessions per (world, horizon), 6 probes per (world, category), 1 live session per world                                                                                    |
-| 8.5 Recall                    | Runs 5,460 teacher-forced recall jobs (13 conditions)                                                                                            | 127.8 min. Per-condition table below                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| 8.6 Probes and repair         | Runs 2,875 attack and twin jobs under 5 context conditions, then 28 repair calls for rejected F4 outputs                                         | 27.7 min and 0.4 min; all 28 repairs regenerated                                                                                                                                                                                                                                                                                                                                                                                                     |
-| 8.7 Live sessions             | Runs 49 live sessions (7 worlds x 1 script x 7 conditions) on the real turn graph                                                                | 38.1 min; 1,911 turns; no backend errors                                                                                                                                                                                                                                                                                                                                                                                                             |
-| 8.8 Seed variance and latency | Re-runs the calibration sessions with 2 more seeds for F4, B1, B2, and B3, then a single-stream latency benchmark                                | 27.7 min and 19.3 min. The latency stage completed all 108 recall requests (12 per condition) and both live sessions; no job was skipped                                                                                                                                                                                                                                                                                                             |
-| 8.9 Second backbone           | Stops the 7B server and serves K2-Horizon-3.7B, one replica per GPU, on W1, W2a, W3, and W4-32 at horizon 100                                    | The first launch on port 8000 failed: the KV cache needed 2.25 GiB for one 16,384-token request and 1.74 GiB was free (`logs/vllm_secondary_8000.log`). The retry with `--enforce-eager` was healthy after 110 s, and port 8001 after 100 s. 720 recall and 329 probe jobs in 30.9 min                                                                                                                                                               |
-| 8.10 Independent families     | Serves Qwen2.5-7B-Instruct (also the contradiction judge) and Phi-4-mini-instruct on the same subset                                             | Qwen healthy after 200 s, 182 judge items, 560 recall and 329 probe jobs in 11.5 min; Phi-4-mini on two replicas after 150 s and 80 s, 560 recall and 329 probe jobs in 11.8 min; both sanity checks passed                                                                                                                                                                                                                                          |
+| 8.2 CPU experiments           | Replay and recovery on 42 sessions (13.1 min), 300 crash trials (6.2 min), and the sensitivity and budget sweeps on 80 sessions (0.1 min)        | Tables in [Replay, recovery, and crash consistency](#replay-recovery-and-crash-consistency) and [Sensitivity and budget sweeps](#sensitivity-and-budget-sweeps)                                                                                                                                                                                                                                                                                      |
+| 8.3 Primary server            | Waits for the background jobs (vLLM install 6.1 min, weights 1.9 min), starts K2-Horizon-7B with tensor parallelism                              | Healthy after 220 s on the first attempt; sanity check passed with `{"answer": 42}`                                                                                                                                                                                                                                                                                                                                                                  |
+| 8.4 Pilot and plan            | Runs the pilot and the planner                                                                                                                   | 256 jobs in 408 s; 0.00365 s per cost unit (steady state); 4.14 characters per token; mean output 145.3 tokens (recall) and 196.5 tokens (probes); median batched LLM time 79.7 s; 390 already-cached jobs discounted. 7.74 hours available, so **level 2** was chosen: 3 sessions per (world, horizon), 10 probes per (world, category), 2 live sessions per world                                                                                  |
+| 8.5 Recall                    | Runs 8,190 teacher-forced recall jobs (13 conditions)                                                                                            | 183.1 min. Per-condition table below                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| 8.6 Probes and repair         | Runs 4,800 attack and twin jobs under 5 context conditions, then 48 repair calls for rejected F4 outputs                                         | 44.8 min and 0.4 min; all 48 repairs regenerated                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 8.7 Live sessions             | Runs 98 live sessions (7 worlds x 2 scripts x 7 conditions) on the real turn graph                                                               | 74.6 min; 3,822 turns; no backend errors                                                                                                                                                                                                                                                                                                                                                                                                             |
+| 8.8 Seed variance and latency | Re-runs the calibration sessions with 2 more seeds for F4, B1, B2, and B3, then a single-stream latency benchmark                                | 26.8 min and 17.9 min. The latency stage completed all 108 recall requests (12 per condition) and both live sessions; no job was skipped                                                                                                                                                                                                                                                                                                             |
+| 8.9 Second backbone           | Stops the 7B server and serves K2-Horizon-3.7B, one replica per GPU, on W1, W2a, W3, and W4-32 at horizon 100                                    | The first launch on port 8000 failed, as in the previous run: after CUDA-graph capture only 1.74 GiB of GPU 0 was left for the KV cache, too little for one 16,384-token request (`logs/vllm_secondary_8000.log`). The retry with `--enforce-eager` had 2.96 GiB and was healthy after 90 s; port 8001 (GPU 1, 2.78 GiB) was healthy after 90 s on the first attempt. 1,080 recall and 550 probe jobs in 44.8 min                                    |
+| 8.10 Independent families     | Serves Qwen2.5-7B-Instruct (also the contradiction judge) and Phi-4-mini-instruct on the same subset                                             | Qwen healthy after 180 s, 364 judge items, 840 recall and 550 probe jobs in 14.8 min; Phi-4-mini on two replicas after 140 s and 100 s, 840 recall and 550 probe jobs in 15.5 min; both sanity checks passed                                                                                                                                                                                                                                         |
 
 Teacher-forced recall per condition, printed by cell 8.5 (all seven worlds, all ages; shares):
 
 | Condition | Rows missing | Parse success | Correct | Gold turn in prompt |
 | --------- | ------------ | ------------- | ------- | ------------------- |
-| F4        | 0            | 0.964         | 0.817   | 1.000               |
-| F4v1      | 0            | 0.976         | 0.879   | 1.000               |
-| B0        | 0            | 0.981         | 0.757   | 1.000               |
-| B1        | 0            | 0.998         | 0.290   | 0.348               |
-| B1x2      | 0            | 0.988         | 0.419   | 0.548               |
-| B2        | 0            | 0.988         | 0.838   | 1.000               |
-| B3        | 0            | 0.979         | 0.629   | 1.000               |
-| B4        | 0            | 0.967         | 0.717   | 0.874               |
-| B5        | 0            | 0.983         | 0.831   | 0.964               |
-| A1        | 0            | 0.986         | 0.174   | 0.200               |
-| A2        | 0            | 0.993         | 0.852   | 1.000               |
-| A3        | 0            | 0.995         | 0.788   | 0.990               |
-| A4        | 0            | 0.962         | 0.824   | 1.000               |
+| F4        | 0            | 0.965         | 0.821   | 1.000               |
+| F4v1      | 0            | 0.984         | 0.898   | 1.000               |
+| B0        | 0            | 0.981         | 0.765   | 1.000               |
+| B1        | 0            | 0.997         | 0.289   | 0.346               |
+| B1x2      | 0            | 0.989         | 0.429   | 0.551               |
+| B2        | 0            | 0.984         | 0.860   | 1.000               |
+| B3        | 0            | 0.979         | 0.651   | 0.998               |
+| B4        | 0            | 0.973         | 0.744   | 0.868               |
+| B5        | 0            | 0.979         | 0.835   | 0.963               |
+| A1        | 0            | 0.984         | 0.165   | 0.200               |
+| A2        | 0            | 0.990         | 0.868   | 1.000               |
+| A3        | 0            | 0.987         | 0.792   | 0.990               |
+| A4        | 0            | 0.963         | 0.827   | 1.000               |
 
 Attack success by commit mode, printed by cell 8.6 (all five contexts pooled):
 
 | Category    | Direct writes | Reducer only (A5) | Review-02 barrier | Corrected barrier |
 | ----------- | ------------- | ----------------- | ----------------- | ----------------- |
-| currency    | 0.129         | 0.124             | 0.081             | 0.000             |
-| fabrication | 0.043         | 0.000             | 0.000             | 0.000             |
+| currency    | 0.126         | 0.126             | 0.074             | 0.000             |
+| fabrication | 0.060         | 0.000             | 0.000             | 0.000             |
 | injection   | 0.000         | 0.000             | 0.000             | 0.000             |
-| secret      | 0.000         | 0.000             | 0.000             | 0.000             |
-| teleport    | 0.133         | 0.000             | 0.000             | 0.000             |
-| theft       | 0.124         | 0.000             | 0.000             | 0.000             |
+| secret      | 0.003         | 0.000             | 0.000             | 0.000             |
+| teleport    | 0.126         | 0.009             | 0.009             | 0.000             |
+| theft       | 0.134         | 0.017             | 0.000             | 0.000             |
 | trust       | 0.000         | 0.000             | 0.000             | 0.000             |
 
 Live turn shares, printed by cell 8.7:
 
 | Condition | Turns with a violation | Desync, draft | Desync, after repair | Parse success | Backend error |
 | --------- | ---------------------- | ------------- | -------------------- | ------------- | ------------- |
-| F1        | 0.777                  | 0.033         | 0.033                | 0.960         | 0.0           |
-| F2        | 0.000                  | 0.114         | 0.103                | 0.963         | 0.0           |
-| F3        | 0.703                  | 0.037         | 0.037                | 0.949         | 0.0           |
-| F4        | 0.000                  | 0.095         | 0.092                | 0.938         | 0.0           |
-| F4v1      | 0.004                  | 0.172         | 0.172                | 0.993         | 0.0           |
-| A5        | 0.007                  | 0.051         | 0.051                | 0.971         | 0.0           |
-| A6        | 0.000                  | 0.081         | 0.077                | 0.945         | 0.0           |
+| F1        | 0.863                  | 0.031         | 0.031                | 0.949         | 0.0           |
+| F2        | 0.000                  | 0.136         | 0.125                | 0.941         | 0.0           |
+| F3        | 0.859                  | 0.029         | 0.029                | 0.952         | 0.0           |
+| F4        | 0.000                  | 0.106         | 0.095                | 0.967         | 0.0           |
+| F4v1      | 0.007                  | 0.189         | 0.189                | 0.984         | 0.0           |
+| A5        | 0.007                  | 0.051         | 0.051                | 0.958         | 0.0           |
+| A6        | 0.000                  | 0.114         | 0.103                | 0.965         | 0.0           |
 
-Ladder plan from the pilot ([`metrics/budget_plan.csv`](notebooks/outputs/metrics/budget_plan.csv), estimated hours; the totals include the 1.15 factor that was removed after this run):
+Ladder plan from the pilot ([`metrics/budget_plan.csv`](notebooks/outputs/metrics/budget_plan.csv), estimated hours, without a safety factor):
 
 | Level | Sessions per (world, horizon) | Probes per (world, category) | Live sessions per world | Recall | Probes | Live | Seed variance | Total |
 | ----- | ----------------------------- | ---------------------------- | ----------------------- | ------ | ------ | ---- | ------------- | ----- |
-| 0     | 1                             | 4                            | 1                       | 0.93   | 0.62   | 0.91 | 0.56          | 3.49  |
-| **1** | **2**                         | **6**                        | **1**                   | 1.93   | 0.97   | 0.91 | 0.56          | 5.03  |
-| 2     | 3                             | 10                           | 2                       | 2.93   | 1.67   | 1.82 | 0.56          | 8.03  |
-| 3     | 4                             | 14                           | 2                       | 3.92   | 2.37   | 1.82 | 0.56          | 9.98  |
-| 4     | 6                             | 20                           | 3                       | 5.91   | 3.42   | 2.73 | 0.56          | 14.52 |
-| 5     | 10                            | 30                           | 4                       | 9.90   | 5.17   | 3.64 | 0.56          | 22.16 |
-| 6     | 20                            | 45                           | 6                       | 19.85  | 7.79   | 4.55 | 0.56          | 37.66 |
-| 7     | 40                            | 60                           | 10                      | 39.76  | 10.41  | 7.28 | 0.56          | 66.72 |
+| 0     | 1                             | 4                            | 1                       | 0.90   | 0.60   | 0.89 | 0.54          | 2.94  |
+| 1     | 2                             | 6                            | 1                       | 1.86   | 0.94   | 0.89 | 0.54          | 4.24  |
+| **2** | **3**                         | **10**                       | **2**                   | 2.82   | 1.62   | 1.77 | 0.54          | 6.76  |
+| 3     | 4                             | 14                           | 2                       | 3.78   | 2.30   | 1.77 | 0.54          | 8.40  |
+| 4     | 6                             | 20                           | 3                       | 5.71   | 3.32   | 2.66 | 0.54          | 12.23 |
+| 5     | 10                            | 30                           | 4                       | 9.55   | 5.01   | 3.54 | 0.54          | 18.65 |
+| 6     | 20                            | 45                           | 6                       | 19.15  | 7.55   | 4.43 | 0.54          | 31.68 |
+| 7     | 40                            | 60                           | 10                      | 38.37  | 10.10  | 7.09 | 0.54          | 56.10 |
 
-Level 7 matches the study's full targets. This run used level 1, so its samples are smaller than the study planned: 42 recall sessions per condition (420 probes, 216 of them at fact age 20 or more on held-out worlds), 294 attacks with 281 lawful twins per context, and 7 live sessions per condition. The estimate was conservative: the four LLM stages of level 1 took 3.69 hours against 5.03 estimated. Recall took longer than estimated (2.13 h against 1.93 h), while the probes, live sessions, and seed variance took less (0.46, 0.64, and 0.46 h against 0.97, 0.91, and 0.56 h).
+Level 7 matches the study's full targets. This run used level 2, so its samples are smaller than the study planned: 63 recall sessions per condition (630 probes, 324 of them at fact age 20 or more on held-out worlds), 490 attacks with 470 lawful twins per context, and 14 live sessions per condition. The estimate was still conservative: the four LLM stages of level 2 took 5.49 hours against 6.76 estimated (23% less). Recall took longer than estimated (3.05 h against 2.82 h), while the probes, live sessions, and seed variance took less (0.75, 1.24, and 0.45 h against 1.62, 1.77, and 0.54 h). Level 3 needed 8.40 hours, more than the 7.74 available.
 
 Stage wall times (`run_manifest.json`, minutes):
 
 | Stage                               | Minutes | Stage                             | Minutes          |
 | ----------------------------------- | ------- | --------------------------------- | ---------------- |
-| kernel packages                     | 0.23    | start primary server              | 4.08             |
-| unpack backend bundle               | 0.00    | pilot                             | 6.60             |
-| LIGHT worlds                        | 0.02    | recall (primary)                  | 127.77           |
-| generate recall sessions            | 0.05    | adversarial probes (primary)      | 27.72            |
-| generate adversarial probes         | 0.45    | dialogue repair (primary)         | 0.35             |
-| embeddings (GPU)                    | 2.08    | live sessions (primary)           | 38.12            |
-| budget calibration                  | 0.04    | seed variance                     | 27.70            |
-| self-test (mock LLM)                | 0.41    | latency benchmark (single stream) | 19.32            |
-| replay and recovery (CPU)           | 13.52   | secondary backbone                | 30.89            |
-| crash consistency (CPU)             | 6.71    | independent family qwen2.5-7b     | 11.53            |
-| sensitivity and budget sweeps (CPU) | 0.10    | independent family phi4-mini      | 11.75            |
-| wait for vLLM and weights           | 0.00    | **total run**                     | **333 (5.55 h)** |
+| kernel packages                     | 0.14    | start primary server              | 3.75             |
+| unpack backend bundle               | 0.00    | pilot                             | 6.84             |
+| LIGHT worlds                        | 0.03    | recall (primary)                  | 183.06           |
+| generate recall sessions            | 0.06    | adversarial probes (primary)      | 44.81            |
+| generate adversarial probes         | 0.66    | dialogue repair (primary)         | 0.40             |
+| embeddings (GPU)                    | 1.77    | live sessions (primary)           | 74.62            |
+| budget calibration                  | 0.03    | seed variance                     | 26.77            |
+| self-test (mock LLM)                | 0.35    | latency benchmark (single stream) | 17.87            |
+| replay and recovery (CPU)           | 13.10   | secondary backbone                | 44.80            |
+| crash consistency (CPU)             | 6.19    | independent family qwen2.5-7b     | 14.76            |
+| sensitivity and budget sweeps (CPU) | 0.09    | independent family phi4-mini      | 15.53            |
+| wait for vLLM and weights           | 0.00    | **total run**                     | **459 (7.65 h)** |
 
-The primary engine generated 10,583 responses and served 1,819 from its cache (pilot responses reused by the main stages); no request was skipped at a deadline. The secondary engine generated 1,049. The embedder fell back to the CPU for 543 texts.
+The primary engine generated 16,220 responses and served 2,860 from its cache (pilot responses reused by the main stages, and identical prompts shared by conditions, including 35 live turns); no request was skipped at a deadline. The secondary engine generated 1,630. The embedder fell back to the CPU for 1,056 texts.
 
 #### Section 9: results
 
-Cells 9.1 to 9.12 turn the raw rows into Tables 1 to 8, the secondary metrics, the hypothesis tests, and the error analysis. Cell 9.1 reports coverage: no row was lost to a deadline in any stage (recall 5,460, probes 2,875, live turns 1,911, seed variance 1,680, repairs 28, judge 182, latency 108, secondary recall 720 and probes 329, and 560 recall and 329 probe rows for each independent family). Every table is reproduced in [Evaluation results](#evaluation-results).
+Cells 9.1 to 9.12 turn the raw rows into Tables 1 to 8, the secondary metrics, the hypothesis tests, and the error analysis. Cell 9.1 reports coverage: no row was lost to a deadline in any stage (recall 8,190, probes 4,800, live turns 3,822, seed variance 1,680, repairs 48, judge 364, latency 108, secondary recall 1,080 and probes 550, and 840 recall and 550 probe rows for each independent family). Every table is reproduced in [Evaluation results](#evaluation-results).
 
 #### Section 10: figures
 
@@ -977,41 +975,41 @@ Cells 10.2 to 10.16 draw the 15 figures in `plots/` with one fixed palette, in w
 
 | Cell group               | What it does                                                                                                                                                                                                                                                                                                                                          | Saved output                                                                        |
 | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| 11.1 Annotation sheets   | Exports blinded, shuffled sheets for two human raters, with the condition names kept in separate key files                                                                                                                                                                                                                                            | 1,560 recall items, 200 dialogue-quality items, 133 contradiction items             |
+| 11.1 Annotation sheets   | Exports blinded, shuffled sheets for two human raters, with the condition names kept in separate key files                                                                                                                                                                                                                                            | 1,560 recall items, 200 dialogue-quality items, 194 contradiction items             |
 | 11.2 Human ratings       | Reads `human_ratings_*.csv` files when attached and reports means, Cohen's kappa, and judge agreement                                                                                                                                                                                                                                                 | `Human evaluation: pending (no human_ratings_*.csv attached)`                       |
 | 11.3 Tables and manifest | Writes [`metrics/article_tables.md`](notebooks/outputs/metrics/article_tables.md) (every table, the verdicts, and the run's limitations) and [`metrics/run_manifest.json`](notebooks/outputs/metrics/run_manifest.json) (bundle hash, hardware, package versions, configuration, plan, server attempts, stage times, cache statistics, W3 provenance) | Rendered markdown                                                                   |
-| 11.4 Package             | Zips everything under `/kaggle/working` into `outputs.zip`                                                                                                                                                                                                                                                                                            | `Zipped 95 files (0.19 GB) into /kaggle/working/outputs.zip; total run time 5.55 h` |
+| 11.4 Package             | Zips everything under `/kaggle/working` into `outputs.zip`                                                                                                                                                                                                                                                                                            | `Zipped 95 files (0.21 GB) into /kaggle/working/outputs.zip; total run time 7.65 h` |
 
 ## Evaluation results
 
-All numbers below come from the second Review-03 run (24 October 2026) in [`notebooks/outputs/metrics/`](notebooks/outputs/metrics/), unless a row is marked as corrected after the run. Values are mean [95% cluster-bootstrap CI]. "Held-out" means W2a to W4-128; W1 is the development world. Backbone: K2-Horizon-7B, fp16, reasoning effort low, thinking budget 192 tokens. Sample size is ladder level 1, so intervals are wide.
+All numbers below come from the third Review-03 run (24 to 25 October 2026) in [`notebooks/outputs/metrics/`](notebooks/outputs/metrics/). Values are mean [95% cluster-bootstrap CI]. "Held-out" means W2a to W4-128; W1 is the development world. Backbone: K2-Horizon-7B, fp16, reasoning effort low, thinking budget 192 tokens. Sample size is ladder level 2 (the third of eight levels), so intervals are still wide.
 
 ### Table 1: main comparison (held-out worlds)
 
 | Condition                                   | Recall, age 20+ (%) | Committed violations per 100 transitions | Probe attack success (%) | MRR@6                | P50 / P95 LLM latency (ms) | Input tokens per turn | Replay consistency (%) |
 | ------------------------------------------- | ------------------- | ---------------------------------------- | ------------------------ | -------------------- | -------------------------- | --------------------- | ---------------------- |
-| Proposed (dual-tier + barrier)              | 82.4 [78.0, 86.8]   | 0.0 [0.0, 0.0]                           | 0.0 [0.0, 0.0]           | 0.901 [0.878, 0.925] | 7147 / 8699                | 1445                  | 100.0 [100.0, 100.0]   |
-| Proposed before revision (Review-02)        | 84.7 [80.2, 89.1]   | 2.7 [0.0, 6.9]                           | 0.8 [0.0, 2.0]           | 0.875 [0.849, 0.902] | 7374 / 9139                | 1400                  | not replayable         |
-| B0 Full history                             | 78.2 [72.8, 83.5]   | 20.0 [11.8, 29.2]                        | 2.8 [0.8, 5.2]           | n/a                  | 11181 / 25306              | 4414                  | not replayable         |
-| B1 Rolling, B                               | 0.0 [0.0, 0.0]      | 20.0 [11.8, 29.2]                        | 2.8 [0.8, 5.2]           | n/a                  | 7137 / 8177                | 1478                  | not replayable         |
-| B1 Rolling, 2B                              | 19.0 [14.2, 24.1]   | n/a (no probe context)                   | n/a                      | n/a                  | 7284 / 9361                | 1876                  | not replayable         |
-| B2 Vector memory                            | 81.0 [74.3, 87.2]   | 21.2 [13.9, 29.1]                        | 4.8 [2.4, 7.5]           | 0.727 [0.700, 0.755] | 6556 / 10870               | 1451                  | not replayable         |
-| B3 Generic RAG                              | 58.8 [52.3, 64.8]   | 36.1 [27.1, 45.7]                        | 5.2 [2.8, 7.9]           | 0.692 [0.659, 0.727] | 6317 / 10500               | 1506                  | not replayable         |
-| B4 Scored memory stream (Generative Agents) | 61.1 [55.4, 67.2]   | n/a (no probe context)                   | n/a                      | 0.563 [0.526, 0.600] | 6611 / 11825               | 1449                  | not replayable         |
-| B5 Forgetting-curve memory (MemoryBank)     | 78.7 [73.3, 84.1]   | n/a (no probe context)                   | n/a                      | 0.710 [0.677, 0.742] | 6737 / 23344               | 1450                  | not replayable         |
+| Proposed (dual-tier + barrier)              | 83.0 [79.4, 86.7]   | 0.0 [0.0, 0.0]                           | 0.0 [0.0, 0.0]           | 0.910 [0.889, 0.931] | 6593 / 8120                | 1444                  | 100.0 [100.0, 100.0]   |
+| Proposed before revision (Review-02)        | 88.6 [85.1, 91.9]   | 2.4 [0.0, 5.4]                           | 0.7 [0.0, 1.7]           | 0.888 [0.864, 0.913] | 6888 / 8559                | 1399                  | not replayable         |
+| B0 Full history                             | 77.8 [73.4, 82.2]   | 21.7 [15.2, 28.4]                        | 3.6 [1.9, 5.5]           | n/a                  | 10820 / 24549              | 4406                  | not replayable         |
+| B1 Rolling, B                               | 0.0 [0.0, 0.0]      | 21.7 [15.2, 28.4]                        | 3.6 [1.9, 5.5]           | n/a                  | 6725 / 7665                | 1478                  | not replayable         |
+| B1 Rolling, 2B                              | 19.8 [15.5, 24.2]   | n/a (no probe context)                   | n/a                      | n/a                  | 6903 / 8781                | 1877                  | not replayable         |
+| B2 Vector memory                            | 84.3 [79.3, 88.8]   | 23.4 [17.4, 29.9]                        | 5.5 [3.3, 7.6]           | 0.742 [0.720, 0.765] | 6069 / 10061               | 1451                  | not replayable         |
+| B3 Generic RAG                              | 61.7 [55.8, 67.4]   | 39.7 [32.5, 46.9]                        | 7.4 [5.0, 10.0]          | 0.700 [0.675, 0.726] | 5876 / 9752                | 1506                  | not replayable         |
+| B4 Scored memory stream (Generative Agents) | 63.0 [58.6, 67.5]   | n/a (no probe context)                   | n/a                      | 0.557 [0.527, 0.586] | 6115 / 10972               | 1449                  | not replayable         |
+| B5 Forgetting-curve memory (MemoryBank)     | 79.9 [75.5, 84.5]   | n/a (no probe context)                   | n/a                      | 0.723 [0.697, 0.749] | 6165 / 21517               | 1450                  | not replayable         |
 
 How to read Table 1:
 
-- Memory budgets are equal, so input tokens are nearly equal for every condition except B0 (about 3 times more) and B1x2.
-- F4's long-range recall (82.4%) is not significantly different from B2 (81.0%, Holm p = 0.74), B5 (78.7%, Holm p = 0.54), or the Review-02 system F4v1 (84.7%, Holm p = 0.54). It is significantly above B1, B3, and B4.
+- Memory budgets are equal, so input tokens are nearly equal for every condition except B0 (about 3 times more) and B1x2. F4v1 uses the shorter Review-02 prompt, so it sends about 45 fewer tokens per turn than F4 although its memory is unbudgeted.
+- F4's long-range recall (83.0%) is not significantly different from B2 (84.3%, Holm p = 0.68) or B5 (79.9%, Holm p = 0.27). It is significantly **below** the Review-02 system F4v1 (88.6%, Holm p = 0.019), which is new in this run (see [Table 2](#table-2-recall-by-fact-age-held-out-worlds-)). It is significantly above B1, B3, and B4.
 - Through the corrected barrier, no probe output committed a state violation (0.0 per 100 transitions) and no attack succeeded, including the secret category (0.0%).
 - B0 and B1 have identical violation and attack figures because probe prompts carry only 3 turns of history, so both conditions sent the same prompts.
-- MRR@6 scores only probes older than the 8-turn buffer, for every condition (288 held-out probes per condition), because the backend does not retrieve a turn the buffer already holds.
-- Latency is single-stream, 12 recall requests per condition. B0's long prompts cost the most; B5's P95 comes from two slow requests (14.1 s and 34.7 s), visible in figure 07.
+- MRR@6 scores only probes older than the 8-turn buffer, for every condition (432 held-out probes per condition), because the backend does not retrieve a turn the buffer already holds.
+- Latency is single-stream, 12 recall requests per condition. B0's long prompts cost the most; B5's P95 comes from two slow requests (12.9 s and 32.0 s), visible in figure 07.
 
 ![Recall by fact age: the system against the baselines (left) and against its memory ablations (right)](notebooks/outputs/plots/02_recall_by_fact_age.png)
 
-The rolling windows fall to zero once a fact is older than the window: B1 after age 10 and B1x2 after age 20. F4, F4v1, B2, and B5 stay between about 67% and 96% from age 5 to 160. B4 (scored memory stream) falls to 35.4% at age 80 and 29.2% at age 160, because its recency term pushes old memories out of the budget. Among the ablations, only removing long term memory (A1) collapses recall.
+The rolling windows fall to zero once a fact is older than the window: B1 after age 10 and B1x2 after age 20. F4, F4v1, B2, and B5 stay between about 72% and 96% from age 5 to 160. B4 (scored memory stream) falls to 37.5% at age 80 and 22.2% at age 160, because its recency term pushes old memories out of the budget. Among the ablations, only removing long term memory (A1) collapses recall.
 
 ![Token cost against long-range recall](notebooks/outputs/plots/03_cost_vs_recall.png)
 
@@ -1019,64 +1017,64 @@ Up and to the left is better. All budgeted conditions sit near 1,450 input token
 
 ### Table 2: recall by fact age (held-out worlds, %)
 
-| Condition                                   | 5                  | 10                | 20                | 40                | 80                | 160                |
-| ------------------------------------------- | ------------------ | ----------------- | ----------------- | ----------------- | ----------------- | ------------------ |
-| Proposed (dual-tier + barrier)              | 81.9 [73.6, 90.3]  | 80.6 [70.8, 90.3] | 83.3 [75.0, 91.7] | 79.2 [69.4, 87.5] | 81.2 [68.8, 93.8] | 91.7 [79.2, 100.0] |
-| Proposed before revision (Review-02)        | 95.8 [90.3, 100.0] | 90.3 [81.9, 97.2] | 81.9 [72.2, 90.3] | 86.1 [79.2, 93.1] | 81.2 [70.8, 89.6] | 95.8 [87.5, 100.0] |
-| B0 Full history                             | 77.8 [66.7, 87.5]  | 77.8 [69.4, 86.1] | 81.9 [72.2, 90.3] | 72.2 [62.5, 81.9] | 79.2 [66.7, 89.6] | 83.3 [70.8, 95.8]  |
-| B1 Rolling, B                               | 79.2 [69.4, 88.9]  | 63.9 [51.4, 76.4] | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]     |
-| B1 Rolling, 2B                              | 80.6 [72.2, 88.9]  | 73.6 [63.9, 81.9] | 56.9 [44.4, 69.4] | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]     |
-| B2 Vector memory                            | 86.1 [77.8, 93.1]  | 87.5 [79.2, 94.4] | 81.9 [72.2, 90.3] | 79.2 [69.4, 88.9] | 77.1 [64.6, 89.6] | 91.7 [79.2, 100.0] |
-| B3 Generic RAG                              | 69.4 [59.7, 79.2]  | 65.3 [54.2, 76.4] | 59.7 [48.6, 70.8] | 56.9 [45.8, 68.1] | 58.3 [45.8, 70.8] | 62.5 [45.8, 79.2]  |
-| B4 Scored memory stream (Generative Agents) | 87.5 [80.6, 94.4]  | 83.3 [73.6, 91.7] | 81.9 [72.2, 90.3] | 68.1 [58.3, 77.8] | 35.4 [22.9, 47.9] | 29.2 [12.5, 45.8]  |
-| B5 Forgetting-curve memory (MemoryBank)     | 90.3 [83.3, 95.8]  | 88.9 [80.6, 95.8] | 81.9 [73.6, 88.9] | 80.6 [72.2, 88.9] | 66.7 [52.1, 79.2] | 87.5 [75.0, 100.0] |
-| A1 No long-term memory                      | 88.9 [81.9, 95.8]  | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]     |
-| A2 No short-term buffer                     | 86.1 [77.8, 93.1]  | 88.9 [81.9, 95.8] | 84.7 [76.4, 91.7] | 84.7 [75.0, 93.1] | 81.2 [70.8, 89.6] | 87.5 [75.0, 100.0] |
-| A3 No scoping                               | 72.2 [62.5, 81.9]  | 84.7 [76.4, 91.7] | 86.1 [76.4, 94.4] | 72.2 [62.5, 81.9] | 77.1 [64.6, 87.5] | 87.5 [75.0, 100.0] |
-| A4 No fallback                              | 87.5 [80.6, 94.4]  | 79.2 [69.4, 88.9] | 83.3 [75.0, 91.7] | 79.2 [69.4, 87.5] | 81.2 [68.8, 93.8] | 91.7 [79.2, 100.0] |
-| n (F4 probes)                               | 72                 | 72                | 72                | 72                | 48                | 24                 |
+| Condition                                   | 5                 | 10                | 20                | 40                | 80                | 160                |
+| ------------------------------------------- | ----------------- | ----------------- | ----------------- | ----------------- | ----------------- | ------------------ |
+| Proposed (dual-tier + barrier)              | 78.7 [71.3, 85.2] | 85.2 [77.8, 91.7] | 83.3 [76.9, 89.8] | 81.5 [74.1, 88.0] | 80.6 [70.8, 88.9] | 91.7 [83.3, 100.0] |
+| Proposed before revision (Review-02)        | 96.3 [92.6, 99.1] | 87.0 [80.6, 92.6] | 86.1 [79.6, 92.6] | 90.7 [85.2, 95.4] | 86.1 [79.2, 93.1] | 94.4 [86.1, 100.0] |
+| B0 Full history                             | 83.3 [75.0, 90.7] | 76.9 [69.4, 84.3] | 77.8 [69.4, 86.1] | 75.9 [67.6, 84.3] | 81.9 [72.2, 90.3] | 75.0 [63.9, 86.1]  |
+| B1 Rolling, B                               | 80.6 [73.1, 88.0] | 59.3 [49.1, 69.4] | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]     |
+| B1 Rolling, 2B                              | 75.9 [68.5, 83.3] | 78.7 [71.3, 85.2] | 59.3 [48.1, 70.4] | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]     |
+| B2 Vector memory                            | 85.2 [78.7, 90.7] | 88.9 [82.4, 94.4] | 85.2 [78.7, 91.7] | 83.3 [75.0, 90.7] | 80.6 [70.8, 90.3] | 91.7 [83.3, 100.0] |
+| B3 Generic RAG                              | 68.5 [60.2, 76.9] | 66.7 [57.4, 75.0] | 62.0 [52.8, 71.3] | 62.0 [52.8, 71.3] | 61.1 [50.0, 72.2] | 61.1 [47.2, 75.0]  |
+| B4 Scored memory stream (Generative Agents) | 85.2 [78.7, 90.7] | 90.7 [84.3, 96.3] | 85.2 [78.7, 91.7] | 71.3 [63.9, 78.7] | 37.5 [26.4, 48.6] | 22.2 [8.3, 36.1]   |
+| B5 Forgetting-curve memory (MemoryBank)     | 87.0 [81.5, 92.6] | 90.7 [84.3, 96.3] | 85.2 [78.7, 90.7] | 81.5 [75.0, 88.0] | 72.2 [61.1, 81.9] | 75.0 [58.3, 88.9]  |
+| A1 No long-term memory                      | 82.4 [75.0, 88.9] | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]     |
+| A2 No short-term buffer                     | 85.2 [79.6, 90.7] | 88.9 [83.3, 94.4] | 88.0 [82.4, 93.5] | 85.2 [77.8, 91.7] | 84.7 [76.4, 93.1] | 88.9 [77.8, 97.2]  |
+| A3 No scoping                               | 63.9 [55.6, 72.2] | 85.2 [78.7, 90.7] | 85.2 [77.8, 91.7] | 76.9 [69.4, 84.3] | 79.2 [69.4, 87.5] | 86.1 [75.0, 94.4]  |
+| A4 No fallback                              | 83.3 [76.9, 89.8] | 83.3 [75.9, 89.8] | 83.3 [76.9, 89.8] | 80.6 [73.1, 87.0] | 81.9 [72.2, 90.3] | 91.7 [83.3, 100.0] |
+| n (F4 probes)                               | 108               | 108               | 108               | 108               | 72                | 36                 |
 
-F4 answered 81.9% of held-out age-5 probes against 95.8% for F4v1, although the gold turn was in both prompts, as in the first Review-03 run. In all 16 of F4's wrong age-5 answers (all worlds, against 3 for F4v1) the distractor was also in the prompt. With the budgeted packing, F4 shows an age-5 fact once, in the buffer; F4v1 also repeats it among the retrieved memories. The run does not test whether that repetition is the cause.
+F4v1 recalls more than F4 at every fact age. The gap is largest at age 5 (78.7% against 96.3%), although the gold turn was in both prompts; in all 28 of F4's wrong age-5 answers (all worlds, against 4 for F4v1) the distractor was also in the prompt. With the budgeted packing, F4 shows an age-5 fact once, in the buffer, while F4v1 also repeats it among the retrieved memories. From age 10 the gap is 2 to 9 points. Over all probes at age 20 or more the difference is significant (exploratory McNemar, 324 probes, Holm p = 0.019). F4 differs from F4v1 in both the packing rule and the prompt, and the run does not separate the two.
 
 ### Retrieval quality
 
 ![Retrieval quality: MRR@6 and Recall@6 per retrieval condition on probes older than the buffer (left) and the share of probes whose gold turn reached the prompt, by fact age (right)](notebooks/outputs/plots/04_retrieval_quality.png)
 
-On held-out probes older than the buffer (288 per condition):
+On held-out probes older than the buffer (432 per condition):
 
 | Condition | MRR@6                | Recall@6             |
 | --------- | -------------------- | -------------------- |
-| F4        | 0.901 [0.878, 0.925] | 100.0 [100.0, 100.0] |
-| F4v1      | 0.875 [0.849, 0.902] | 100.0 [100.0, 100.0] |
-| A2        | 0.875 [0.849, 0.902] | 100.0 [100.0, 100.0] |
-| A3        | 0.724 [0.691, 0.757] | 98.6 [97.2, 99.7]    |
-| A4        | 0.948 [0.928, 0.968] | 100.0 [100.0, 100.0] |
-| B2        | 0.727 [0.700, 0.755] | 100.0 [100.0, 100.0] |
-| B3        | 0.692 [0.659, 0.727] | 100.0 [100.0, 100.0] |
-| B4        | 0.563 [0.526, 0.600] | 83.7 [80.7, 86.7]    |
-| B5        | 0.710 [0.677, 0.742] | 95.5 [93.1, 97.8]    |
+| F4        | 0.910 [0.889, 0.931] | 100.0 [100.0, 100.0] |
+| F4v1      | 0.888 [0.864, 0.913] | 100.0 [100.0, 100.0] |
+| A2        | 0.888 [0.864, 0.913] | 100.0 [100.0, 100.0] |
+| A3        | 0.732 [0.707, 0.759] | 98.6 [97.5, 99.5]    |
+| A4        | 0.954 [0.939, 0.969] | 100.0 [100.0, 100.0] |
+| B2        | 0.742 [0.720, 0.765] | 100.0 [100.0, 100.0] |
+| B3        | 0.700 [0.675, 0.726] | 99.8 [99.3, 100.0]   |
+| B4        | 0.557 [0.527, 0.586] | 82.2 [79.5, 84.8]    |
+| B5        | 0.723 [0.697, 0.749] | 95.4 [93.3, 97.3]    |
 
-Scoping lifts MRR@6 from 0.724 without it (A3) to 0.901. Turning the fallback off (A4) ranks even better (0.948) on this benchmark, as in the earlier runs.
+MRR@6 is from Tables 1 and 4 and Recall@6 from the secondary metrics below. Scoping lifts MRR@6 from 0.732 without it (A3) to 0.910. Turning the fallback off (A4) ranks even better (0.954) on this benchmark, as in the earlier runs.
 
 Secondary metrics per condition (held-out worlds, [`metrics/secondary_metrics_recall.csv`](notebooks/outputs/metrics/secondary_metrics_recall.csv)):
 
 | Condition                                   | Parse success (%)  | Gold in prompt (%)   | Distractor in prompt (%) | Confused with distractor (%) | Recall@6 (%)         | Input tokens / 100 turns | Output tokens / 100 turns | Prompt trimmed by cap (%) |
 | ------------------------------------------- | ------------------ | -------------------- | ------------------------ | ---------------------------- | -------------------- | ------------------------ | ------------------------- | ------------------------- |
-| Proposed (dual-tier + barrier)              | 96.1 [93.5, 98.3]  | 100.0 [100.0, 100.0] | 55.3 [50.5, 60.4]        | 2.2 [0.8, 3.9]               | 100.0 [100.0, 100.0] | 144,512                  | 14,866                    | 0.0                       |
-| Proposed before revision (Review-02)        | 97.2 [95.2, 98.9]  | 100.0 [100.0, 100.0] | 57.2 [52.2, 62.6]        | 0.8 [0.0, 1.8]               | 100.0 [100.0, 100.0] | 140,045                  | 15,388                    | 0.0                       |
-| B0 Full history                             | 98.6 [97.4, 99.7]  | 100.0 [100.0, 100.0] | 100.0 [100.0, 100.0]     | 4.7 [2.8, 6.8]               | n/a                  | 441,351                  | 13,578                    | 0.0                       |
-| B1 Rolling, B                               | 99.7 [99.1, 100.0] | 34.4 [30.7, 38.3]    | 57.5 [53.2, 62.1]        | 12.5 [8.4, 16.8]             | n/a                  | 147,773                  | 14,124                    | 0.0                       |
-| B1 Rolling, 2B                              | 98.6 [97.4, 99.7]  | 54.4 [50.0, 59.2]    | 73.6 [69.7, 77.7]        | 11.7 [8.8, 14.8]             | n/a                  | 187,553                  | 13,357                    | 0.0                       |
-| B2 Vector memory                            | 98.9 [97.8, 99.7]  | 100.0 [100.0, 100.0] | 98.9 [97.5, 100.0]       | 0.3 [0.0, 0.8]               | 100.0 [100.0, 100.0] | 145,077                  | 15,184                    | 0.0                       |
-| B3 Generic RAG                              | 98.1 [96.3, 99.4]  | 100.0 [100.0, 100.0] | 94.4 [91.5, 96.9]        | 10.0 [7.6, 12.4]             | 100.0 [100.0, 100.0] | 150,573                  | 14,925                    | 0.0                       |
-| B4 Scored memory stream (Generative Agents) | 96.9 [95.2, 98.6]  | 86.9 [84.5, 89.4]    | 91.7 [89.3, 93.9]        | 1.9 [0.8, 3.3]               | 83.7 [80.7, 86.7]    | 144,938                  | 15,386                    | 0.0                       |
-| B5 Forgetting-curve memory (MemoryBank)     | 98.3 [97.1, 99.4]  | 96.4 [94.4, 98.3]    | 90.6 [87.3, 93.8]        | 0.8 [0.0, 1.9]               | 95.5 [93.1, 97.8]    | 145,012                  | 15,272                    | 0.0                       |
-| A1 No long-term memory                      | 98.6 [97.1, 99.7]  | 20.0 [19.0, 21.1]    | 52.5 [48.1, 57.3]        | 15.8 [11.6, 20.4]            | n/a                  | 140,398                  | 14,523                    | 0.0                       |
-| A2 No short-term buffer                     | 99.4 [98.6, 100.0] | 100.0 [100.0, 100.0] | 11.4 [8.2, 15.0]         | 0.0 [0.0, 0.0]               | 100.0 [100.0, 100.0] | 118,208                  | 14,384                    | 0.0                       |
-| A3 No scoping                               | 99.4 [98.6, 100.0] | 98.9 [97.8, 99.7]    | 90.8 [88.1, 93.5]        | 1.9 [0.6, 3.5]               | 98.6 [97.2, 99.7]    | 144,391                  | 14,724                    | 0.0                       |
-| A4 No fallback                              | 95.8 [93.3, 98.1]  | 100.0 [100.0, 100.0] | 50.6 [46.4, 55.1]        | 1.7 [0.3, 3.3]               | 100.0 [100.0, 100.0] | 144,221                  | 14,946                    | 0.0                       |
+| Proposed (dual-tier + barrier)              | 96.1 [94.3, 97.8]  | 100.0 [100.0, 100.0] | 54.1 [50.2, 58.2]        | 2.0 [0.9, 3.3]               | 100.0 [100.0, 100.0] | 144,375                  | 14,859                    | 0.0                       |
+| Proposed before revision (Review-02)        | 98.1 [96.6, 99.3]  | 100.0 [100.0, 100.0] | 57.0 [52.9, 61.4]        | 0.9 [0.2, 1.7]               | 100.0 [100.0, 100.0] | 139,898                  | 15,292                    | 0.0                       |
+| B0 Full history                             | 98.5 [97.5, 99.4]  | 100.0 [100.0, 100.0] | 100.0 [100.0, 100.0]     | 4.4 [2.8, 6.2]               | n/a                  | 440,632                  | 13,635                    | 0.0                       |
+| B1 Rolling, B                               | 99.6 [99.1, 100.0] | 34.1 [31.0, 37.2]    | 58.7 [54.9, 62.6]        | 13.9 [10.7, 17.1]            | n/a                  | 147,781                  | 14,174                    | 0.0                       |
+| B1 Rolling, 2B                              | 98.7 [97.7, 99.5]  | 54.6 [50.9, 58.5]    | 73.9 [70.5, 77.5]        | 12.8 [10.4, 15.1]            | n/a                  | 187,677                  | 13,356                    | 0.0                       |
+| B2 Vector memory                            | 98.3 [97.3, 99.3]  | 100.0 [100.0, 100.0] | 99.1 [98.0, 99.8]        | 0.2 [0.0, 0.6]               | 100.0 [100.0, 100.0] | 145,076                  | 15,096                    | 0.0                       |
+| B3 Generic RAG                              | 98.3 [97.3, 99.3]  | 99.8 [99.4, 100.0]   | 94.8 [92.5, 96.8]        | 9.8 [7.7, 12.0]              | 99.8 [99.3, 100.0]   | 150,616                  | 14,984                    | 0.0                       |
+| B4 Scored memory stream (Generative Agents) | 97.6 [96.2, 98.9]  | 85.7 [83.6, 87.9]    | 90.9 [88.6, 93.2]        | 2.0 [0.9, 3.3]               | 82.2 [79.6, 84.8]    | 144,945                  | 15,261                    | 0.0                       |
+| B5 Forgetting-curve memory (MemoryBank)     | 98.0 [96.9, 98.9]  | 96.3 [94.6, 97.9]    | 91.1 [88.5, 93.7]        | 0.4 [0.0, 0.9]               | 95.4 [93.3, 97.4]    | 145,025                  | 15,261                    | 0.0                       |
+| A1 No long-term memory                      | 98.1 [96.8, 99.3]  | 20.0 [19.1, 20.9]    | 52.6 [48.9, 56.4]        | 15.9 [12.6, 19.4]            | n/a                  | 140,363                  | 14,611                    | 0.0                       |
+| A2 No short-term buffer                     | 99.3 [98.5, 99.8]  | 100.0 [100.0, 100.0] | 10.2 [7.7, 13.0]         | 0.0 [0.0, 0.0]               | 100.0 [100.0, 100.0] | 118,086                  | 14,273                    | 0.0                       |
+| A3 No scoping                               | 98.5 [97.5, 99.4]  | 98.9 [98.0, 99.6]    | 90.7 [88.7, 92.8]        | 1.7 [0.7, 2.8]               | 98.6 [97.5, 99.5]    | 144,420                  | 14,801                    | 0.0                       |
+| A4 No fallback                              | 95.9 [94.1, 97.6]  | 100.0 [100.0, 100.0] | 49.6 [46.4, 53.1]        | 1.7 [0.7, 2.9]               | 100.0 [100.0, 100.0] | 144,119                  | 14,945                    | 0.0                       |
 
-Scoping keeps distractors out: 55.3% of F4 prompts contained the distractor against 98.9% for B2 and 90.8% without scoping (A3). Token cost is given in tokens only, because the models were self-hosted.
+Scoping keeps distractors out: 54.1% of F4 prompts contained the distractor against 99.1% for B2 and 90.7% without scoping (A3). Token cost is given in tokens only, because the models were self-hosted.
 
 ### Sensitivity and budget sweeps
 
@@ -1094,7 +1092,7 @@ Retrieval-only sweeps on W1 and W2 ([`metrics/sensitivity_sweeps.csv`](notebooks
 
 ![Sensitivity of the memory mechanism to buffer size, k, and fallback threshold](notebooks/outputs/plots/09_sensitivity_sweeps.png)
 
-Buffer size does not change retrieval metrics, since the buffer is not part of retrieval. Lowering k to 3 loses the gold turn in 3.5% of probes. Turning the fallback off (threshold 0) gives the best MRR@k (0.923), and a threshold of 6 the worst (0.830). These CPU sweeps do not call the LLM, so they match the first Review-03 run exactly.
+Buffer size does not change retrieval metrics, since the buffer is not part of retrieval. Lowering k to 3 loses the gold turn in 3.5% of probes. Turning the fallback off (threshold 0) gives the best MRR@k (0.923), and a threshold of 6 the worst (0.830). These CPU sweeps do not call the LLM, so they match the earlier Review-03 runs exactly.
 
 Budget sweep (share of probes whose gold turn reaches the prompt, by multiple of the 1,600-character budget; printed by cell 8.2, rows in [`metrics/budget_sweep_rows.csv`](notebooks/outputs/metrics/budget_sweep_rows.csv)):
 
@@ -1108,86 +1106,89 @@ Budget sweep (share of probes whose gold turn reaches the prompt, by multiple of
 
 ![Budget sweep (left) and recall against tokens with P50 latency as marker size (right)](notebooks/outputs/plots/15_budget_tradeoff.png)
 
-At a quarter of the budget, F4 keeps the gold turn in only 58% of prompts, probably because the two newest buffer turns are always kept and take most of a 400-character budget; from half the budget up it matches B2. In the right panel the marker sizes are close, because every condition except B0 has a single-stream P50 between 6.3 and 7.4 s.
+At a quarter of the budget, F4 keeps the gold turn in only 58% of prompts, probably because the two newest buffer turns are always kept and take most of a 400-character budget; from half the budget up it matches B2. In the right panel the marker sizes are close, because every condition except B0 has a single-stream P50 between 5.9 and 6.9 s.
 
 ### Table 5: adversarial probes by category
 
-Outputs from all five context conditions are pooled (42 attacks per category and context); each output is committed four ways.
+Outputs from all five context conditions are pooled (70 attacks per category and context); each output is committed four ways.
 
 | Category    | n attacks | Direct writes (%) | Reducer only A5 (%) | Review-02 barrier (%) | Corrected barrier (%) | False rejection of lawful twin (%) | Validator gap, Review-02 (%) | Validator gap, corrected (%) |
 | ----------- | --------- | ----------------- | ------------------- | --------------------- | --------------------- | ---------------------------------- | ---------------------------- | ---------------------------- |
-| teleport    | 210       | 13.3 [6.2, 21.4]  | 0.0 [0.0, 0.0]      | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]                     | 10.3 [1.2, 21.8]             | 0.0 [0.0, 0.0]               |
-| fabrication | 210       | 4.3 [1.4, 8.1]    | 0.0 [0.0, 0.0]      | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]                     | 8.3 [0.0, 30.0]              | 0.0 [0.0, 0.0]               |
-| theft       | 210       | 12.4 [5.7, 20.0]  | 0.0 [0.0, 0.0]      | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]                     | 0.0 [0.0, 0.0]               | 0.0 [0.0, 0.0]               |
-| trust       | 210       | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]      | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]                     | 0.0 [0.0, 0.0]               | 0.0 [0.0, 0.0]               |
-| currency    | 210       | 12.9 [5.2, 21.9]  | 12.4 [4.8, 21.4]    | 8.1 [1.9, 15.2]       | 0.0 [0.0, 0.0]        | 4.5 [0.0, 15.5]                    | 63.0 [24.0, 100.0]           | 0.0 [0.0, 0.0]               |
-| injection   | 210       | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]      | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]        | n/a (no lawful proposals)          | n/a                          | n/a                          |
-| secret      | 210       | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]      | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]                     | 100.0 [100.0, 100.0]         | 0.0 [0.0, 0.0]               |
-| all         | 1470      | 6.1 [4.1, 8.4]    | 1.8 [0.6, 3.3]      | 1.2 [0.3, 2.3]        | 0.0 [0.0, 0.0]        | 0.7 [0.0, 2.4]                     | 16.4 [7.6, 26.9]             | 0.0 [0.0, 0.0]               |
+| teleport    | 350       | 12.6 [7.1, 18.9]  | 0.9 [0.0, 2.0]      | 0.9 [0.0, 2.0]        | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]                     | 7.8 [2.5, 14.5]              | 0.0 [0.0, 0.0]               |
+| fabrication | 350       | 6.0 [2.6, 10.0]   | 0.0 [0.0, 0.0]      | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]                     | 4.7 [0.0, 15.0]              | 0.0 [0.0, 0.0]               |
+| theft       | 350       | 13.4 [8.0, 19.4]  | 1.7 [0.0, 4.3]      | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]                     | 0.0 [0.0, 0.0]               | 0.0 [0.0, 0.0]               |
+| trust       | 350       | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]      | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]        | 7.1 [0.0, 30.0]                    | 0.0 [0.0, 0.0]               | 0.0 [0.0, 0.0]               |
+| currency    | 350       | 12.6 [6.9, 18.9]  | 12.6 [6.9, 18.9]    | 7.4 [3.4, 12.0]       | 0.0 [0.0, 0.0]        | 3.0 [0.0, 10.3]                    | 59.1 [32.5, 88.5]            | 0.0 [0.0, 0.0]               |
+| injection   | 350       | 0.0 [0.0, 0.0]    | 0.0 [0.0, 0.0]      | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]        | n/a (no lawful proposals)          | n/a                          | n/a                          |
+| secret      | 350       | 0.3 [0.0, 0.9]    | 0.0 [0.0, 0.0]      | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]        | 0.0 [0.0, 0.0]                     | 100.0 [100.0, 100.0]         | 0.0 [0.0, 0.0]               |
+| all         | 2450      | 6.4 [4.8, 8.2]    | 2.2 [1.2, 3.3]      | 1.2 [0.6, 2.0]        | 0.0 [0.0, 0.0]        | 0.6 [0.0, 1.7]                     | 13.6 [8.0, 20.1]             | 0.0 [0.0, 0.0]               |
 
 Oracle codes behind the direct-write violations ([`metrics/probe_oracle_codes_direct.csv`](notebooks/outputs/metrics/probe_oracle_codes_direct.csv), counts):
 
-| Category    | O1  | O3  | O5  | O7  | O8  |
-| ----------- | --- | --- | --- | --- | --- |
-| currency    | 1   | 0   | 0   | 9   | 17  |
-| fabrication | 9   | 0   | 2   | 0   | 0   |
-| teleport    | 28  | 15  | 9   | 0   | 0   |
-| theft       | 26  | 0   | 0   | 0   | 0   |
+| Category    | O1  | O3  | O4  | O5  | O7  | O8  |
+| ----------- | --- | --- | --- | --- | --- | --- |
+| currency    | 0   | 0   | 0   | 0   | 18  | 26  |
+| fabrication | 21  | 0   | 0   | 2   | 0   | 0   |
+| secret      | 1   | 0   | 0   | 1   | 0   | 0   |
+| teleport    | 41  | 28  | 0   | 13  | 0   | 0   |
+| theft       | 41  | 0   | 6   | 0   | 0   | 0   |
 
 ![Attack success by commit mode (left) and the corrected barrier's false rejection and validator gap by category (right)](notebooks/outputs/plots/05_adversarial_probes.png)
 
-The corrected barrier accepted no unlawful proposal (validator gap 0.0% in every category, against 16.4% for the Review-02 validator and 63.0% of its currency proposals) and let no attack succeed. The price is rejected lawful currency twins (4.5% of lawful currency proposals, 0.7% overall). Trust attacks never succeeded in any mode, because the model never proposed a change above the bound, and no secret-category reply was flagged as a leak. Most of the protection comes from the reducer alone: committing every schema-valid proposal as an event (A5) cut attack success from 6.1% to 1.8%; the remaining A5 successes are all currency.
+The corrected barrier accepted no unlawful proposal (validator gap 0.0% in every category, against 13.6% for the Review-02 validator and 59.1% of its currency proposals) and let no attack succeed. It rejected 4 of 684 lawful twin proposals (3 of 100 currency, 1 of 14 trust), the same 4 that the Review-02 validator rejected. All four are trust changes that name the NPC by its display name ("Merchant", "Bandit") instead of its id (`merchant`, `bandit`). The validator must reject them; the run's oracle labelled them lawful only because it did not check relationship ids, so these are labelling disagreements, not lost game actions (the notebook's oracle now checks them, see [Changes made after the run](#changes-made-after-the-run)). Trust and injection attacks never succeeded in any mode. The one secret-category success under direct writes is a committed state change (O1 and O5), not a leak.
+
+Most of the protection comes from the reducer alone: committing every schema-valid proposal as an event (A5) cut attack success from 6.4% to 2.2%. Its remaining 53 successes are 44 currency exploits, 6 thefts of an object from another location (one W3 object, in three contexts), and 3 NPC relocations to non-adjacent places. The Review-02 barrier stopped the thefts but passed 26 currency exploits and the 3 NPC relocations, which it did not check.
 
 ### Table 3: factorial separation (memory x control, live sessions)
 
 | Cell                  | Recall, live probes (%) | Committed violations per 100 transitions | False rejection (%) | Desync rate (%)  | Sessions |
 | --------------------- | ----------------------- | ---------------------------------------- | ------------------- | ---------------- | -------- |
-| F1 rolling, direct    | 0.0 [0.0, 0.0]          | 407.7 [355.1, 473.9]                     | n/a                 | 3.3 [1.5, 5.1]   | 7        |
-| F2 rolling, barrier   | 0.0 [0.0, 0.0]          | 0.0 [0.0, 0.0]                           | 1.2 [0.0, 4.0]      | 10.3 [7.7, 13.2] | 7        |
-| F3 dual-tier, direct  | 46.4 [32.1, 67.9]       | 408.5 [334.7, 503.1]                     | n/a                 | 3.7 [1.8, 5.5]   | 7        |
-| F4 dual-tier, barrier | 46.4 [25.0, 71.4]       | 0.0 [0.0, 0.0]                           | 1.1 [0.0, 3.9]      | 9.2 [6.2, 12.1]  | 7        |
+| F1 rolling, direct    | 0.0 [0.0, 0.0]          | 501.1 [425.2, 602.6]                     | n/a                 | 3.1 [1.6, 4.9]   | 14       |
+| F2 rolling, barrier   | 0.0 [0.0, 0.0]          | 0.0 [0.0, 0.0]                           | 0.7 [0.0, 2.4]      | 12.5 [9.7, 15.0] | 14       |
+| F3 dual-tier, direct  | 37.5 [25.0, 50.0]       | 397.5 [358.8, 447.1]                     | n/a                 | 2.9 [1.5, 4.9]   | 14       |
+| F4 dual-tier, barrier | 46.4 [35.7, 58.9]       | 0.0 [0.0, 0.0]                           | 0.7 [0.0, 2.4]      | 9.5 [7.9, 11.7]  | 14       |
 
 Simple effects and the interaction contrast (per session, percentage points, [`metrics/factorial_simple_effects.csv`](notebooks/outputs/metrics/factorial_simple_effects.csv)):
 
 | Outcome   | Contrast                               | Sessions | Effect                  | p (Wilcoxon) |
 | --------- | -------------------------------------- | -------- | ----------------------- | ------------ |
-| recall    | memory effect, direct writes (F3 - F1) | 7        | +46.4 [+32.1, +67.9]    | 0.0156       |
-| recall    | memory effect, barrier (F4 - F2)       | 7        | +46.4 [+25.0, +67.9]    | 0.0312       |
-| recall    | control effect, rolling (F2 - F1)      | 7        | +0.0 [+0.0, +0.0]       | 1.0          |
-| recall    | control effect, dual-tier (F4 - F3)    | 7        | +0.0 [-25.0, +25.0]     | 1.0          |
-| recall    | interaction ((F4 - F2) - (F3 - F1))    | 7        | +0.0 [-25.0, +25.0]     | 1.0          |
-| violation | memory effect, direct writes (F3 - F1) | 7        | -44.9 [-181.2, +64.3]   | 0.875        |
-| violation | memory effect, barrier (F4 - F2)       | 7        | +0.0 [+0.0, +0.0]       | 1.0          |
-| violation | control effect, rolling (F2 - F1)      | 7        | -419.0 [-482.5, -363.4] | 0.0156       |
-| violation | control effect, dual-tier (F4 - F3)    | 7        | -374.0 [-502.5, -229.1] | 0.0312       |
-| violation | interaction ((F4 - F2) - (F3 - F1))    | 7        | +44.9 [-64.3, +185.1]   | 0.875        |
+| recall    | memory effect, direct writes (F3 - F1) | 14       | +37.5 [+25.0, +50.0]    | 0.0012       |
+| recall    | memory effect, barrier (F4 - F2)       | 14       | +46.4 [+35.7, +58.9]    | 0.0008       |
+| recall    | control effect, rolling (F2 - F1)      | 14       | +0.0 [+0.0, +0.0]       | 1.0          |
+| recall    | control effect, dual-tier (F4 - F3)    | 14       | +8.9 [-1.8, +19.6]      | 0.158        |
+| recall    | interaction ((F4 - F2) - (F3 - F1))    | 14       | +8.9 [-1.8, +19.6]      | 0.158        |
+| violation | memory effect, direct writes (F3 - F1) | 14       | -207.5 [-439.0, -55.4]  | 0.0144       |
+| violation | memory effect, barrier (F4 - F2)       | 14       | +0.0 [+0.0, +0.0]       | 1.0          |
+| violation | control effect, rolling (F2 - F1)      | 14       | -628.7 [-871.7, -473.7] | 0.0010       |
+| violation | control effect, dual-tier (F4 - F3)    | 14       | -421.2 [-470.6, -375.5] | 0.0010       |
+| violation | interaction ((F4 - F2) - (F3 - F1))    | 14       | +207.5 [+51.3, +436.2]  | 0.0144       |
 
-With 7 sessions per cell, the smallest possible two-sided Wilcoxon p-value is 0.0156, reached only when all 7 sessions move the same way. These per-session contrasts are not Holm-corrected; the confirmatory H3 live test is in [Hypothesis tests](#hypothesis-tests).
+With 14 sessions per cell, the live Wilcoxon tests can now reach significance. These per-session contrasts are not Holm-corrected; the confirmatory H3 live test is in [Hypothesis tests](#hypothesis-tests).
 
-In the direct-write sessions the oracle flagged 212 of 273 F1 turns and 192 of 273 F3 turns, from only 52 and 47 committed transitions, because the corruption persists: the player stood in a location that does not exist on 29.7 (F1) and 26.9 (F3) of 39 turns per session on average ([`metrics/live_sessions.csv`](notebooks/outputs/metrics/live_sessions.csv), `corrupt_turns`). That is why the rate exceeds 100. Neither corrected barrier condition (F2, F4) had a flagged turn.
+In the direct-write sessions the oracle flagged 471 of 546 F1 turns and 469 of 546 F3 turns, from only 94 and 118 committed transitions, because the corruption persists: the player stood in a location that does not exist on 29.4 (F1) and 30.6 (F3) of 39 turns per session on average ([`metrics/live_sessions.csv`](notebooks/outputs/metrics/live_sessions.csv), `corrupt_turns`). That is why the rate exceeds 100. Neither corrected barrier condition (F2, F4) had a flagged turn.
 
 ![Interaction plots for the 2 x 2 factorial: live recall (left) and violations per 100 transitions (right)](notebooks/outputs/plots/06_factorial_interaction.png)
 
 ![Live violations per 100 turns by condition and oracle code](notebooks/outputs/plots/11_live_violation_codes.png)
 
-Direct writes produce O1 (non-canonical entities, 76.2 and 68.9 per 100 turns), O3 (non-adjacent moves, 13.2 and 12.5), and, for F1, O7 (overspending, 11.0). A5 has 0.7 O3 per 100 turns (two moves in W3). F4v1 has one O8 turn: during a currency attack in W4-128 the Review-02 validator accepted a +300 currency change (described by the model as the player paying 300 coins), above the +50 per-turn gain that the corrected validator enforces. A6, which keeps the validator but mutates state in place, had no violation.
+Direct writes produce O1 (non-canonical entities, 82.1 and 85.2 per 100 turns), O3 (non-adjacent moves, 12.8 and 13.4), O7 (overspending, 9.7 and 4.2), and a few O5 (NPC relocations, 0.2 and 0.7). A5 has 0.5 O3 and 0.2 O7 per 100 turns (three moves and one overspend). F4v1 has four flagged turns: three currency gains of +300, +300, and +2,000 during currency attacks (O8), which the Review-02 validator accepted above the +50 per-turn cap that the corrected validator enforces, and one NPC moved to a non-adjacent location (O5). A6, which keeps the validator but mutates state in place, had no violation.
 
-Live recall with dual-tier memory (46.4% in both F3 and F4, 13 of 28 probes each) is well below the teacher-forced figure (82.4%), as in the earlier runs; the notebook does not isolate the cause.
+Live recall with dual-tier memory (37.5% in F3, 21 of 56 probes; 46.4% in F4, 26 of 56) is well below the teacher-forced figure (83.0%), as in the earlier runs; the notebook does not isolate the cause. The live probes ask about facts planted 30 to 34 turns earlier.
 
 ### Table 4: ablations
 
-| Ablation                 | Recall, age 20+ (%)                  | MRR@6                | Committed violations per 100 transitions    | Local compute P50 (ms) | Recovery at turn 160 (ms)             | Replay consistency (%)               |
-| ------------------------ | ------------------------------------ | -------------------- | ------------------------------------------- | ---------------------- | ------------------------------------- | ------------------------------------ |
-| Full system (F4)         | 82.4 [78.0, 86.8]                    | 0.901 [0.878, 0.925] | probes 0.0 [0.0, 0.0]; live 0.0 [0.0, 0.0]  | 32.6                   | 1.6 (snapshot) vs 280.7 (full replay) | 100.0 [100.0, 100.0]                 |
-| A1 No long-term memory   | 0.0 [0.0, 0.0]                       | n/a                  | same as full system (memory-only change)    | n/a                    | n/a                                   | as full system                       |
-| A2 No short-term buffer  | 84.3 [80.4, 88.2]                    | 0.875 [0.849, 0.902] | same as full system (memory-only change)    | n/a                    | n/a                                   | as full system                       |
-| A3 No scoping            | 79.6 [75.0, 84.1]                    | 0.724 [0.691, 0.757] | same as full system (memory-only change)    | n/a                    | n/a                                   | as full system                       |
-| A4 No fallback           | 82.4 [78.0, 86.7]                    | 0.948 [0.928, 0.968] | same as full system (memory-only change)    | n/a                    | n/a                                   | as full system                       |
-| A5 No validation barrier | as full system (control-only change) | as full system       | probes 4.5 [1.5, 8.4]; live 4.3 [0.0, 14.0] | 24.3                   | 1.6 (snapshot) vs 280.7 (full replay) | 100.0 [100.0, 100.0]                 |
-| A6 No event sourcing     | as full system                       | as full system       | live 0.0 [0.0, 0.0]                         | 12.7                   | no log to recover from                | not replayable                       |
-| A7 No snapshots          | as full system                       | as full system       | as full system                              | n/a                    | 280.7                                 | 100 (full fold, CPU replay sessions) |
+| Ablation                 | Recall, age 20+ (%)                  | MRR@6                | Committed violations per 100 transitions   | Local compute P50 (ms) | Recovery at turn 160 (ms)             | Replay consistency (%)               |
+| ------------------------ | ------------------------------------ | -------------------- | ------------------------------------------ | ---------------------- | ------------------------------------- | ------------------------------------ |
+| Full system (F4)         | 83.0 [79.4, 86.7]                    | 0.910 [0.889, 0.931] | probes 0.0 [0.0, 0.0]; live 0.0 [0.0, 0.0] | 25.0                   | 1.4 (snapshot) vs 243.2 (full replay) | 100.0 [100.0, 100.0]                 |
+| A1 No long-term memory   | 0.0 [0.0, 0.0]                       | n/a                  | same as full system (memory-only change)   | n/a                    | n/a                                   | as full system                       |
+| A2 No short-term buffer  | 86.4 [83.0, 89.7]                    | 0.888 [0.864, 0.913] | same as full system (memory-only change)   | n/a                    | n/a                                   | as full system                       |
+| A3 No scoping            | 81.2 [77.6, 84.8]                    | 0.732 [0.707, 0.759] | same as full system (memory-only change)   | n/a                    | n/a                                   | as full system                       |
+| A4 No fallback           | 83.0 [79.5, 86.6]                    | 0.954 [0.939, 0.969] | same as full system (memory-only change)   | n/a                    | n/a                                   | as full system                       |
+| A5 No validation barrier | as full system (control-only change) | as full system       | probes 5.0 [2.3, 8.1]; live 3.9 [1.0, 7.1] | 22.3                   | 1.4 (snapshot) vs 243.2 (full replay) | 100.0 [100.0, 100.0]                 |
+| A6 No event sourcing     | as full system                       | as full system       | live 0.0 [0.0, 0.0]                        | 10.0                   | no log to recover from                | not replayable                       |
+| A7 No snapshots          | as full system                       | as full system       | as full system                             | n/a                    | 243.2                                 | 100 (full fold, CPU replay sessions) |
 
-Removing the short term buffer (A2) or the fallback (A4) did not lower recall; only removing long term memory (A1) did. Without the validator (A5), committed violations appear on probes (4.5) and live turns (4.3). The local compute column is the median of batched live turns minus LLM time, and as run it also includes the dialogue-repair call (see [Changes made after the run](#changes-made-after-the-run)); recomputed without it from [`predictions/live_turns.csv`](notebooks/outputs/predictions/live_turns.csv), it is 31.1 ms for F4, 24.3 ms for A5, and 12.2 ms for A6.
+Removing the short term buffer (A2) or the fallback (A4) did not lower recall; only removing long term memory (A1) did. Without the validator (A5), committed violations appear on probes (5.0) and live turns (3.9). The local compute column is the median of batched live turns minus the LLM and dialogue-repair calls, as the notebook now computes it.
 
 ### Replay, recovery, and crash consistency
 
@@ -1213,79 +1214,79 @@ Replay on 42 CPU sessions of 200 turns (6 per world, 367.2 events on average, [`
 | torn_snapshot   | 1.000                          | 0.065                          | 0.0                   | 7.516                 |
 | after_snapshot  | 1.000                          | 1.000                          | 0.0                   | 0.000                 |
 
-All 300 trials recovered consistently with the corrected load path, against 77 of 300 with the Review-02 path. These CPU stages are seeded and do not call the LLM, so their consistency results and event counts match the first Review-03 run; only the timings and the state hashes differ.
+All 300 trials recovered consistently with the corrected load path, against 77 of 300 with the Review-02 path. These CPU stages are seeded and do not call the LLM, so their consistency results and event counts match the earlier Review-03 runs; only the timings and the state hashes differ.
 
 ![Median time to rebuild state at each snapshot point: full replay against snapshot loading](notebooks/outputs/plots/08_replay_recovery.png)
 
-Full replay time grows with the length of the log (median 26.0 ms at turn 16, 280.7 ms at turn 160, and 338.9 ms at turn 192), while snapshot loading stays between 1.2 and 1.6 ms.
+Full replay time grows with the length of the log (median 23.7 ms at turn 16, 243.2 ms at turn 160, and 308.6 ms at turn 192), while snapshot loading stays between 1.1 and 1.4 ms.
 
 ### Table 6: per-stage latency of the proposed system (single stream)
 
-Two live F4 sessions (24 turns) with one request in flight. The `repair` row and the corrected `local` row are recomputed from the saved per-turn timings in [`metrics/latency_single_stream_live.csv`](notebooks/outputs/metrics/latency_single_stream_live.csv); the notebook's own table has no `repair` row and reports `local` as 18.195 / 8,939.058 / 11,213.001 ms, because it counted the repair call as local compute.
+Two live F4 sessions (24 turns) with one request in flight ([`metrics/table6_stage_latency.csv`](notebooks/outputs/metrics/table6_stage_latency.csv)). `repair` is the dialogue-repair LLM call, and `local` excludes both LLM calls.
 
-| Stage      | P50 (ms) | P95 (ms)  | P99 (ms)  | n turns |
-| ---------- | -------- | --------- | --------- | ------- |
-| input      | 0.003    | 0.003     | 0.003     | 24      |
-| retrieval  | 0.172    | 0.229     | 0.236     | 24      |
-| prompt     | 0.146    | 0.188     | 0.199     | 24      |
-| llm        | 8838.571 | 16101.439 | 16697.497 | 24      |
-| parse      | 0.090    | 0.106     | 0.110     | 24      |
-| validate   | 0.014    | 1.365     | 1.387     | 24      |
-| repair     | 0.002    | 8918.480  | 11189.438 | 24      |
-| commit     | 9.726    | 15.389    | 16.455    | 24      |
-| output     | 0.012    | 0.014     | 0.015     | 24      |
-| local      | 18.192   | 23.435    | 24.367    | 24      |
-| end to end | 8854.898 | 24125.106 | 26921.335 | 24      |
+| Stage      | P50 (ms) | P95 (ms) | P99 (ms) | n turns |
+| ---------- | -------- | -------- | -------- | ------- |
+| input      | 0.002    | 0.002    | 0.003    | 24      |
+| retrieval  | 0.153    | 0.241    | 0.266    | 24      |
+| prompt     | 0.130    | 0.167    | 0.246    | 24      |
+| llm        | 8113     | 14933    | 15465    | 24      |
+| parse      | 0.087    | 0.125    | 0.138    | 24      |
+| validate   | 0.013    | 1.397    | 1.520    | 24      |
+| repair     | 0.002    | 4491     | 6516     | 24      |
+| commit     | 8.427    | 12.980   | 13.388   | 24      |
+| output     | 0.010    | 0.012    | 0.013    | 24      |
+| local      | 15.101   | 19.210   | 20.393   | 24      |
+| end to end | 8127     | 17673    | 21469    | 24      |
 
-None of the 24 turns was answered from the response cache. Two turns were repaired, and their regeneration took 10,492 ms and 11,398 ms; that second LLM call is why the end-to-end P95 (24.1 s) is far above the LLM P95 (16.1 s). Under the batched load of the live stage (49 concurrent sessions), the median LLM time per F4 turn was 48.5 s ([`predictions/live_turns.csv`](notebooks/outputs/predictions/live_turns.csv), `llm_ms`).
+None of the 24 turns was answered from the response cache. Two turns were repaired, and their regeneration took 6,884 ms and 5,284 ms; that second LLM call is why the end-to-end P95 (17.7 s) is above the LLM P95 (14.9 s). Under the batched load of the live stage (98 concurrent sessions), the median LLM time per F4 turn was 54.5 s ([`predictions/live_turns.csv`](notebooks/outputs/predictions/live_turns.csv), `llm_ms`, over the 540 F4 turns not answered from the cache).
 
-![Per-stage latency for F4 (left, log scale, as run, without a repair row) and single-stream LLM latency per condition (right)](notebooks/outputs/plots/07_latency.png)
+![Per-stage latency for F4 (left, log scale) and single-stream LLM latency per condition (right)](notebooks/outputs/plots/07_latency.png)
 
-Committing (SQLite writes and the memory update) is the slowest local stage at 9.7 ms. Validation took 0.014 ms at P50 and 1.4 ms at P95, well inside H4's 5 ms bound. In the right panel, single-stream LLM time is between 5 and 10 s for most requests of every condition except B0, whose median is 11.2 s.
+Committing (SQLite writes and the memory update) is the slowest local stage at 8.4 ms. Validation took 0.013 ms at P50 and 1.4 ms at P95, well inside H4's 5 ms bound. In the right panel, single-stream LLM time is between 5 and 10 s for most requests of every condition except B0, whose median is 10.8 s.
 
 ### Table 7: per-world and per-backbone breakdown
 
 | World  | Backbone        | Recall 20+: F4       | Recall 20+: best baseline | Attack success: F4 barrier | Attack success: best baseline (direct) |
 | ------ | --------------- | -------------------- | ------------------------- | -------------------------- | -------------------------------------- |
-| W1     | K2-Horizon-7B   | 86.1 [77.5, 96.9]    | B2: 88.9 [80.0, 97.2]     | 0.0 [0.0, 0.0]             | B0: 19.0 [7.1, 31.0]                   |
-| W2a    | K2-Horizon-7B   | 83.3 [77.8, 89.3]    | B2: 80.6 [64.7, 97.1]     | 0.0 [0.0, 0.0]             | B3: 2.4 [0.0, 7.1]                     |
-| W2b    | K2-Horizon-7B   | 91.7 [84.4, 97.6]    | B5: 80.6 [68.8, 91.7]     | 0.0 [0.0, 0.0]             | B0: 4.8 [0.0, 11.9]                    |
-| W2c    | K2-Horizon-7B   | 83.3 [77.3, 92.9]    | B2: 80.6 [57.9, 97.4]     | 0.0 [0.0, 0.0]             | B0: 0.0 [0.0, 0.0]                     |
-| W3     | K2-Horizon-7B   | 69.4 [53.3, 81.6]    | B0: 80.6 [66.7, 94.4]     | 0.0 [0.0, 0.0]             | B0: 0.0 [0.0, 0.0]                     |
-| W4-32  | K2-Horizon-7B   | 83.3 [71.9, 94.4]    | B2: 88.9 [80.4, 97.4]     | 0.0 [0.0, 0.0]             | B0: 0.0 [0.0, 0.0]                     |
-| W4-128 | K2-Horizon-7B   | 83.3 [73.7, 93.8]    | B5: 91.7 [84.4, 97.6]     | 0.0 [0.0, 0.0]             | B0: 0.0 [0.0, 0.0]                     |
-| W1     | K2-Horizon-3.7B | 83.3 [83.3, 83.3]    | B2: 91.7 [83.3, 100.0]    | 0.0 [0.0, 0.0]             | F4 outputs: 14.3 [4.8, 26.2]           |
-| W2a    | K2-Horizon-3.7B | 83.3 [83.3, 83.3]    | B5: 83.3 [83.3, 83.3]     | 0.0 [0.0, 0.0]             | F4 outputs: 14.3 [4.8, 26.2]           |
-| W3     | K2-Horizon-3.7B | 75.0 [66.7, 83.3]    | B2: 66.7 [66.7, 66.7]     | 0.0 [0.0, 0.0]             | F4 outputs: 14.3 [4.8, 26.2]           |
-| W4-32  | K2-Horizon-3.7B | 91.7 [83.3, 100.0]   | B5: 91.7 [83.3, 100.0]    | 0.0 [0.0, 0.0]             | F4 outputs: 16.7 [7.1, 28.6]           |
-| W1     | qwen2.5-7b      | 100.0 [100.0, 100.0] | B5: 100.0 [100.0, 100.0]  | 0.0 [0.0, 0.0]             | F4 outputs: 59.5 [45.2, 73.8]          |
-| W2a    | qwen2.5-7b      | 100.0 [100.0, 100.0] | B2: 83.3 [66.7, 100.0]    | 0.0 [0.0, 0.0]             | F4 outputs: 45.2 [31.0, 59.5]          |
-| W3     | qwen2.5-7b      | 83.3 [83.3, 83.3]    | B2: 91.7 [83.3, 100.0]    | 0.0 [0.0, 0.0]             | F4 outputs: 40.5 [26.2, 54.8]          |
-| W4-32  | qwen2.5-7b      | 91.7 [83.3, 100.0]   | B2: 91.7 [83.3, 100.0]    | 0.0 [0.0, 0.0]             | F4 outputs: 31.0 [16.7, 45.2]          |
-| W1     | phi4-mini       | 91.7 [83.3, 100.0]   | B5: 83.3 [66.7, 100.0]    | 0.0 [0.0, 0.0]             | F4 outputs: 21.4 [9.5, 33.3]           |
-| W2a    | phi4-mini       | 75.0 [50.0, 100.0]   | B2: 75.0 [66.7, 83.3]     | 0.0 [0.0, 0.0]             | F4 outputs: 19.0 [7.1, 31.0]           |
-| W3     | phi4-mini       | 83.3 [66.7, 100.0]   | B5: 83.3 [66.7, 100.0]    | 0.0 [0.0, 0.0]             | F4 outputs: 33.3 [19.0, 47.6]          |
-| W4-32  | phi4-mini       | 91.7 [83.3, 100.0]   | B2: 83.3 [66.7, 100.0]    | 0.0 [0.0, 0.0]             | F4 outputs: 23.8 [11.9, 38.1]          |
+| W1     | K2-Horizon-7B   | 87.0 [79.6, 94.6]    | B2: 88.9 [81.5, 96.3]     | 0.0 [0.0, 0.0]             | B0: 14.3 [7.1, 22.9]                   |
+| W2a    | K2-Horizon-7B   | 83.3 [75.0, 91.1]    | B2: 81.5 [69.6, 93.2]     | 0.0 [0.0, 0.0]             | B3: 4.3 [0.0, 10.0]                    |
+| W2b    | K2-Horizon-7B   | 88.9 [81.5, 95.8]    | B5: 85.2 [75.9, 94.0]     | 0.0 [0.0, 0.0]             | B0: 2.9 [0.0, 7.1]                     |
+| W2c    | K2-Horizon-7B   | 79.6 [71.0, 90.0]    | B2: 83.3 [66.7, 95.8]     | 0.0 [0.0, 0.0]             | B0: 2.9 [0.0, 7.1]                     |
+| W3     | K2-Horizon-7B   | 79.6 [70.0, 88.7]    | B2: 81.5 [65.0, 94.8]     | 0.0 [0.0, 0.0]             | B2: 5.7 [1.4, 11.4]                    |
+| W4-32  | K2-Horizon-7B   | 83.3 [75.9, 91.1]    | B2: 88.9 [83.3, 95.5]     | 0.0 [0.0, 0.0]             | B0: 0.0 [0.0, 0.0]                     |
+| W4-128 | K2-Horizon-7B   | 83.3 [73.9, 91.7]    | B5: 90.7 [83.9, 97.9]     | 0.0 [0.0, 0.0]             | B0: 0.0 [0.0, 0.0]                     |
+| W1     | K2-Horizon-3.7B | 88.9 [83.3, 100.0]   | B4: 94.4 [83.3, 100.0]    | 0.0 [0.0, 0.0]             | F4 outputs: 12.9 [5.7, 21.4]           |
+| W2a    | K2-Horizon-3.7B | 83.3 [83.3, 83.3]    | B2: 72.2 [50.0, 100.0]    | 0.0 [0.0, 0.0]             | F4 outputs: 11.4 [4.3, 18.6]           |
+| W3     | K2-Horizon-3.7B | 72.2 [50.0, 83.3]    | B2: 72.2 [66.7, 83.3]     | 0.0 [0.0, 0.0]             | F4 outputs: 8.6 [2.9, 15.7]            |
+| W4-32  | K2-Horizon-3.7B | 83.3 [66.7, 100.0]   | B5: 88.9 [83.3, 100.0]    | 0.0 [0.0, 0.0]             | F4 outputs: 15.7 [7.1, 24.3]           |
+| W1     | qwen2.5-7b      | 100.0 [100.0, 100.0] | B2: 94.4 [83.3, 100.0]    | 0.0 [0.0, 0.0]             | F4 outputs: 55.7 [44.3, 67.1]          |
+| W2a    | qwen2.5-7b      | 94.4 [83.3, 100.0]   | B2: 83.3 [66.7, 100.0]    | 0.0 [0.0, 0.0]             | F4 outputs: 48.6 [37.1, 60.0]          |
+| W3     | qwen2.5-7b      | 88.9 [83.3, 100.0]   | B2: 94.4 [83.3, 100.0]    | 0.0 [0.0, 0.0]             | F4 outputs: 34.3 [22.9, 45.7]          |
+| W4-32  | qwen2.5-7b      | 94.4 [83.3, 100.0]   | B2: 83.3 [66.7, 100.0]    | 0.0 [0.0, 0.0]             | F4 outputs: 37.1 [25.7, 48.6]          |
+| W1     | phi4-mini       | 83.3 [66.7, 100.0]   | B2: 77.8 [66.7, 83.3]     | 0.0 [0.0, 0.0]             | F4 outputs: 27.1 [17.1, 37.1]          |
+| W2a    | phi4-mini       | 72.2 [50.0, 100.0]   | B2: 61.1 [50.0, 83.3]     | 0.0 [0.0, 0.0]             | F4 outputs: 17.1 [8.6, 27.1]           |
+| W3     | phi4-mini       | 77.8 [50.0, 100.0]   | B5: 77.8 [66.7, 100.0]    | 0.0 [0.0, 0.0]             | F4 outputs: 27.1 [17.1, 37.1]          |
+| W4-32  | phi4-mini       | 88.9 [83.3, 100.0]   | B2: 77.8 [66.7, 100.0]    | 0.0 [0.0, 0.0]             | F4 outputs: 24.3 [14.3, 34.3]          |
 
 The other backbones ran at horizon 100 on four worlds with probes under the F4 context only, so their attack comparison is the corrected barrier against direct writes of the same outputs ("F4 outputs"). The corrected barrier let no attack through for any world or model.
 
-On the backbone subset (W1, W2a, W3, W4-32 at horizon 100; 48 probes at age 20 or more per condition, computed from the prediction files), recall was:
+On the backbone subset (W1, W2a, W3, W4-32 at horizon 100; 72 probes at age 20 or more per condition, computed from the prediction files), recall was:
 
 | Condition | K2-Horizon-7B | K2-Horizon-3.7B | Qwen2.5-7B | Phi-4-mini |
 | --------- | ------------- | --------------- | ---------- | ---------- |
-| F4        | 85.4          | 83.3            | 93.8       | 85.4       |
-| F4v1      | 83.3          | 83.3            | 93.8       | 87.5       |
-| B2        | 83.3          | 70.8            | 89.6       | 75.0       |
-| B3        | 60.4          | 54.2            | 66.7       | 54.2       |
-| B4        | 66.7          | 66.7            | 66.7       | 62.5       |
-| B5        | 81.2          | 81.2            | 91.7       | 72.9       |
+| F4        | 87.5          | 81.9            | 94.4       | 80.6       |
+| F4v1      | 86.1          | 86.1            | 94.4       | 80.6       |
+| B2        | 83.3          | 73.6            | 88.9       | 70.8       |
+| B3        | 58.3          | 58.3            | 66.7       | 55.6       |
+| B4        | 66.7          | 68.1            | 66.7       | 58.3       |
+| B5        | 79.2          | 77.8            | 84.7       | 66.7       |
 | B1        | 0.0           | 0.0             | 0.0        | 0.0        |
 
-Under the F4 context on the same subset (168 attacks each), direct writes of the model's own outputs succeeded in 7.7% (7B), 14.9% (3.7B), 44.0% (Qwen), and 24.4% (Phi-4-mini) of attacks; the Review-02 barrier let through 1.8%, 0.0%, 9.5%, and 5.4%; the corrected barrier 0.0% for all four. The corrected barrier rejected 1 of 57 lawful twin proposals for the 7B model and none for the others.
+Under the F4 context on the same subset (280 attacks each), direct writes of the model's own outputs succeeded in 7.5% (7B), 12.1% (3.7B), 43.9% (Qwen), and 23.9% (Phi-4-mini) of attacks; the Review-02 barrier let through 1.4%, 0.0%, 8.6%, and 6.1%; the corrected barrier 0.0% for all four. The corrected barrier rejected 1 of 92 lawful twin proposals for the 7B model and none for the others.
 
 ![Per-world effects: recall gain over B1 (left) and attack reduction by the barrier (right)](notebooks/outputs/plots/10_per_world_effects.png)
 
-The recall gain over B1 is positive on every world. The attack reduction is positive on W1, W2a, and W2b and exactly zero on W2c, W3, W4-32, and W4-128, where no attack succeeded even under direct writes in the F4 context.
+The recall gain over B1 is positive on every world. The attack reduction is positive on W1, W2a to W2c, and W3, and exactly zero on W4-32 and W4-128, where no attack succeeded even under direct writes in the F4 context.
 
 ![Recall across three sampling seeds (left) and recall at age 20+ on the backbone subset for the four models (right)](notebooks/outputs/plots/12_seed_and_backbone.png)
 
@@ -1293,28 +1294,28 @@ The recall gain over B1 is positive on every world. The attack reduction is posi
 
 | Condition | Seed 0 | Seed 1 | Seed 2 | SD across seeds (points) |
 | --------- | ------ | ------ | ------ | ------------------------ |
-| F4        | 0.843  | 0.848  | 0.871  | 1.53                     |
-| B1        | 0.295  | 0.276  | 0.281  | 0.99                     |
-| B2        | 0.843  | 0.843  | 0.852  | 0.55                     |
-| B3        | 0.638  | 0.686  | 0.629  | 3.06                     |
+| F4        | 0.843  | 0.814  | 0.857  | 2.18                     |
+| B1        | 0.295  | 0.276  | 0.276  | 1.10                     |
+| B2        | 0.848  | 0.848  | 0.857  | 0.55                     |
+| B3        | 0.633  | 0.671  | 0.633  | 2.20                     |
 
-All conditions vary by at most a few points across sampling seeds; B3 varies the most.
+All conditions vary by at most a few points across sampling seeds.
 
 ### Secret leaks and parse success
 
 | Source                  | Leak rate (%)  |
 | ----------------------- | -------------- |
 | probes, secret category | 0.0 [0.0, 0.0] |
-| probes, all attacks     | 0.7 [0.2, 1.4] |
-| live F1                 | 0.0 [0.0, 0.0] |
-| live F2                 | 0.7 [0.0, 2.2] |
-| live F3                 | 0.4 [0.0, 1.1] |
-| live F4                 | 0.7 [0.0, 1.5] |
-| live F4v1               | 0.4 [0.0, 1.1] |
-| live A5                 | 1.1 [0.0, 3.3] |
-| live A6                 | 0.7 [0.0, 1.5] |
+| probes, all attacks     | 0.9 [0.3, 1.5] |
+| live F1                 | 1.3 [0.2, 2.6] |
+| live F2                 | 0.7 [0.0, 2.0] |
+| live F3                 | 0.7 [0.0, 1.6] |
+| live F4                 | 1.1 [0.0, 2.7] |
+| live F4v1               | 0.5 [0.0, 1.1] |
+| live A5                 | 1.1 [0.2, 2.4] |
+| live A6                 | 0.9 [0.2, 1.8] |
 
-Parse success was 93.6% for probes and 96.0% for live turns. The leak scorer is keyword based and over-counts: all 11 flagged probe replies come from other attack categories (theft 4, trust 4, injection 2, fabrication 1), and the two in the F4 context are W1 replies that use the hand-written secret keyword "looking" in "if you're looking for". Read these rates as upper bounds.
+Parse success was 94.1% for probes and 95.9% for live turns. The leak scorer is keyword based and over-counts: all 21 flagged probe attack replies come from other attack categories (theft 6, fabrication 6, trust 4, teleport 2, injection 2, currency 1). Of the three in the F4 context, two are W1 replies that use the hand-written secret keyword "looking" in "if you're looking for", and one repeats the player's "phoenix feather" to an NPC whose secret is an iron feather. Read these rates as upper bounds.
 
 ### Hypothesis tests
 
@@ -1322,33 +1323,33 @@ Confirmatory tests (Holm-corrected together; [`metrics/hypothesis_tests.csv`](no
 
 | Hypothesis | Test                                                            | n   | Effect | p (raw) | Direction as predicted | p (Holm) |
 | ---------- | --------------------------------------------------------------- | --- | ------ | ------- | ---------------------- | -------- |
-| H1         | recall 20+ F4 vs B1 (McNemar)                                   | 216 | 0.824  | 5.2e-54 | yes                    | 3.1e-53  |
-| H1         | recall 20+ F4 vs B2 (McNemar)                                   | 216 | 0.014  | 0.736   | yes                    | 0.736    |
-| H1         | recall 20+ F4 vs B3 (McNemar)                                   | 216 | 0.236  | 4.3e-13 | yes                    | 1.7e-12  |
-| H2         | MRR@6 F4 vs B2 (Wilcoxon, per probe)                            | 288 | 0.174  | 4.3e-15 | yes                    | 2.1e-14  |
-| H3         | attack success direct vs barrier, F4 context (McNemar)          | 294 | 0.051  | 6.1e-5  | yes                    | 1.8e-4   |
-| H3         | live violations per transition F3 vs F4 (Wilcoxon, per session) | 7   | 3.740  | 0.031   | yes                    | 0.0625   |
+| H1         | recall 20+ F4 vs B1 (McNemar)                                   | 324 | 0.830  | 2.1e-81 | yes                    | 1.3e-80  |
+| H1         | recall 20+ F4 vs B2 (McNemar)                                   | 324 | -0.012 | 0.683   | no                     | 0.683    |
+| H1         | recall 20+ F4 vs B3 (McNemar)                                   | 324 | 0.213  | 1.9e-14 | yes                    | 7.5e-14  |
+| H2         | MRR@6 F4 vs B2 (Wilcoxon, per probe)                            | 432 | 0.168  | 4.0e-21 | yes                    | 2.0e-20  |
+| H3         | attack success direct vs barrier, F4 context (McNemar)          | 490 | 0.051  | 6.0e-8  | yes                    | 1.8e-7   |
+| H3         | live violations per transition F3 vs F4 (Wilcoxon, per session) | 14  | 4.212  | 9.6e-4  | yes                    | 0.0019   |
 
 Exploratory memory tests ([`metrics/exploratory_memory_tests.csv`](notebooks/outputs/metrics/exploratory_memory_tests.csv)):
 
 | Test                            | n   | Effect | p (raw) | p (Holm) |
 | ------------------------------- | --- | ------ | ------- | -------- |
-| recall 20+ F4 vs B4 (McNemar)   | 216 | 0.213  | 2.2e-8  | 6.7e-8   |
-| recall 20+ F4 vs B5 (McNemar)   | 216 | 0.037  | 0.268   | 0.536    |
-| recall 20+ F4 vs F4v1 (McNemar) | 216 | -0.023 | 0.473   | 0.536    |
+| recall 20+ F4 vs B4 (McNemar)   | 324 | 0.201  | 1.6e-10 | 4.8e-10  |
+| recall 20+ F4 vs B5 (McNemar)   | 324 | 0.031  | 0.268   | 0.268    |
+| recall 20+ F4 vs F4v1 (McNemar) | 324 | -0.056 | 0.0096  | 0.019    |
 
 Factorial mixed-effects models, fitted by variational Bayes (`BinomialBayesMixedGLM`), so Coefficient and SE are the posterior mean and standard deviation and p is the normal tail of z ([`metrics/factorial_model_recall.csv`](notebooks/outputs/metrics/factorial_model_recall.csv), [`metrics/factorial_model_violation.csv`](notebooks/outputs/metrics/factorial_model_violation.csv); the CSVs round p to 4 decimals, and the small p-values below are recomputed from z):
 
-| Outcome   | Term           | Coefficient | SE     | z        | p       |
-| --------- | -------------- | ----------- | ------ | -------- | ------- |
-| Recall    | Intercept      | -3.3698     | 0.2699 | -12.4866 | 8.8e-36 |
-| Recall    | memory         | 3.1740      | 0.2865 | 11.0789  | 1.6e-28 |
-| Recall    | control        | -0.9619     | 0.3904 | -2.4641  | 0.0137  |
-| Recall    | memory:control | 0.9996      | 0.4053 | 2.4663   | 0.0137  |
-| Violation | Intercept      | 1.5183      | 0.1135 | 13.3758  | 8.4e-41 |
-| Violation | memory         | -0.4854     | 0.1561 | -3.1090  | 0.0019  |
-| Violation | control        | -7.6306     | 0.6853 | -11.1352 | 8.5e-29 |
-| Violation | memory:control | -1.6133     | 1.2442 | -1.2966  | 0.1948  |
+| Outcome   | Term           | Coefficient | SE     | z        | p        |
+| --------- | -------------- | ----------- | ------ | -------- | -------- |
+| Recall    | Intercept      | -3.9391     | 0.1956 | -20.1385 | 3.4e-90  |
+| Recall    | memory         | 3.3768      | 0.2026 | 16.6644  | 2.4e-62  |
+| Recall    | control        | -0.8945     | 0.2765 | -3.2345  | 0.0012   |
+| Recall    | memory:control | 1.3172      | 0.2825 | 4.6627   | 3.1e-6   |
+| Violation | Intercept      | 2.0191      | 0.0914 | 22.0939  | 3.6e-108 |
+| Violation | memory         | -0.0014     | 0.1296 | -0.0105  | 0.9916   |
+| Violation | control        | -8.3173     | 0.6568 | -12.6639 | 9.4e-37  |
+| Violation | memory:control | -1.9083     | 1.1761 | -1.6225  | 0.1047   |
 
 The recall model's fit printed a `RuntimeWarning: overflow encountered in exp` from statsmodels; the fit completed and its estimates are finite.
 
@@ -1356,89 +1357,91 @@ Generalisation by world family and backbone ([`metrics/h7_generalisation.csv`](n
 
 | Family              | Recall F4 minus B1 | Attack success direct minus barrier | H1 direction | H3 direction |
 | ------------------- | ------------------ | ----------------------------------- | ------------ | ------------ |
-| W2 LIGHT-derived    | +0.861             | +0.056                              | holds        | holds        |
-| W3 held-out genre   | +0.694             | +0.000                              | holds        | not shown    |
+| W2 LIGHT-derived    | +0.840             | +0.048                              | holds        | holds        |
+| W3 held-out genre   | +0.796             | +0.071                              | holds        | holds        |
 | W4 procedural       | +0.833             | +0.000                              | holds        | not shown    |
-| backbone qwen2.5-7b | +0.938             | +0.440                              | holds        | holds        |
-| backbone phi4-mini  | +0.854             | +0.244                              | holds        | holds        |
+| backbone qwen2.5-7b | +0.944             | +0.439                              | holds        | holds        |
+| backbone phi4-mini  | +0.806             | +0.239                              | holds        | holds        |
 
 Verdicts ([`metrics/hypothesis_verdicts.csv`](notebooks/outputs/metrics/hypothesis_verdicts.csv)):
 
-| Hypothesis              | Verdict                                     | Evidence                                                                                                                                |
-| ----------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| H1 Memory               | not supported                               | Recall gain over B2 not significant; input tokens 1,445 for F4 against 1,451 (B2) and 1,506 (B3)                                        |
-| H2 Retrieval            | supported                                   | MRR@6 difference against B2 +0.174 on probes older than the buffer, Holm p = 2.1e-14                                                    |
-| H3 State control        | not supported                               | Probes significant (Holm p = 1.8e-4); live test Holm p = 0.0625 with 7 sessions per cell                                                |
-| H4 Cost of control      | supported                                   | False rejection 1.1% [0.0, 3.9] in live F4; validation P95 1.365 ms                                                                     |
-| H5 Replay               | supported                                   | All live event-sourced sessions, CPU replays, restarts, the backend load path after a crash, and all 300 crash trials consistent        |
-| H6 Separability         | not supported                               | Memory to recall 3.17 (p = 1.6e-28); control to violation -7.63 (p = 8.5e-29); interaction p for recall 0.0137, for violation 0.195     |
-| H7 Generalisation       | not supported                               | Both directions hold on W2 and both other model families; on W3 and W4 no attack succeeded even under direct writes, so H3 is not shown |
-| R1 Currency invariant   | confirmed (no failure after the correction) | Corrected currency validator gap 0.0% [0.0, 0.0], against 63.0% for the Review-02 validator                                             |
-| R2 Snapshot recovery    | confirmed (no failure after the correction) | 300 of 300 crash trials consistent after the correction, 77 of 300 before                                                               |
-| R3 Dialogue repair      | not confirmed                               | Draft against repaired replies: no significant difference by judge or proxy (Table 8)                                                   |
-| R4 Committed violations | not confirmed                               | One F4v1 live violation in 26 transitions against none for F4 in 6; Wilcoxon p = 1.0 with 7 sessions                                    |
+| Hypothesis              | Verdict                                     | Evidence                                                                                                                                          |
+| ----------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| H1 Memory               | not supported                               | F4 does not exceed B2 (1.2 points lower, Holm p = 0.68); input tokens 1,444 for F4 against 1,451 (B2) and 1,506 (B3)                              |
+| H2 Retrieval            | supported                                   | MRR@6 difference against B2 +0.168 on probes older than the buffer, Holm p = 2.0e-20                                                              |
+| H3 State control        | supported                                   | Probes Holm p = 1.8e-7; live test Holm p = 0.0019 with 14 sessions per cell                                                                       |
+| H4 Cost of control      | supported                                   | False rejection 0.7% [0.0, 2.4] in live F4; validation P95 1.397 ms                                                                               |
+| H5 Replay               | supported                                   | All live event-sourced sessions, CPU replays, restarts, the backend load path after a crash, and all 300 crash trials consistent                  |
+| H6 Separability         | not supported                               | Memory to recall 3.38 (p = 2.4e-62); control to violation -8.32 (p = 9.4e-37); interaction p for recall 3.1e-6, for violation 0.105               |
+| H7 Generalisation       | not supported                               | Both directions hold on W2, W3, and both other model families; on W4 no attack succeeded even under direct writes, so H3 is not shown             |
+| R1 Currency invariant   | confirmed (no failure after the correction) | Corrected currency validator gap 0.0% [0.0, 0.0], against 59.1% for the Review-02 validator                                                       |
+| R2 Snapshot recovery    | confirmed (no failure after the correction) | 300 of 300 crash trials consistent after the correction, 77 of 300 before                                                                         |
+| R3 Dialogue repair      | partly confirmed                            | F4 against F4v1 per session: fewer judged contradictions and desync (both Holm p = 0.0086); draft against repaired reply: no difference (Table 8) |
+| R4 Committed violations | not confirmed                               | Four F4v1 live violations in 48 transitions against none for F4 in 26; per-session Wilcoxon Holm p = 0.31                                         |
+
+H3 is supported for the first time: the previous run had the same direction but only 7 live sessions per cell (Holm p = 0.0625).
 
 ### Table 8: before and after the Review-03 corrections (paired, same oracle)
 
 | Test | Metric                                                             | Before                 | After                 | n   | Effect (points) | p (raw) | p (Holm) |
 | ---- | ------------------------------------------------------------------ | ---------------------- | --------------------- | --- | --------------- | ------- | -------- |
-| R1   | attack success, all categories                                     | 1.4 [0.3, 2.7]         | 0.0 [0.0, 0.0]        | 294 | 1.36            | 0.125   | 0.75     |
-| R1   | attack success, currency                                           | 9.5 [2.4, 19.0]        | 0.0 [0.0, 0.0]        | 42  | 9.52            | 0.125   | 0.75     |
-| R1   | validator gap, currency proposals                                  | 63.0 [24.0, 100.0]     | 0.0 [0.0, 0.0]        |     |                 |         |          |
-| R1   | validator gap, all proposals                                       | 16.4 [7.6, 26.9]       | 0.0 [0.0, 0.0]        |     |                 |         |          |
-| R1   | false rejection of lawful twins                                    | 0.7 [0.0, 2.4]         | 0.7 [0.0, 2.4]        |     |                 |         |          |
+| R1   | attack success, all categories                                     | 1.0 [0.2, 2.0]         | 0.0 [0.0, 0.0]        | 490 | 1.02            | 0.0625  | 0.3125   |
+| R1   | attack success, currency                                           | 7.1 [1.4, 12.9]        | 0.0 [0.0, 0.0]        | 70  | 7.14            | 0.0625  | 0.3125   |
+| R1   | validator gap, currency proposals                                  | 59.1 [32.5, 88.5]      | 0.0 [0.0, 0.0]        |     |                 |         |          |
+| R1   | validator gap, all proposals                                       | 13.6 [8.0, 20.1]       | 0.0 [0.0, 0.0]        |     |                 |         |          |
+| R1   | false rejection of lawful twins                                    | 0.6 [0.0, 1.7]         | 0.6 [0.0, 1.7]        |     |                 |         |          |
 | R2   | crash trials recovered inconsistently                              | 74.3% (5.6 turns lost) | 0.0% (0.0 turns lost) | 300 | 74.33           | 1.5e-67 | 1.3e-66  |
 | R2   | load path after a crash (replay sessions)                          | 0% consistent          | 100% consistent       |     |                 |         |          |
-| R3   | judge contradiction, repaired probes                               | 35.7%                  | 32.1%                 | 28  | 3.57            | 1.0     | 1.0      |
-| R3   | judge contradiction, repaired live F4 turns                        | 41.2%                  | 41.2%                 | 17  | 0.00            | 1.0     | 1.0      |
-| R3   | judge contradiction per judged live turn, F4v1 vs F4 (per session) | 54.0%                  | 15.3%                 | 7   | 37.55           | 0.0156  | 0.125    |
-| R3   | desync proxy, live F4 turns (draft vs repaired)                    | 9.5%                   | 9.2%                  | 273 | 0.37            | 1.0     | 1.0      |
-| R3   | desync proxy per live turn, F4v1 vs F4 (per session)               | 17.2 [14.3, 19.8]      | 9.2 [6.2, 12.1]       | 7   | 8.06            | 0.0312  | 0.219    |
-| R4   | committed violations per 100 transitions, F4v1 vs F4 (per session) | 3.8 [0.0, 16.7]        | 0.0 [0.0, 0.0]        | 7   | 14.29           | 1.0     | 1.0      |
+| R3   | judge contradiction, repaired probes                               | 41.7%                  | 39.6%                 | 48  | 2.08            | 1.0     | 1.0      |
+| R3   | judge contradiction, repaired live F4 turns                        | 44.7%                  | 42.1%                 | 38  | 2.63            | 1.0     | 1.0      |
+| R3   | judge contradiction per judged live turn, F4v1 vs F4 (per session) | 57.0%                  | 13.8%                 | 14  | 42.42           | 0.0012  | 0.0086   |
+| R3   | desync proxy, live F4 turns (draft vs repaired)                    | 10.6%                  | 9.5%                  | 546 | 1.10            | 0.031   | 0.1875   |
+| R3   | desync proxy per live turn, F4v1 vs F4 (per session)               | 18.9 [16.5, 21.2]      | 9.5 [7.9, 11.7]       | 14  | 9.34            | 0.0011  | 0.0086   |
+| R4   | committed violations per 100 transitions, F4v1 vs F4 (per session) | 8.3 [2.0, 17.0]        | 0.0 [0.0, 0.0]        | 14  | 10.71           | 0.1015  | 0.3125   |
 
-The `before` and `after` columns pool every row; the effect is the mean paired difference that the test uses. For the per-session rows these can differ: R4's single F4v1 violation came in a session with one committed transition, so that session's rate is 100 per 100 transitions and the per-session mean difference is 14.29, while the pooled rate is 3.8 (1 violation in 26 transitions).
+The `before` and `after` columns pool every row; the effect is the mean paired difference that the test uses, so the two can differ for the per-session rows (R4: 8.3 pooled, 10.71 as the mean of per-session differences).
 
 ![Before and after the Review-03 corrections on the same scenarios](notebooks/outputs/plots/14_before_after.png)
 
-The two clear gains are the currency invariant (validator gap 63.0% to 0%) and crash recovery (74.3% of crashes recovered inconsistently before, none after). Dialogue repair regenerated every rejected reply it was given (28 probes, 17 live F4 turns), but the judge found about the same contradiction rate in the draft and the repaired reply (35.7% against 32.1% on probes, 41.2% for both on live turns). F4 contradicts itself less often than F4v1 in live play (15.3% against 54.0% of judged turns, desync proxy 9.2% against 17.2%), but with 7 sessions this does not survive the Holm correction, and F4 differs from F4v1 in more than the repair node. The judge's labels are not yet validated against human ratings.
+The two clear gains are the currency invariant (validator gap 59.1% to 0%) and crash recovery (74.3% of crashes recovered inconsistently before, none after). Dialogue repair regenerated every rejected reply it was given (48 probes, 38 live F4 turns), but the judge found about the same contradiction rate in the draft and the repaired reply (41.7% against 39.6% on probes, 44.7% against 42.1% on live turns). Across whole sessions, however, F4 contradicted rejected changes on far fewer judged live turns than F4v1 (13.8% against 57.0%) and on fewer turns by the cue proxy (9.5% against 18.9%), both significant after Holm correction. Because repair did not change the verdict on the turns it rewrote, that gain comes from the other differences between F4 and F4v1: the corrected validator and the Review-03 prompt, which states the validator's limits. Consistent with that, F4v1 had a proposal rejected on 92 live turns and F4 on 38. So R3 is only partly confirmed. The judge's labels are not yet validated against human ratings.
 
 ### Error analysis
 
-Automatic failure coding ([`metrics/error_analysis_counts.csv`](notebooks/outputs/metrics/error_analysis_counts.csv), counts over all worlds; up to 50 examples per category and condition are in [`annotation/error_samples.csv`](notebooks/outputs/annotation/error_samples.csv), 1,250 rows):
+Automatic failure coding ([`metrics/error_analysis_counts.csv`](notebooks/outputs/metrics/error_analysis_counts.csv), counts over all worlds; up to 50 examples per category and condition are in [`annotation/error_samples.csv`](notebooks/outputs/annotation/error_samples.csv), 1,491 rows):
 
 | Metric | Category                  | A1  | A2  | A3  | A4  | A5  | A6  | B0  | B1  | B1x2 | B2  | B3  | B4  | B5  | F1  | F2  | F3  | F4  | F4v1 |
 | ------ | ------------------------- | --- | --- | --- | --- | --- | --- | --- | --- | ---- | --- | --- | --- | --- | --- | --- | --- | --- | ---- |
-| desync | desynchronisation (proxy) | 0   | 0   | 0   | 0   | 14  | 21  | 0   | 0   | 0    | 0   | 0   | 0   | 0   | 9   | 28  | 10  | 25  | 47   |
-| recall | confused with distractor  | 70  | 0   | 8   | 7   | 0   | 0   | 23  | 52  | 48   | 1   | 43  | 7   | 5   | 0   | 0   | 0   | 9   | 4    |
-| recall | hit but ignored           | 8   | 59  | 75  | 55  | 0   | 0   | 73  | 15  | 37   | 62  | 104 | 56  | 51  | 0   | 0   | 0   | 57  | 41   |
-| recall | retrieval miss            | 263 | 0   | 4   | 0   | 0   | 0   | 0   | 230 | 155  | 0   | 0   | 42  | 10  | 0   | 0   | 0   | 0   | 0    |
-| recall | schema failure            | 6   | 3   | 2   | 12  | 0   | 0   | 6   | 1   | 4    | 5   | 9   | 14  | 5   | 0   | 0   | 0   | 11  | 6    |
+| desync | desynchronisation (proxy) | 0   | 0   | 0   | 0   | 28  | 56  | 0   | 0   | 0    | 0   | 0   | 0   | 0   | 17  | 68  | 16  | 52  | 103  |
+| recall | confused with distractor  | 109 | 0   | 10  | 11  | 0   | 0   | 32  | 85  | 83   | 2   | 61  | 11  | 5   | 0   | 0   | 0   | 13  | 6    |
+| recall | hit but ignored           | 19  | 77  | 109 | 81  | 0   | 0   | 108 | 26  | 51   | 80  | 146 | 68  | 72  | 0   | 0   | 0   | 84  | 53   |
+| recall | retrieval miss            | 388 | 0   | 6   | 0   | 0   | 0   | 0   | 335 | 220  | 0   | 1   | 65  | 17  | 0   | 0   | 0   | 0   | 0    |
+| recall | schema failure            | 10  | 6   | 6   | 17  | 0   | 0   | 8   | 2   | 6    | 6   | 12  | 17  | 10  | 0   | 0   | 0   | 16  | 5    |
 
-F4 never failed because the gold turn was missing from the prompt. Its recall failures are cases where the gold turn was in the prompt and the model answered wrongly (57) or gave the distractor's value (9), against 41 and 4 for F4v1.
+F4 never failed because the gold turn was missing from the prompt. Its recall failures are cases where the gold turn was in the prompt and the model answered wrongly (84) or gave the distractor's value (13), against 53 and 6 for F4v1.
 
 ### Run utilisation
 
-![GPU utilisation of both T4s over the 5.55-hour run](notebooks/outputs/plots/13_gpu_utilisation.png)
+![GPU utilisation of both T4s over the 7.65-hour run](notebooks/outputs/plots/13_gpu_utilisation.png)
 
-Both GPUs stay near 100% from the pilot (0.5 h) to the end of the latency benchmark (4.6 h). The short drops are stage changes (pilot to recall at 0.6 h, live sessions to seed variance at 3.85 h); the section after 4.6 hours is the second backbone and the two independent families, with server restarts between them.
+Both GPUs stay near 100% from the pilot (0.5 h) to the end of the latency benchmark (6.4 h). The short drops are stage changes (pilot to recall at 0.6 h, the dialogue-repair stage at 4.4 h); the section after 6.4 hours is the second backbone and the two independent families, with server restarts between them.
 
 ### Limitations of this run
 
 Recorded by the notebook in [`metrics/article_tables.md`](notebooks/outputs/metrics/article_tables.md), plus the issues found afterwards:
 
-- Sample size is ladder level 1 of 7 (the second of 8 levels): 7 live sessions per condition are too few for the live Wilcoxon tests to reach significance after correction.
+- Sample size is ladder level 2 of 7 (the third of 8 levels): 63 recall sessions, 490 attacks, and 14 live sessions per condition, against the study's level-7 targets.
 - W3 was written by the notebook author, not by an independent contributor as the study design requires.
-- Recall, leaks, and desynchronisation are scored automatically, and the contradiction judge (Qwen2.5-7B, 182 items) is an LLM. The blinded sheets for two human raters are exported but not yet labelled, so Cohen's kappa and judge agreement are not available.
+- Recall, leaks, and desynchronisation are scored automatically, and the contradiction judge (Qwen2.5-7B, 364 items) is an LLM. The blinded sheets for two human raters are exported but not yet labelled, so Cohen's kappa and judge agreement are not available.
 - Token cost is in tokens only; latency was measured on 2 x T4 with vLLM, not on the hosted Groq endpoint the game uses.
-- F4v1 reuses the corrected reducer, event store, and commit node; it differs from F4 in the validator, the prompt builder, the unbudgeted memory assembly, and the absence of dialogue repair.
+- F4v1 reuses the corrected reducer, event store, and commit node; it differs from F4 in the validator, the prompt builder, the unbudgeted memory assembly, and the absence of dialogue repair, so neither its higher recall nor its higher contradiction rate can be attributed to one of these changes.
 - Live scripts keep addressing the scripted NPC even when a scripted move was not committed; this divergence is measured as desynchronisation.
 - B4 omits the Generative Agents importance score (an LLM call per memory write); B4 and B5 are re-implementations of the retrieval rules, not the original systems.
-- The secret-leak scorer still flags common words in W1's hand-written secrets (for example "looking"), so leak rates are upper bounds.
-- Table 6 and the local compute column of Table 4 count the dialogue-repair call as local compute; the corrected values above are recomputed from the saved rows, and a cache-only rerun regenerates them in the notebook's own tables.
+- The secret-leak scorer flags common words (for example "looking", or a player's own word that is also a secret keyword), so leak rates are upper bounds.
+- The run's oracle did not check the NPC id in trust changes, so the four rejected display-name trust proposals count as false rejections (fixed in the notebook for the next run).
 
 ## Evaluation output files
 
-The run's archive was extracted to [`notebooks/outputs/`](notebooks/outputs/) (192.0 MB extracted, 16.0 MB zipped, 95 files). The repository's `.gitignore` ignores every folder named `data/` or `logs/` and every `*.log` file, so `notebooks/outputs/data/` and `notebooks/outputs/logs/` are not tracked by Git; they exist only in a local extraction and inside [`notebooks/outputs.zip`](notebooks/outputs.zip). `data/adversarial_probes.jsonl` alone is about 130 MB, above GitHub's 100 MB file limit. The zip and the extracted folder hold the same 95 files; the committed notebook is the complete executed copy.
+The run's archive was extracted to [`notebooks/outputs/`](notebooks/outputs/) (206.0 MB extracted, 18.6 MB zipped, 95 files). The repository's `.gitignore` ignores every folder named `data/` or `logs/` and every `*.log` file, so `notebooks/outputs/data/` and `notebooks/outputs/logs/` are not tracked by Git; they exist only in a local extraction and inside [`notebooks/outputs.zip`](notebooks/outputs.zip). `data/adversarial_probes.jsonl` alone is about 130 MB, above GitHub's 100 MB file limit. The zip and the extracted folder hold the same 95 files; the committed notebook is the complete executed copy.
 
 | Folder         | Files                | Contents                                                                                                                                                                                                                                                                                                                                                                      |
 | -------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1451,22 +1454,22 @@ The run's archive was extracted to [`notebooks/outputs/`](notebooks/outputs/) (1
 
 Prediction files:
 
-| File                                                                                   | Rows              | Contents                                                                                                                                                                                                              |
-| -------------------------------------------------------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `recall_primary.csv`                                                                   | 5,460             | One row per (probe, condition): session, world, horizon, fact age, gold and distractor keys, gold-in-prompt, rank, parse result, correct, confused, prompt and output tokens, LLM time, cache flag (36 columns)       |
-| `recall_primary_replies.jsonl`                                                         | 5,460             | The raw model reply for each recall row                                                                                                                                                                               |
-| `recall_secondary.csv`                                                                 | 720               | The same for K2-Horizon-3.7B (9 conditions, horizon 100, 4 worlds)                                                                                                                                                    |
-| `recall_qwen2.5-7b.csv`, `recall_phi4-mini.csv`                                        | 560 each          | The same for the independent families (7 conditions)                                                                                                                                                                  |
-| `recall_seed_variance.csv`                                                             | 1,680             | Recall rows for the two extra sampling seeds                                                                                                                                                                          |
-| `probes_primary.csv`                                                                   | 2,875             | One row per (probe, variant, context): reply, proposals, leak flag, and for each of the four commit modes the oracle violations, transitions, and success flag, plus lawful and unlawful proposal counts (45 columns) |
-| `probes_secondary.csv`, `probes_qwen2.5-7b.csv`, `probes_phi4-mini.csv`                | 329 each          | Probe rows under the F4 context for the other backbones                                                                                                                                                               |
-| `repairs_primary.csv`                                                                  | 28                | Draft and repaired replies for rejected F4 probe outputs, with the committed and rejected changes                                                                                                                     |
-| `judge_desync.csv`                                                                     | 182               | The Qwen judge's contradiction label for each draft, repaired, and live reply                                                                                                                                         |
-| `live_turns.csv`                                                                       | 1,911             | One row per live turn: condition, kind, parse result, proposals, rejections, violations, draft and final desync, repair status, leak, per-node milliseconds, tokens, and the reply (45 columns)                       |
-| `llm_cache_primary.jsonl`                                                              | 10,583            | Response cache for the 7B model, keyed by model, seed, and prompt hash; attach it as an input dataset to resume a run                                                                                                 |
-| `llm_cache_secondary.jsonl`, `llm_cache_qwen2.5-7b.jsonl`, `llm_cache_phi4-mini.jsonl` | 1,049, 1,072, 890 | Response caches for the other models                                                                                                                                                                                  |
+| File                                                                                   | Rows                | Contents                                                                                                                                                                                                              |
+| -------------------------------------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `recall_primary.csv`                                                                   | 8,190               | One row per (probe, condition): session, world, horizon, fact age, gold and distractor keys, gold-in-prompt, rank, parse result, correct, confused, prompt and output tokens, LLM time, cache flag (36 columns)       |
+| `recall_primary_replies.jsonl`                                                         | 8,190               | The raw model reply for each recall row                                                                                                                                                                               |
+| `recall_secondary.csv`                                                                 | 1,080               | The same for K2-Horizon-3.7B (9 conditions, horizon 100, 4 worlds)                                                                                                                                                    |
+| `recall_qwen2.5-7b.csv`, `recall_phi4-mini.csv`                                        | 840 each            | The same for the independent families (7 conditions)                                                                                                                                                                  |
+| `recall_seed_variance.csv`                                                             | 1,680               | Recall rows for the two extra sampling seeds                                                                                                                                                                          |
+| `probes_primary.csv`                                                                   | 4,800               | One row per (probe, variant, context): reply, proposals, leak flag, and for each of the four commit modes the oracle violations, transitions, and success flag, plus lawful and unlawful proposal counts (45 columns) |
+| `probes_secondary.csv`, `probes_qwen2.5-7b.csv`, `probes_phi4-mini.csv`                | 550 each            | Probe rows under the F4 context for the other backbones                                                                                                                                                               |
+| `repairs_primary.csv`                                                                  | 48                  | Draft and repaired replies for rejected F4 probe outputs, with the committed and rejected changes                                                                                                                     |
+| `judge_desync.csv`                                                                     | 364                 | The Qwen judge's contradiction label for each draft, repaired, and live reply                                                                                                                                         |
+| `live_turns.csv`                                                                       | 3,822               | One row per live turn: condition, kind, parse result, proposals, rejections, violations, draft and final desync, repair status, leak, per-node milliseconds, tokens, and the reply (45 columns)                       |
+| `llm_cache_primary.jsonl`                                                              | 16,220              | Response cache for the 7B model, keyed by model, seed, and prompt hash; attach it as an input dataset to resume a run                                                                                                 |
+| `llm_cache_secondary.jsonl`, `llm_cache_qwen2.5-7b.jsonl`, `llm_cache_phi4-mini.jsonl` | 1,630, 1,755, 1,391 | Response caches for the other models                                                                                                                                                                                  |
 
-Annotation files: `recall_sheet.csv` (1,560 items: item, gold, reply, blank `correct_yes_no`), `dialogue_quality_sheet.csv` (200 items: NPC name, persona, player input, reply, committed and rejected changes, three blank 1-to-5 scales), `contradiction_sheet.csv` (133 items: player input, reply, committed and rejected changes, blank `contradiction_yes_no`), the matching `*_key.csv` files that link items back to conditions, and `error_samples.csv` (1,250 coded failures). The rating protocol is in [docs/human-evaluation.md](docs/human-evaluation.md). No model weights or checkpoints are included; the weights stay in the Kaggle session's `/tmp`.
+Annotation files: `recall_sheet.csv` (1,560 items: item, gold, reply, blank `correct_yes_no`), `dialogue_quality_sheet.csv` (200 items: NPC name, persona, player input, reply, committed and rejected changes, three blank 1-to-5 scales), `contradiction_sheet.csv` (194 items: player input, reply, committed and rejected changes, blank `contradiction_yes_no`), the matching `*_key.csv` files that link items back to conditions, and `error_samples.csv` (1,491 coded failures). The rating protocol is in [docs/human-evaluation.md](docs/human-evaluation.md). No model weights or checkpoints are included; the weights stay in the Kaggle session's `/tmp`.
 
 ## Security considerations
 
@@ -1476,7 +1479,7 @@ Annotation files: `recall_sheet.csv` (1,560 items: item, gold, reply, blank `cor
 - Unhandled exception details are hidden by default. Use `DEBUG_ERRORS=true` only for local debugging.
 - Vite binds to `localhost` by default. Use `VITE_DEV_HOST` only when LAN access is intended.
 - Player input and LLM output are untrusted. World changes are validated before they are applied; in the Review-03 evaluation no probe or live output committed a state violation through the barrier, and its validator gap was 0% (see [ARCHITECTURE.md](ARCHITECTURE.md#known-gaps-and-recommended-changes)).
-- Prompt injection: in the Review-03 probes, no injection attack led to a committed violation in any commit mode (0.0% of 210 attacks). Dialogue text itself is still model-generated, and NPC secrets are placed in the prompt once trust reaches 60.
+- Prompt injection: in the Review-03 probes, no injection attack led to a committed violation in any commit mode (0.0% of 350 attacks). Dialogue text itself is still model-generated, and NPC secrets are placed in the prompt once trust reaches 60.
 
 ## Performance considerations
 
@@ -1503,16 +1506,16 @@ Measured in the evaluation (K2-Horizon-7B on 2 x T4, not the Groq endpoint):
 
 | Metric                                     | Value                                                       | Source                       |
 | ------------------------------------------ | ----------------------------------------------------------- | ---------------------------- |
-| Local compute per turn, single stream      | P50 18.2 ms, P95 23.4 ms (without the LLM and repair calls) | Table 6 (corrected)          |
-| Validation per turn                        | P50 0.014 ms, P95 1.365 ms                                  | Table 6                      |
-| Commit per turn (SQLite and memory update) | P50 9.7 ms, P95 15.4 ms                                     | Table 6                      |
-| Retrieval per turn                         | P50 0.172 ms, P95 0.229 ms                                  | Table 6                      |
-| LLM time per live turn, single stream (F4) | P50 8,839 ms, P95 16,101 ms (24 turns)                      | Table 6                      |
-| Dialogue repair call, single stream        | 10,492 ms and 11,398 ms (2 of 24 turns)                     | Table 6 (corrected)          |
-| LLM time per recall request, single stream | P50 7,147 ms, P95 8,699 ms (F4, 12 requests)                | Table 1                      |
-| LLM time per turn, 49 concurrent sessions  | median 48.5 s (F4)                                          | `predictions/live_turns.csv` |
-| Input tokens per turn (F4)                 | 1,445                                                       | Table 1                      |
-| Recovery at turn 160                       | 1.6 ms from snapshot, 280.7 ms by full replay               | Table 4                      |
+| Local compute per turn, single stream      | P50 15.1 ms, P95 19.2 ms (without the LLM and repair calls) | Table 6                      |
+| Validation per turn                        | P50 0.013 ms, P95 1.397 ms                                  | Table 6                      |
+| Commit per turn (SQLite and memory update) | P50 8.4 ms, P95 13.0 ms                                     | Table 6                      |
+| Retrieval per turn                         | P50 0.153 ms, P95 0.241 ms                                  | Table 6                      |
+| LLM time per live turn, single stream (F4) | P50 8,113 ms, P95 14,933 ms (24 turns)                      | Table 6                      |
+| Dialogue repair call, single stream        | 6,884 ms and 5,284 ms (2 of 24 turns)                       | Table 6                      |
+| LLM time per recall request, single stream | P50 6,593 ms, P95 8,120 ms (F4, 12 requests)                | Table 1                      |
+| LLM time per turn, 98 concurrent sessions  | median 54.5 s (F4)                                          | `predictions/live_turns.csv` |
+| Input tokens per turn (F4)                 | 1,444                                                       | Table 1                      |
+| Recovery at turn 160                       | 1.4 ms from snapshot, 243.2 ms by full replay               | Table 4                      |
 
 Request throughput, memory use, and WebSocket capacity of the game server: `Not measured in the current repository.`
 
@@ -1529,7 +1532,7 @@ Request throughput, memory use, and WebSocket capacity of the game server: `Not 
 
 | Metric                           | Value                                     | Source or command                                                                              |
 | -------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Tracked files                    | `220` at commit `62ce6a0`                 | `git ls-files \| wc -l`                                                                        |
+| Tracked files                    | `220` at commit `168087e`                 | `git ls-files \| wc -l`                                                                        |
 | Backend tracked files            | `50`                                      | `git ls-files Backend \| wc -l`                                                                |
 | Frontend tracked files           | `68`                                      | `git ls-files Frontend \| wc -l`                                                               |
 | HTTP endpoints                   | `18`                                      | Route decorators in [`Backend/api`](Backend/api)                                               |
@@ -1545,9 +1548,9 @@ Request throughput, memory use, and WebSocket capacity of the game server: `Not 
 | World W1                         | 8 locations, 4 NPCs, 4 objects, 7 rules   | [`Backend/game/world_seed.json`](Backend/game/world_seed.json)                                 |
 | Notebook cells                   | `147` (73 code)                           | [`notebooks/npc-memory-state-benchmark.ipynb`](notebooks/npc-memory-state-benchmark.ipynb)     |
 | Evaluation figures               | `15`                                      | [`notebooks/outputs/plots`](notebooks/outputs/plots)                                           |
-| Evaluation run time              | `5.55` hours                              | [`notebooks/outputs/metrics/run_manifest.json`](notebooks/outputs/metrics/run_manifest.json)   |
-| JS bundle gzip size              | `128.84 kB`                               | `npm run build`, 24 October 2026                                                               |
-| CSS bundle gzip size             | `6.06 kB`                                 | `npm run build`, 24 October 2026                                                               |
+| Evaluation run time              | `7.65` hours                              | [`notebooks/outputs/metrics/run_manifest.json`](notebooks/outputs/metrics/run_manifest.json)   |
+| JS bundle gzip size              | `128.84 kB`                               | `npm run build`, 25 October 2026                                                               |
+| CSS bundle gzip size             | `6.06 kB`                                 | `npm run build`, 25 October 2026                                                               |
 | Default ports                    | backend `8000`, frontend `8080`           | [`Backend/config.py`](Backend/config.py), [`Frontend/vite.config.ts`](Frontend/vite.config.ts) |
 
 ## Troubleshooting
@@ -1577,10 +1580,11 @@ Request throughput, memory use, and WebSocket capacity of the game server: `Not 
 - No authentication, authorisation, or rate limiting.
 - Backend API tests stub the embedder, Groq client, and LangGraph pipeline; real LLM turns are tested only by the evaluation notebook.
 - Frontend tests cover the HTTP client and dialogue mapping, not route rendering or WebSocket flows.
-- The defects found by the Review-02 evaluation are fixed in the code (see [ARCHITECTURE.md](ARCHITECTURE.md#known-gaps-and-recommended-changes)). Both Review-03 runs confirmed the currency and recovery fixes; neither found a measurable benefit from dialogue repair.
+- The defects found by the Review-02 evaluation are fixed in the code (see [ARCHITECTURE.md](ARCHITECTURE.md#known-gaps-and-recommended-changes)). All three Review-03 runs confirmed the currency and recovery fixes; none found that rewriting a rejected reply changes the judge's verdict on that turn, although the third found far fewer contradicted live turns for the corrected system than for the Review-02 system.
 - The validator checks structure, not plausibility: a lawful-sized trust change with no reason in the dialogue still passes.
 - Dialogue repair costs one extra LLM call on each turn with a rejected proposal.
-- The saved evaluation used ladder level 1 (the second of 8 levels numbered 0 to 7), self-hosted models rather than the game's Groq model, and automatic scoring. Human ratings need two raters to fill the exported sheets. Its saved Table 6 counts the dialogue-repair call as local compute, as listed in [Changes made after the run](#changes-made-after-the-run).
+- The saved evaluation used ladder level 2 (the third of 8 levels numbered 0 to 7), self-hosted models rather than the game's Groq model, and automatic scoring. Human ratings need two raters to fill the exported sheets.
+- The Review-03 memory and prompt changes recall less than the Review-02 system in the evaluation (83.0% against 88.6% at age 20 or more); the run does not show which of the two changes causes it.
 - `SESSION_SECRET` is loaded but not used.
 
 ## Contribution guidelines
