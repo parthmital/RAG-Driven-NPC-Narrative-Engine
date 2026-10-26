@@ -76,7 +76,7 @@ const steps = [
 const seconds = (since) => `${((Date.now() - since) / 1000).toFixed(1)}s`;
 
 try {
-	ensureSetup();
+	await ensureSetup();
 	const startedAt = Date.now();
 	for (const [name, step] of steps) {
 		const stepStartedAt = Date.now();

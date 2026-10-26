@@ -3,7 +3,7 @@
 // Sets up everything on first run, then starts each long-running service in
 // its own titled terminal window (Windows) or with prefixed output (elsewhere).
 // Ctrl+C here stops every process tree and window.
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
@@ -16,6 +16,7 @@ import {
 	VENV_PYTHON,
 	ensureSetup,
 	fail,
+	killTree,
 	log,
 	ok,
 	repoEnv,
@@ -93,21 +94,6 @@ async function portBusy(port) {
 		accepts("::1", port),
 	]);
 	return results.some(Boolean);
-}
-
-function killTree(pid) {
-	if (!pid) return;
-	if (IS_WINDOWS) {
-		spawnSync("taskkill", ["/pid", String(pid), "/T", "/F"], {
-			stdio: "ignore",
-		});
-	} else {
-		try {
-			process.kill(-pid, "SIGTERM");
-		} catch {
-			// already gone
-		}
-	}
 }
 
 function startInWindow(name, service) {
@@ -188,12 +174,9 @@ async function main() {
 		fs.rmSync(RUN_DIR, { recursive: true, force: true });
 		process.exit(code);
 	};
-	process.on("SIGINT", () => stop(0));
-	process.on("SIGTERM", () => stop(0));
-	process.on("SIGHUP", () => stop(0));
 
 	try {
-		ensureSetup();
+		await ensureSetup();
 		for (const service of Object.values(SERVICES)) {
 			if (await portBusy(service.port)) {
 				throw new SetupError(
@@ -207,6 +190,10 @@ async function main() {
 		process.exit(1);
 	}
 
+	// Registered after setup, which handles its own interrupts.
+	for (const signal of ["SIGINT", "SIGTERM", "SIGHUP", "SIGBREAK"]) {
+		process.on(signal, () => stop(0));
+	}
 	fs.rmSync(RUN_DIR, { recursive: true, force: true });
 	fs.mkdirSync(RUN_DIR, { recursive: true });
 	for (const [name, service] of Object.entries(SERVICES)) {

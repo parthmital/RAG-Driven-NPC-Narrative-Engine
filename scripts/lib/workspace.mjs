@@ -1,5 +1,5 @@
 // Repository-local environment, runtime discovery, and idempotent first-run setup.
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -92,10 +92,129 @@ export function npm(args, options = {}) {
 	if (npmCli && npmCli.endsWith(".js")) {
 		return run(process.execPath, [npmCli, ...args], options);
 	}
-	return run(IS_WINDOWS ? "npm.cmd" : "npm", args, {
-		what: "npm",
-		...options,
-		shell: IS_WINDOWS,
+	// npm.cmd needs a shell on Windows; one command string avoids Node's
+	// DEP0190 warning about unescaped args (they are fixed literals here).
+	return IS_WINDOWS
+		? run(`npm.cmd ${args.join(" ")}`, [], {
+				what: "npm",
+				...options,
+				shell: true,
+			})
+		: run("npm", args, { what: "npm", ...options });
+}
+
+/** Kill a process and all of its descendants. */
+export function killTree(pid) {
+	if (!pid) return;
+	if (IS_WINDOWS) {
+		spawnSync("taskkill", ["/pid", String(pid), "/T", "/F"], {
+			stdio: "ignore",
+		});
+	} else {
+		try {
+			process.kill(-pid, "SIGTERM");
+		} catch {
+			// already gone
+		}
+	}
+}
+
+const HEARTBEAT_MS = 20_000;
+// pip's verbose log of the last backend install, for diagnosing a slow or failed run.
+const PIP_LOG = path.join(CACHE, "pip-install.log");
+
+/**
+ * Install the backend requirements with a live status line. pip's own output
+ * is captured and shown only on failure; big downloads, the install phase and
+ * a heartbeat are logged so the long, otherwise silent unpacking of PyTorch
+ * never looks like a hang. Ctrl+C stops pip and says how to resume.
+ */
+function installBackendRequirements(env) {
+	const startedAt = Date.now();
+	const elapsed = () => {
+		const s = Math.round((Date.now() - startedAt) / 1000);
+		return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`;
+	};
+	let phase = "resolving packages";
+	let collected = 0;
+	const output = [];
+	fs.rmSync(PIP_LOG, { force: true });
+	const child = spawn(
+		VENV_PYTHON,
+		[
+			...["-m", "pip", "install", "--progress-bar", "off"],
+			...["--log", PIP_LOG, "-r", REQUIREMENTS],
+		],
+		{ cwd: BACKEND, env, detached: !IS_WINDOWS },
+	);
+	const onLine = (line) => {
+		output.push(line);
+		const download = line.match(/^\s*Downloading (\S+) \(([\d.]+) (\w+)\)/);
+		const installing = line.match(/^Installing collected packages: (.*)/);
+		if (line.startsWith("Collecting ")) {
+			collected += 1;
+			phase = `resolving packages (${collected} found)`;
+		} else if (download && !download[1].endsWith(".metadata")) {
+			phase = `downloading ${download[1]}`;
+			if (download[3] === "MB" && Number(download[2]) >= 10) {
+				log(`Downloading ${download[1]} (${download[2]} MB)...`);
+			}
+		} else if (installing) {
+			const count = installing[1].split(",").length;
+			phase = `installing ${count} packages`;
+			log(
+				`Installing ${count} packages into .venv; unpacking PyTorch takes a few minutes...`,
+			);
+		}
+	};
+	for (const stream of [child.stdout, child.stderr]) {
+		let buffer = "";
+		stream.setEncoding("utf-8");
+		stream.on("data", (chunk) => {
+			buffer += chunk;
+			const lines = buffer.split(/\r?\n/);
+			buffer = lines.pop();
+			lines.forEach(onLine);
+		});
+	}
+	const heartbeat = setInterval(
+		() => log(`Still ${phase} (${elapsed()})`),
+		HEARTBEAT_MS,
+	);
+	const interrupt = () => {
+		killTree(child.pid);
+		fail(
+			"Setup interrupted. Run the same command again to resume; finished downloads are cached in .cache/pip.",
+		);
+		process.exit(130);
+	};
+	const signals = ["SIGINT", "SIGTERM", "SIGHUP", "SIGBREAK"];
+	for (const signal of signals) process.on(signal, interrupt);
+
+	return new Promise((resolve, reject) => {
+		const done = (error) => {
+			clearInterval(heartbeat);
+			for (const signal of signals) process.off(signal, interrupt);
+			if (error) {
+				process.stderr.write(`${output.join("\n")}\n`);
+				reject(error);
+			} else {
+				ok(`Backend requirements installed in ${elapsed()}`);
+				resolve();
+			}
+		};
+		child.on("error", (error) =>
+			done(new SetupError(`Backend pip install: ${error.message}`)),
+		);
+		child.on("exit", (code) =>
+			done(
+				code === 0
+					? null
+					: new SetupError(
+							`Backend pip install failed (exit code ${code}). Full log: ${path.relative(ROOT, PIP_LOG)}`,
+						),
+			),
+		);
 	});
 }
 
@@ -170,7 +289,7 @@ function pythonHealthy() {
  * Install Node deps, the .venv, and .env on first run; later runs skip each
  * part unless its lockfile changed or its environment is broken.
  */
-export function ensureSetup() {
+export async function ensureSetup() {
 	assertNodeVersion();
 	fs.mkdirSync(CACHE, { recursive: true });
 	const stamp = readStamp();
@@ -210,11 +329,7 @@ export function ensureSetup() {
 		log(
 			"Installing backend requirements into .venv (first run downloads PyTorch)...",
 		);
-		run(VENV_PYTHON, ["-m", "pip", "install", "--quiet", "-r", REQUIREMENTS], {
-			cwd: BACKEND,
-			env,
-			what: "Backend pip install",
-		});
+		await installBackendRequirements(env);
 		stamp.python = pyHash;
 	} else {
 		upToDate.push("Python");

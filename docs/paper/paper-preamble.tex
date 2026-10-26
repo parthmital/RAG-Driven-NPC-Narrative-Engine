@@ -1,0 +1,127 @@
+% Shared preamble of main.tex (the manuscript) and supplementary.tex (its supplementary
+% material). Each loads IEEEtran, then \input{paper-preamble}. The wrappers define one switch
+% before that: \Anonymised (no authors, e-mails, repository or commit links, system name
+% replaced), \TitlePage or \NoReferences (main.tex only).
+\usepackage{amsmath,amsfonts,amssymb,amsthm}
+\usepackage{dsfont} % \mathds{1}: amssymb has no blackboard-bold 1
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{array}
+\usepackage{textcomp}
+\usepackage{stfloats}
+\usepackage{float} % [H] for the one-column supplementary tables
+\usepackage{graphicx}
+\usepackage{adjustbox}
+\usepackage{booktabs,tabularx,multirow}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,fit,calc}
+\usepackage{enumitem}
+\usepackage{cite} % numeric citations in order of first citation (IEEEtran.bst)
+\usepackage{xurl}
+\usepackage{xr-hyper} % references between the manuscript and the supplementary PDF
+\usepackage{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
+\hyphenation{op-tical net-works semi-conduc-tor IEEE-Xplore}
+\definecolor{linkblue}{RGB}{0,70,140}
+\definecolor{citegreen}{RGB}{0,100,60}
+\hypersetup{colorlinks=true, linkcolor=linkblue, citecolor=citegreen,
+  urlcolor=linkblue, filecolor=linkblue,
+  bookmarksnumbered=true,
+  pdftitle={Memory and State Control for LLM-Driven NPC Dialogue}}
+\ifdefined\Anonymised
+  \def\Variant{-anonymised}
+\else
+  \def\Variant{}
+  \hypersetup{pdfauthor={Parth Mital, Bhumika Singh, Pranesh Gopal, Kalyanaraman P}}
+\fi
+
+% Repository links: Backend modules and the configuration are pinned to the evaluated
+% commit (the backend embedded in the notebook for the Review-03 run), notebook outputs are linked on main.
+\newcommand{\repo}{https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine}
+\newcommand{\evalcommit}{8a98f165ce2cb5901cb2f25f8acfc7794b021fac}
+% \linkpath{url prefix}{path}: link to prefix+path, typeset the path with url-style line breaks
+\newcommand{\linkpath}[2]{\href{#1\detokenize{#2}}{\expandafter\nolinkurl\expandafter{\detokenize{#2}}}}
+\newcommand{\bsrc}[1]{\linkpath{\repo/blob/\evalcommit/Backend/}{#1}}
+\newcommand{\esrc}[1]{\linkpath{\repo/blob/\evalcommit/}{#1}}
+\newcommand{\msrc}[1]{\linkpath{\repo/blob/main/}{#1}}
+\newcommand{\mdir}[1]{\linkpath{\repo/tree/main/}{#1}}
+\newcommand{\osrc}[1]{\linkpath{\repo/blob/main/notebooks/outputs/}{#1}}
+\newcommand{\commit}[1]{\href{\repo/commit/#1}{\nolinkurl{#1}}}
+% \repolink{url}{text}: a link into the repository
+\newcommand{\repolink}[2]{\href{#1}{#2}}
+% The anonymised copies keep paths and drop every repository or commit link and the system name.
+\ifdefined\Anonymised
+  \renewcommand{\linkpath}[2]{\nolinkurl{#2}}
+  \renewcommand{\commit}[1]{[commit withheld for review]}
+  \renewcommand{\repolink}[2]{#2}
+\fi
+\newcommand{\hfmodel}[1]{\href{https://huggingface.co/#1}{\texttt{#1}}}
+
+% unique hyperref anchors for algorithm lines across several algorithms
+\makeatletter
+\def\theHALG@line{\thealgorithm.\arabic{ALG@line}}
+\makeatother
+
+\graphicspath{{../../notebooks/outputs/plots/}}
+% Many full-width floats: let pages carry more of them so each lands next to its first mention.
+\setcounter{topnumber}{3}
+\setcounter{dbltopnumber}{3}
+% stfloats: a full-width float may sit at the foot of the page that cites it
+\setcounter{dblbotnumber}{2}
+\def\dblbotfraction{0.6}
+\setcounter{totalnumber}{4}
+\renewcommand{\topfraction}{0.95}
+\renewcommand{\dbltopfraction}{0.95}
+\renewcommand{\textfraction}{0.05}
+\renewcommand{\floatpagefraction}{0.5}
+\renewcommand{\dblfloatpagefraction}{0.5}
+% Stack floats from the top of float pages instead of spreading them over the page.
+\makeatletter
+\setlength{\@fptop}{0pt}
+\setlength{\@fpsep}{\floatsep}
+\setlength{\@fpbot}{0pt plus 1fil}
+\setlength{\@dblfptop}{0pt}
+\setlength{\@dblfpsep}{\dblfloatsep}
+\setlength{\@dblfpbot}{0pt plus 1fil}
+\makeatother
+\setlength{\emergencystretch}{2.5em}
+\setlist{itemsep=2pt,topsep=4pt}
+\renewcommand{\arraystretch}{1.12}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\theoremstyle{plain}
+\newtheorem{proposition}{Proposition}
+\crefname{proposition}{Proposition}{Propositions}
+\crefname{definition}{Definition}{Definitions}
+\crefname{algorithm}{Algorithm}{Algorithms}
+\crefname{figure}{Fig.}{Figs.}
+\Crefname{figure}{Fig.}{Figs.}
+
+\ifdefined\Anonymised
+  \newcommand{\Sys}{\textsc{Engine-X}}
+\else
+  \newcommand{\Sys}{\textsc{Obsidian Flask}}
+\fi
+\newcommand{\ci}[3]{#1\,[#2,\,#3]}
+\newcommand{\code}[1]{\texttt{#1}}
+% allow line breaks after underscores in identifiers and file names
+\let\origunderscore\_
+\renewcommand{\_}{\origunderscore\allowbreak}
+\DeclareMathOperator{\foldl}{foldl}
+\DeclareMathOperator{\topk}{top}
+
+\newcommand{\PaperTitle}{Memory and State Control for LLM-Driven NPC Dialogue: Scoped Dual-Tier Memory and Pre-Commit Invariant Validation under a Paired, Oracle-Audited Evaluation}
+% \PaperAuthors: the author block and running heads (anonymous in the anonymised copies)
+\newcommand{\PaperAuthors}{%
+\ifdefined\Anonymised
+  \author{Anonymous Authors}%
+  \markboth{October~2026}{Anonymous: Memory and State Control for LLM-Driven NPC Dialogue}%
+\else
+  \author{Parth~Mital, Bhumika~Singh, Pranesh~Gopal, and~Kalyanaraman~P%
+  \thanks{The authors are with the School of Computer Science and Engineering, Vellore Institute of Technology. Dr.\ Kalyanaraman P is the faculty author (e-mail: \href{mailto:parth.mital2023@vitstudent.ac.in}{\nolinkurl{parth.mital2023@vitstudent.ac.in}}, \href{mailto:bhumika.2023a@vitstudent.ac.in}{\nolinkurl{bhumika.2023a@vitstudent.ac.in}}, \href{mailto:pranesh.gopal2023@vitstudent.ac.in}{\nolinkurl{pranesh.gopal2023@vitstudent.ac.in}}, \href{mailto:pkalyanaraman@vit.ac.in}{\nolinkurl{pkalyanaraman@vit.ac.in}}).}%
+  \thanks{Source code, benchmark and run outputs: \url{https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine}.}}%
+  \markboth{October~2026}{Mital \MakeLowercase{\textit{et al.}}: Memory and State Control for LLM-Driven NPC Dialogue}%
+\fi}

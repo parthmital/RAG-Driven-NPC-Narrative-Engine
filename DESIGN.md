@@ -1,5 +1,8 @@
 # Design
 
+Purpose: how the UI looks and behaves. Read when: changing any user-facing UI.
+Last verified: 2026-10-26.
+
 The design system and UI decisions of The Obsidian Flask frontend (`Frontend/`). Keep this file in sync with the code it describes: tokens in [Frontend/src/index.css](Frontend/src/index.css) and [Frontend/tailwind.config.ts](Frontend/tailwind.config.ts), primitives in [Frontend/src/components/ui/](Frontend/src/components/ui/), and screens in [Frontend/src/pages/](Frontend/src/pages/). Module boundaries are in [ARCHITECTURE.md](ARCHITECTURE.md); screenshots are in the [README](README.md#screenshots).
 
 ## Brief

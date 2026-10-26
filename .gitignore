@@ -25,8 +25,9 @@ MANIFEST
 .codex-local/
 .agent-local/
 
-# IDE
-.vscode/
+# IDE (the shared workspace settings activate .venv in new terminals)
+.vscode/*
+!.vscode/settings.json
 .idea/
 *.swp
 *.swo

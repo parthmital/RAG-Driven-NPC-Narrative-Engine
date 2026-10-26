@@ -44,6 +44,7 @@ The repository also contains a full evaluation of the engine's two mechanisms, s
 - [Coding standards](#coding-standards)
 - [Licence](#licence)
 - [Support and contact information](#support-and-contact-information)
+- [Documentation](#documentation)
 
 ## Screenshots
 
@@ -83,7 +84,7 @@ Run these commands from the repository root.
    npm run dev
    ```
 
-   The first run installs Node dependencies, creates `.venv` with the backend requirements, and copies [`Backend/.env.example`](Backend/.env.example) to `Backend/.env`. It then starts the backend and frontend in separate titled windows on Windows, or with prefixed output in the same terminal on macOS and Linux. Once both services respond, it opens `http://localhost:8080`.
+   The first run installs Node dependencies, creates `.venv` with the backend requirements, and copies [`Backend/.env.example`](Backend/.env.example) to `Backend/.env`. The backend install downloads and unpacks PyTorch, which takes several minutes. The terminal prints a status line every 20 seconds (`Still downloading ...`, `Still installing ...`) so a slow step is never mistaken for a hang. If you press `Ctrl+C` during setup, it stops pip and tells you to run the command again, and the next run resumes from the cached downloads. It then starts the backend and frontend in separate titled windows on Windows, or with prefixed output in the same terminal on macOS and Linux. Once both services respond, it opens `http://localhost:8080`.
 
 2. Set `GROQ_API_KEY` in `Backend/.env`; LLM gameplay needs it. Restart `npm run dev` after editing it.
 
@@ -94,7 +95,7 @@ Common quick start errors:
 | Problem                                     | Likely cause                                          | Resolution                                                                |
 | ------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------- |
 | `Port 8000 is busy` or `Port 8080 is busy`  | Another process or an earlier run holds the port      | Stop that process, then rerun `npm run dev`                               |
-| First backend startup is slow               | ML packages or the embedding model are being cached   | Wait for setup to finish. Files are cached under `.cache` for later runs  |
+| First setup run takes several minutes       | PyTorch is downloaded and unpacked into `.venv`       | Wait while `Still ...` status lines appear. Later runs reuse `.cache`     |
 | Frontend stays on the loading screen        | Backend `/health` is not ready                        | Check the backend terminal output and open `http://127.0.0.1:8000/health` |
 | Action submission fails                     | Missing or invalid `GROQ_API_KEY`                     | Set `GROQ_API_KEY` in `Backend/.env` and restart                          |
 | Character creation returns validation error | `age` is below `18` or required text fields are empty | Use a non empty name, gender, occupation, and age `18` or higher          |
@@ -115,8 +116,10 @@ Further reading:
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): module map, dependency rules, data flow, decisions, and operations.
 - [DESIGN.md](DESIGN.md): the frontend design system: palette, type, layout, breakpoints, components, motion, and copy.
-- [docs/paper/main.pdf](docs/paper/main.pdf): the research paper on the study, written in LaTeX ([source](docs/paper/main.tex), [bibliography](docs/paper/references.bib)), with a formal model and an audit of the results against the raw run outputs. Its sections follow the project report format: Introduction, Literature Survey, Research Gap, Proposed Methodology, Dataset Description and Usage, Novelty, Algorithms, Implementation, and Comparison of Results. The base paper is Generative Agents (Park et al., UIST 2023), and the results section compares the engine with it. All 44 references are published papers, with no preprints. Secondary tables and figures are in a one-column Supplementary Results appendix. It is typeset in the two-column IEEE Transactions journal format: [docs/paper/IEEEtran.cls](docs/paper/IEEEtran.cls) is an unmodified copy of the class (V1.8b) from the IEEE Transactions LaTeX template, and references use the IEEEtran bibliography style. Rebuild it with `npm run paper`.
-- [RESEARCH.md](RESEARCH.md): sources and search notes for the paper's literature survey.
+- [docs/paper/main.pdf](docs/paper/main.pdf): the research paper on the study, written in LaTeX ([source](docs/paper/main.tex), [bibliography](docs/paper/references.bib)), with a formal model and an audit of the results against the raw run outputs. It targets IEEE Transactions on Games (see [RESEARCH.md](RESEARCH.md#target-journal-for-the-paper-2026-10-26)), so the manuscript fits the journal's 10-page limit including references, its abstract is at most 200 words, and it has five keywords. Everything that does not fit (the algorithms, the dataset details, the run configuration and audit, and every secondary table and figure) is in [docs/paper/supplementary.pdf](docs/paper/supplementary.pdf) ([source](docs/paper/supplementary.tex)), a one-column document whose items are numbered S1, S2, and so on. The two PDFs link to each other. The same sources also build three submission variants: [main-anonymised.pdf](docs/paper/main-anonymised.pdf) with [supplementary-anonymised.pdf](docs/paper/supplementary-anonymised.pdf) (double-anonymised, with no authors or repository links and the system name replaced), [main-title-page.pdf](docs/paper/main-title-page.pdf) (title, authors, abstract, keywords, and the corresponding author), and [main-no-references.pdf](docs/paper/main-no-references.pdf) (for similarity checks, with the reference list removed and citations kept). The manuscript's sections follow the project report format: Introduction, Literature Survey, Research Gap, Proposed Methodology, Dataset Description and Usage, Novelty, Algorithms, Implementation, and Comparison of Results. The base paper is Generative Agents (Park et al., UIST 2023), and the results section compares the engine with it. All 44 references are published papers, with no preprints. Both documents share [docs/paper/paper-preamble.tex](docs/paper/paper-preamble.tex). It is typeset in the two-column IEEE Transactions journal format: [docs/paper/IEEEtran.cls](docs/paper/IEEEtran.cls) is an unmodified copy of the class (V1.8b) from the IEEE Transactions LaTeX template, and references use the IEEEtran bibliography style. Rebuild it with `npm run paper`.
+- [RESEARCH.md](RESEARCH.md): sources and search notes for the paper's literature survey and target journal.
+- [EXPLAINER.md](EXPLAINER.md): the whole project explained from scratch, for interviews and presentations.
+- [AGENTS.md](AGENTS.md): commands, conventions, and gotchas for coding agents.
 
 ## Problem statement
 
@@ -209,9 +212,11 @@ Game application (versions from repository files):
 | Pydantic              | `>=2.0,<3.0`                    | Data validation                 | [`Backend/api/schemas.py`](Backend/api/schemas.py), [`Backend/schemas`](Backend/schemas)                                 | Defines API contracts, world state, event, and LLM output models                                                              |
 | LangGraph             | `>=0.2,<1.0`                    | Turn pipeline orchestration     | [`Backend/graph/definition.py`](Backend/graph/definition.py)                                                             | Runs the fixed graph from input to output                                                                                     |
 | Groq SDK              | `>=0.9.0`                       | LLM provider client             | [`Backend/llm/groq_client.py`](Backend/llm/groq_client.py)                                                               | Sends prompts to the configured Groq model ([`openai/gpt-oss-120b`](https://console.groq.com/docs/model/openai/gpt-oss-120b)) |
-| Sentence Transformers | `>=2.7,<4.0`                    | Text embeddings                 | [`Backend/memory/embedder.py`](Backend/memory/embedder.py)                                                               | Converts player input to 384-dimensional vectors                                                                              |
+| Sentence Transformers | `>=2.7,<6.0`                    | Text embeddings                 | [`Backend/memory/embedder.py`](Backend/memory/embedder.py)                                                               | Converts player input to 384-dimensional vectors                                                                              |
 | PyTorch               | `>=2.2,<3.0`                    | ML runtime                      | Backend embeddings                                                                                                       | Required by sentence transformers                                                                                             |
 | FAISS CPU             | `>=1.7,<2.0`                    | Vector search                   | [`Backend/memory/faiss_index.py`](Backend/memory/faiss_index.py)                                                         | Exact inner product search over memory vectors                                                                                |
+| NumPy                 | `>=1.24,<3.0`                   | Vector arrays                   | [`Backend/memory`](Backend/memory)                                                                                       | Holds embeddings for FAISS. NumPy 2 is allowed because NumPy 1.x has no wheels for Python 3.13 and newer                      |
+| Uvicorn (standard)    | `>=0.30,<1.0`                   | ASGI server                     | [`Backend/server.py`](Backend/server.py)                                                                                 | Serves FastAPI and installs `websockets` for `/ws/game`. `websockets` is not pinned separately (see Troubleshooting)          |
 | SQLite                | Python standard library         | Event store and embedding cache | [`Backend/core/event_store.py`](Backend/core/event_store.py), [`Backend/memory/embedder.py`](Backend/memory/embedder.py) | Stores events and cached vectors without a separate database server                                                           |
 | React                 | `^18.3.1`                       | UI framework                    | [`Frontend/src`](Frontend/src)                                                                                           | Renders the game interface                                                                                                    |
 | TypeScript            | `^5.8.3`                        | Frontend typing                 | [`Frontend/src`](Frontend/src), config files                                                                             | Provides typed API client, store, and UI code                                                                                 |
@@ -303,7 +308,14 @@ RAG-Driven-NPC-Narrative-Engine/
 |   |-- vite.config.ts          # Dev server and proxy config
 |   `-- vitest.config.ts        # Vitest config
 |-- docs/
-|   |-- paper/                  # IEEE-format LaTeX paper: main.tex, references.bib, IEEEtran.cls, compiled main.pdf
+|   |-- paper/                  # IEEE-format LaTeX paper, references.bib, IEEEtran.cls, six compiled PDFs
+|   |   |-- paper-preamble.tex  # Packages, macros, author block, and anonymisation switches shared by both documents
+|   |   |-- main.tex            # The 10-page manuscript
+|   |   |-- supplementary.tex   # Supplementary material (S-numbered), linked to the manuscript with xr-hyper
+|   |   |-- main-anonymised.tex     # Wrapper: double-anonymised manuscript
+|   |   |-- supplementary-anonymised.tex # Wrapper: double-anonymised supplement
+|   |   |-- main-title-page.tex     # Wrapper: separate title page with the corresponding author
+|   |   `-- main-no-references.tex  # Wrapper: similarity-check copy without the reference list
 |   |-- screenshots/            # Game screenshots used in this README
 |   |-- human-evaluation.md     # Rating protocol for the notebook's blinded annotation sheets
 |   `-- tectonic.exe            # Tectonic 0.15 LaTeX engine (Windows) used by `npm run paper`
@@ -316,9 +328,13 @@ RAG-Driven-NPC-Narrative-Engine/
 |   |-- dev.mjs                 # `npm run dev` launcher and service supervisor
 |   |-- check.mjs               # `npm run check` validation runner
 |   |-- notebook_bundle.py      # Embeds Backend/ in the notebook, or checks it is in sync
-|   `-- paper.mjs               # `npm run paper` LaTeX build with log checks
+|   `-- paper.mjs               # `npm run paper` LaTeX build of all six PDFs with log checks
+|-- .vscode/settings.json       # VS Code: .venv interpreter and a terminal profile that activates .venv
+|-- AGENTS.md                   # Commands, conventions, and gotchas for coding agents
 |-- ARCHITECTURE.md             # Module map, dependency rules, data flow, operations
 |-- DESIGN.md                   # Frontend design system and UI decisions
+|-- EXPLAINER.md                # The whole project explained for humans
+|-- RESEARCH.md                 # Dated research behind the paper and its decisions
 |-- package.json                # Root npm scripts and the clone detector
 `-- README.md                   # This file
 ```
@@ -341,12 +357,13 @@ npm run dev
 The root dev command performs the complete idempotent setup through [scripts/lib/workspace.mjs](scripts/lib/workspace.mjs):
 
 - Runs `npm ci` at the root and in `Frontend`.
-- Creates `.venv` in the repository root when missing and installs [`Backend/requirements-dev.txt`](Backend/requirements-dev.txt) through the `.venv` interpreter only.
+- Creates `.venv` in the repository root when missing and installs [`Backend/requirements-dev.txt`](Backend/requirements-dev.txt) through the `.venv` interpreter only. pip's own output is captured: the terminal shows large downloads, the install step, and a status line every 20 seconds, and the full pip output is printed only if the install fails. pip's verbose log of the last install is kept in `.cache/pip-install.log`.
+- Handles `Ctrl+C` during the pip install: it stops pip's whole process tree and prints how to resume. Rerunning the command resumes, because finished downloads are cached in `.cache/pip` and the setup stamp is written only after setup succeeds.
 - Copies [`Backend/.env.example`](Backend/.env.example) to `Backend/.env` when missing and warns while `GROQ_API_KEY` is unset.
 - Records lockfile hashes in the Git-ignored `.cache/setup-stamp.json`. Later runs skip installs unless a lockfile or requirements file changed or an environment is broken.
 - Uses repo-local caches: `.cache/npm`, `.cache/pip`, `.cache/huggingface`, `.cache/torch`, and `.cache/pycache`.
 
-The first run can take time because PyTorch, FAISS, and the sentence-transformers model are large. `npm run check` performs the same setup before validating.
+The first run can take several minutes because PyTorch (about 125 MB to download and about 480 MB unpacked on Windows), FAISS, and the sentence-transformers model are large. `npm run check` performs the same setup before validating.
 
 ## Environment configuration
 
@@ -405,6 +422,8 @@ What it does ([scripts/dev.mjs](scripts/dev.mjs)):
 
 Manual runs are mainly useful for debugging. Run `npm run dev` once first so setup is complete.
 
+On Windows, VS Code opens new terminals with the `PowerShell (.venv)` profile from [`.vscode/settings.json`](.vscode/settings.json), which activates `.venv` (the prompt starts with `(.venv)`, and `python` is the repository's interpreter). The same file points VS Code's Python tools at `.venv`. Terminals opened before `.venv` existed, and plain PowerShell windows outside VS Code, are not activated. Run `.\.venv\Scripts\Activate.ps1` there, or call `.venv\Scripts\python.exe` directly as below.
+
 Terminal 1, backend:
 
 ```bash
@@ -425,14 +444,14 @@ Expected result: Vite serves the frontend on `http://localhost:8080` and proxies
 
 Root ([package.json](package.json)):
 
-| Command             | Where to run    | Purpose                                                                                                                                                                                                                                                           |
-| ------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev`       | Repository root | Runs complete setup, starts both services, and opens the browser                                                                                                                                                                                                  |
-| `npm run check`     | Repository root | Runs setup, clone detection, black, backend tests, the notebook backend-bundle check, frontend format check, typecheck, lint, tests, and build                                                                                                                    |
-| `npm run build`     | Repository root | Runs the frontend production build                                                                                                                                                                                                                                |
-| `npm run build:dev` | Repository root | Runs the frontend development build                                                                                                                                                                                                                               |
-| `npm run preview`   | Repository root | Serves the built frontend locally                                                                                                                                                                                                                                 |
-| `npm run paper`     | Repository root | Compiles [docs/paper/main.tex](docs/paper/main.tex) to `docs/paper/main.pdf` with Tectonic (`docs/tectonic.exe` on Windows, `tectonic` on PATH or `$TECTONIC` elsewhere); fails on errors, undefined references or citations, overfull boxes, and BibTeX warnings |
+| Command             | Where to run    | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run dev`       | Repository root | Runs complete setup, starts both services, and opens the browser                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `npm run check`     | Repository root | Runs setup, clone detection, black, backend tests, the notebook backend-bundle check, frontend format check, typecheck, lint, tests, and build                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `npm run build`     | Repository root | Runs the frontend production build                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `npm run build:dev` | Repository root | Runs the frontend development build                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `npm run preview`   | Repository root | Serves the built frontend locally                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `npm run paper`     | Repository root | Compiles the manuscript [docs/paper/main.tex](docs/paper/main.tex), the supplement [docs/paper/supplementary.tex](docs/paper/supplementary.tex), and their wrappers to six PDFs in `docs/paper` (manuscript, supplement, both anonymised, title page, no references), building each manuscript and supplement pair twice so their cross-references resolve, with Tectonic (`docs/tectonic.exe` on Windows, `tectonic` on PATH or `$TECTONIC` elsewhere). Fails on errors, undefined references or citations, overfull boxes, and BibTeX warnings |
 
 Backend:
 
@@ -626,13 +645,15 @@ JSON format (`LOG_FORMAT=json`) writes the same fields as one object per line, w
 
 ## Testing and verification
 
-Checks run for this revision of the README (25 October 2026, Windows 11, Python 3.11.9):
+Checks run for this revision of the README (26 October 2026, Windows 11, Python 3.11.9, from a fresh `.venv` with NumPy 2.4.6, sentence-transformers 5.7.0, and websockets 17.3):
 
-| Check          | Command                                             | Result                                       |
-| -------------- | --------------------------------------------------- | -------------------------------------------- |
-| Backend tests  | `python -m unittest discover -s tests` in `Backend` | Passed, `42` tests                           |
-| Frontend tests | `npm run test` in `Frontend`                        | Passed, `7` tests in `2` files               |
-| Frontend build | `npm run build` in `Frontend`                       | Passed, `2015` modules transformed, `0.90 s` |
+| Check          | Command                                             | Result                             |
+| -------------- | --------------------------------------------------- | ---------------------------------- |
+| Backend tests  | `python -m unittest discover -s tests` in `Backend` | Passed, `42` tests                 |
+| Frontend tests | `npm run test` in `Frontend`                        | Passed, `7` tests in `2` files     |
+| Frontend build | `npm run build` in `Frontend`                       | Passed, `2015` modules transformed |
+| Full pipeline  | `npm run check` at the root                         | Passed, all `9` checks             |
+| Paper          | `npm run paper` at the root                         | Passed, `6` PDFs with clean logs   |
 
 `npm run check` from the repository root runs 9 steps: clone detection, backend format, backend tests, the notebook backend-bundle check, frontend format, typecheck, lint, tests, and build.
 
@@ -1530,35 +1551,38 @@ Request throughput, memory use, and WebSocket capacity of the game server: `Not 
 
 ## Repository metrics
 
-| Metric                           | Value                                     | Source or command                                                                              |
-| -------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Tracked files                    | `220` at commit `168087e`                 | `git ls-files \| wc -l`                                                                        |
-| Backend tracked files            | `50`                                      | `git ls-files Backend \| wc -l`                                                                |
-| Frontend tracked files           | `68`                                      | `git ls-files Frontend \| wc -l`                                                               |
-| HTTP endpoints                   | `18`                                      | Route decorators in [`Backend/api`](Backend/api)                                               |
-| WebSocket endpoints              | `1`                                       | Same                                                                                           |
-| Event types                      | `14`                                      | [`Backend/schemas/events.py`](Backend/schemas/events.py)                                       |
-| Turn graph nodes                 | `9`                                       | [`Backend/graph/definition.py`](Backend/graph/definition.py)                                   |
-| Frontend route pages             | `8`                                       | [`Frontend/src/pages`](Frontend/src/pages)                                                     |
-| Frontend scripts                 | `11`                                      | [`Frontend/package.json`](Frontend/package.json)                                               |
-| Backend runtime dependency lines | `14`                                      | [`Backend/requirements.txt`](Backend/requirements.txt)                                         |
-| Backend tests                    | `42` in `5` files                         | `python -m unittest discover -s tests`                                                         |
-| Frontend tests                   | `7` in `2` files                          | `npm run test`                                                                                 |
-| Test coverage percentage         | `Not measured in the current repository.` | No coverage tooling output                                                                     |
-| World W1                         | 8 locations, 4 NPCs, 4 objects, 7 rules   | [`Backend/game/world_seed.json`](Backend/game/world_seed.json)                                 |
-| Notebook cells                   | `147` (73 code)                           | [`notebooks/npc-memory-state-benchmark.ipynb`](notebooks/npc-memory-state-benchmark.ipynb)     |
-| Evaluation figures               | `15`                                      | [`notebooks/outputs/plots`](notebooks/outputs/plots)                                           |
-| Evaluation run time              | `7.65` hours                              | [`notebooks/outputs/metrics/run_manifest.json`](notebooks/outputs/metrics/run_manifest.json)   |
-| JS bundle gzip size              | `128.84 kB`                               | `npm run build`, 25 October 2026                                                               |
-| CSS bundle gzip size             | `6.06 kB`                                 | `npm run build`, 25 October 2026                                                               |
-| Default ports                    | backend `8000`, frontend `8080`           | [`Backend/config.py`](Backend/config.py), [`Frontend/vite.config.ts`](Frontend/vite.config.ts) |
+| Metric                           | Value                                      | Source or command                                                                              |
+| -------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| Tracked files                    | `228` in the working tree, 26 October 2026 | `git ls-files \| wc -l`                                                                        |
+| Backend tracked files            | `50`                                       | `git ls-files Backend \| wc -l`                                                                |
+| Frontend tracked files           | `68`                                       | `git ls-files Frontend \| wc -l`                                                               |
+| HTTP endpoints                   | `18`                                       | Route decorators in [`Backend/api`](Backend/api)                                               |
+| WebSocket endpoints              | `1`                                        | Same                                                                                           |
+| Event types                      | `14`                                       | [`Backend/schemas/events.py`](Backend/schemas/events.py)                                       |
+| Turn graph nodes                 | `9`                                        | [`Backend/graph/definition.py`](Backend/graph/definition.py)                                   |
+| Frontend route pages             | `8`                                        | [`Frontend/src/pages`](Frontend/src/pages)                                                     |
+| Frontend scripts                 | `11`                                       | [`Frontend/package.json`](Frontend/package.json)                                               |
+| Backend runtime dependency lines | `13`                                       | [`Backend/requirements.txt`](Backend/requirements.txt)                                         |
+| Backend tests                    | `42` in `5` files                          | `python -m unittest discover -s tests`                                                         |
+| Frontend tests                   | `7` in `2` files                           | `npm run test`                                                                                 |
+| Test coverage percentage         | `Not measured in the current repository.`  | No coverage tooling output                                                                     |
+| World W1                         | 8 locations, 4 NPCs, 4 objects, 7 rules    | [`Backend/game/world_seed.json`](Backend/game/world_seed.json)                                 |
+| Notebook cells                   | `147` (73 code)                            | [`notebooks/npc-memory-state-benchmark.ipynb`](notebooks/npc-memory-state-benchmark.ipynb)     |
+| Evaluation figures               | `15`                                       | [`notebooks/outputs/plots`](notebooks/outputs/plots)                                           |
+| Evaluation run time              | `7.65` hours                               | [`notebooks/outputs/metrics/run_manifest.json`](notebooks/outputs/metrics/run_manifest.json)   |
+| JS bundle gzip size              | `128.84 kB`                                | `npm run build`, 26 October 2026                                                               |
+| CSS bundle gzip size             | `6.06 kB`                                  | `npm run build`, 26 October 2026                                                               |
+| Default ports                    | backend `8000`, frontend `8080`            | [`Backend/config.py`](Backend/config.py), [`Frontend/vite.config.ts`](Frontend/vite.config.ts) |
 
 ## Troubleshooting
 
 | Problem                                                            | Likely cause                                                                                                                                                              | Diagnostic command                                                       | Resolution                                                                                              |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
 | `npm run dev` reports a busy port                                  | Another process or earlier run holds the port                                                                                                                             | `netstat -ano`                                                           | Stop that process, then rerun `npm run dev`                                                             |
-| First setup run is slow                                            | Large ML dependencies or embedding model download                                                                                                                         | Check `.cache\pip` and `.cache\huggingface`                              | Let the setup finish. Later runs reuse the repository-local caches                                      |
+| First setup run is slow                                            | PyTorch and other ML packages are downloaded and unpacked. The terminal prints a `Still ...` status line every 20 seconds                                                 | Read `.cache/pip-install.log`                                            | Let the setup finish. Later runs reuse the repository-local caches                                      |
+| Setup was interrupted with `Ctrl+C`                                | pip was stopped before it finished                                                                                                                                        | The `Setup interrupted` message                                          | Run the same command again. It resumes from the cached downloads                                        |
+| pip prints `This is taking longer than usual`                      | Two requirements conflict, so pip backtracks through many old versions. A former `websockets<14` pin did this with `langsmith`, which needs `websockets>=15`              | `grep "looking at multiple versions" .cache/pip-install.log`             | Remove or widen the conflicting cap in `Backend/requirements.txt`                                       |
+| A VS Code terminal does not show `(.venv)`                         | The terminal was opened before `.venv` existed, or with a profile other than `PowerShell (.venv)`                                                                         | `$env:VIRTUAL_ENV` is empty                                              | Open a new terminal after `npm run dev` finishes setup, or run `.\.venv\Scripts\Activate.ps1`           |
 | Backend import or package error                                    | Backend dependencies not installed in `.venv`                                                                                                                             | `.venv/Scripts/python.exe -m pip show fastapi`                           | Rerun `npm run dev`; setup reinstalls a broken `.venv`                                                  |
 | Frontend loading screen does not proceed                           | Backend health endpoint not ready                                                                                                                                         | `Invoke-RestMethod http://127.0.0.1:8000/health`                         | Start the backend and wait for shared resources to load                                                 |
 | Groq generation fails                                              | Missing or invalid API key                                                                                                                                                | Check `Backend/.env`                                                     | Set `GROQ_API_KEY` in `Backend/.env` and restart                                                        |
@@ -1624,3 +1648,15 @@ No licence file is present in the repository, so usage, distribution, and modifi
 ## Support and contact information
 
 No support channel or maintainer contact is specified in the repository.
+
+## Documentation
+
+| File                                                 | Answers                                                             |
+| ---------------------------------------------------- | ------------------------------------------------------------------- |
+| [AGENTS.md](AGENTS.md)                               | What must a coding agent know in every task here?                   |
+| [ARCHITECTURE.md](ARCHITECTURE.md)                   | How is the code organised, and why?                                 |
+| [DESIGN.md](DESIGN.md)                               | How does the UI look and behave?                                    |
+| [RESEARCH.md](RESEARCH.md)                           | What was evaluated before each research or venue decision?          |
+| [EXPLAINER.md](EXPLAINER.md)                         | How does the whole project work, explained from scratch for people? |
+| [docs/human-evaluation.md](docs/human-evaluation.md) | How do raters fill the blinded annotation sheets?                   |
+| [docs/paper/main.pdf](docs/paper/main.pdf)           | What did the evaluation find?                                       |

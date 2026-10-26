@@ -1,5 +1,8 @@
 # Human evaluation protocol
 
+Purpose: how raters fill and score the notebook's blinded annotation sheets. Read when: collecting or analysing human ratings.
+Last verified: 2026-10-26.
+
 This protocol goes with the blinded sheets that the evaluation notebook writes to `annotation/` (notebook section 11.1). It answers the Review-03 requirement for blinded human ratings of coherence, persona fidelity and state consistency, and it validates the two automatic scorers the paper relies on: the key-word recall scorer and the LLM contradiction judge.
 
 ## Raters

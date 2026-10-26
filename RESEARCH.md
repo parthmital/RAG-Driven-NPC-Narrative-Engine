@@ -1,5 +1,50 @@
 # Research Notes
 
+Purpose: dated evidence behind the paper's literature, venue, and dependency decisions. Read when: choosing or revisiting a library, reference, venue, or approach.
+
+## Target journal for the paper (2026-10-26)
+
+**Brief.** Pick the journal the paper is formatted for, with an official LaTeX template, and apply its limits.
+
+**Findings.**
+
+- IEEE Transactions on Games fits the topic: the survey already cites an LLM dialogue paper published there (Phillips et al., `phillips2025goal`, see the 2026-10-16 entry). Its scope page was not opened (inference). Its submission guidelines require the standard IEEE Transactions format, with templates from the IEEE Author Center, which is the `IEEEtran` journal class the paper already uses.
+- Its limits: abstract of 150 to 200 words in one paragraph with no abbreviations or references, 2 to 5 keywords (another passage says three or four), double-anonymous review for submissions from 1 January 2025 (another passage still says single-blind), and full papers limited to 10 pages with a charge of USD 200 per extra page.
+- Runner-up: Entertainment Computing (Elsevier). It fits the topic, but the paper already uses the IEEE class, and its official LaTeX template was not checked.
+
+**Decision.** Adopt IEEE Transactions on Games. The abstract was cut to 200 words with abbreviations spelled out, and the keywords to five. The 27-page paper was split into a 10-page manuscript (references included, so no over-length charge applies) and a 15-page supplementary document, linked with `xr-hyper`, as the guidelines exclude supplementary material from the limit. The anonymised copies, separate title page, and no-references copy are built by `npm run paper`. Final accepted papers also carry author biographies within the 10 pages, which the authors must supply.
+
+**Sources.** [IEEE ToG submission guidelines](https://www.transactions.games/submit/submission-guidelines) (2026-10-26), [IEEE Author Center](https://ieeeauthorcenter.ieee.org/) (linked from the guidelines).
+
+## Backend dependency resolution on a fresh clone (2026-10-26)
+
+**Brief.** The first `npm run dev` on a fresh clone appeared to hang while installing PyTorch.
+
+**Findings.**
+
+- pip's verbose log of a fresh install showed `pip is looking at multiple versions of langsmith` and `This is taking longer than usual`. It fetched metadata for 65 `langsmith` versions, because `langsmith` 0.8.6 to 0.14.12 require `websockets>=15.0` and `Backend/requirements.txt` capped `websockets<14.0`. It settled on `langsmith` 0.8.5.
+- No backend code imports `websockets`. `uvicorn[standard]` already declares `websockets>=13.0` for the WebSocket route. The cap dates from the first commit, with no recorded reason.
+- `numpy<2.0` resolves to NumPy 1.26.4, which has no wheels for Python 3.13 or newer, so setup on a current Python would try to compile NumPy. The evaluated backend ran on NumPy 2.1.3 and sentence-transformers 5.4.1 (`notebooks/outputs/metrics/run_manifest.json`).
+- After removing the `websockets` line and widening `numpy` to `<3.0` and `sentence-transformers` to `<6.0`, a dry run resolved in one pass with no backtracking.
+- The launcher ran pip with `--quiet` through a blocking `spawnSync`, so the resolver warnings and the minutes-long, silent unpacking of about 30,000 files into `.venv` were invisible, and `Ctrl+C` could not run a handler.
+
+**Decision.** Fix the conflicting pins (Build) and make the install observable and interruptible in `scripts/lib/workspace.mjs`: streamed status, a heartbeat, a pip log in `.cache/pip-install.log`, and a `Ctrl+C` handler that stops pip and explains how to resume. A full lock file was considered and not adopted: with the conflict removed the resolver needs no backtracking, and a lock file adds an upgrade chore.
+
+**Sources.** Local pip 24.0 logs of fresh installs in `.agent-local/` (2026-10-26). `pip index versions` against PyPI (2026-10-26).
+
+## Paper fact-check after the third Review-03 run (checked 2026-10-26)
+
+**Brief.** Fact-check every claim in `docs/paper/main.tex` before building the submission variants.
+
+**Findings.**
+
+- Every number in the paper was cross-checked against `notebooks/outputs/` with `.agent-local/scripts/paper_number_crosscheck.py`. The only numbers not found verbatim were thousand-separated token counts, rounded p-values, and the Generative Agents figures, and each matched its source.
+- Row-level claims were recomputed from the prediction files: the 28 wrong age-5 F4 answers, all with the distractor in the prompt (4 for F4v1), 471 of 546 F1 and 469 of 546 F3 flagged live turns, 4 of 684 lawful twin proposals rejected, A5's 44 currency, 6 theft, and 3 relocation successes, and the per-point crash consistency.
+- Three statements were corrected. The error analysis now says that conditions which never reject proposals still trip the arrival cue (17 F1, 16 F3, and 28 A5 turns). The crash-trial sentence now says that the Review-02 path was consistent exactly when the crash lost no turn, not that it failed at every other crash point. The budget-sweep sentence now gives B3's 98.3% at half the budget instead of grouping it with F4 and B2.
+- All 34 DOIs resolve in Crossref with matching titles, apart from two temporary HTTP 429 rate-limit responses (`zhong2024memorybank`, `greshake2023indirect`) that were verified on 2026-10-24. Every entry is cited, and no entry is a preprint or a book.
+
+**Sources.** `notebooks/outputs/` at commit `eff999e`, the [Crossref REST API](https://api.crossref.org/) (2026-10-26).
+
 ## Paper fact-check after the second Review-03 run (checked 2026-10-24)
 
 **Brief.** Re-verify every reference and every number the paper attributes to other work before publishing the results of the 24 October 2026 run. Scope: the 44 entries of [docs/paper/references.bib](docs/paper/references.bib), the Crossref REST API, the publishers' and proceedings' pages, and the arXiv HTML copy of the base paper.

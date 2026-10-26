@@ -1,5 +1,8 @@
 # Architecture
 
+Purpose: how the code is organised and why. Read when: adding a module, moving code, changing dependencies between parts, or changing the launcher.
+Last verified: 2026-10-26.
+
 This document describes how the repository is structured: the parts, the module boundaries and the rules that enforce them, how a request flows, where new code goes, and how the system is operated. The frontend design system is in [DESIGN.md](DESIGN.md), and the evaluation results are in the [README](README.md#evaluation-results).
 
 ## Context
@@ -23,7 +26,7 @@ flowchart LR
   Services -->|REST /api/game| Routes[api/routes]
   Services -->|WS /ws/game| Routes
   Routes --> Manager[session.SessionManager]
-  Manager --> Graph[graph: 8-node turn pipeline]
+  Manager --> Graph[graph: 9-node turn pipeline]
   Graph --> Memory[memory: embedder, FAISS, buffer]
   Graph --> LLM[llm: Groq client, prompt builder]
   Graph --> Game[game: validator]
@@ -137,6 +140,8 @@ Persistence is per session under `Backend/data/sessions/{session_id}/`: `events.
 | Validation and reduction kept in separate pure modules        | The barrier can be measured apart from the reducer (ablation A5), and state can be rebuilt from the log |
 | Frontend DTO mapping in `stores/mappers.ts`                   | Pure, testable, and kept out of the store                                                               |
 | Single Node launcher ([`scripts/dev.mjs`](scripts/dev.mjs))   | Cross-platform, one entry point, lockfile-hash setup skip, fail-fast ports, crash and Ctrl+C teardown   |
+| pip runs asynchronously with a 20 s status heartbeat          | Unpacking PyTorch is silent for minutes. A blocking, `--quiet` install looked hung and ignored Ctrl+C   |
+| No separate `websockets` pin, `uvicorn[standard]` declares it | A `websockets<14` cap conflicted with `langsmith` (needs `>=15`) and made pip backtrack ~65 versions    |
 | `black` in `requirements-dev.txt`                             | Keeps a development tool out of the runtime dependencies                                                |
 | One logging setup in `log_config.py`, Uvicorn access log off  | One format and one line per request; request and session IDs on every line, including in turn threads   |
 | Groq SDK retries off; `GroqClient` retries transient errors   | Two stacked retry loops could make nine calls; auth and bad-request errors fail at once as `LLMError`   |
