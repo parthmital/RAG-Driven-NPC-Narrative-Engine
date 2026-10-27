@@ -118,7 +118,6 @@ Further reading:
 - [DESIGN.md](DESIGN.md): the frontend design system: palette, type, layout, breakpoints, components, motion, and copy.
 - [docs/paper/main.pdf](docs/paper/main.pdf): the research paper on the study, written in LaTeX ([source](docs/paper/main.tex), [bibliography](docs/paper/references.bib)), with a formal model and an audit of the results against the raw run outputs. It targets IEEE Transactions on Games (see [RESEARCH.md](RESEARCH.md#target-journal-for-the-paper-2026-10-26)), so the manuscript fits the journal's 10-page limit including references, its abstract is at most 200 words, and it has five keywords. Everything that does not fit (the algorithms, the dataset details, the run configuration and audit, and every secondary table and figure) is in [docs/paper/supplementary.pdf](docs/paper/supplementary.pdf) ([source](docs/paper/supplementary.tex)), a one-column document whose items are numbered S1, S2, and so on. The two PDFs link to each other. The same sources also build three submission variants: [main-anonymised.pdf](docs/paper/main-anonymised.pdf) with [supplementary-anonymised.pdf](docs/paper/supplementary-anonymised.pdf) (double-anonymised, with no authors or repository links and the system name replaced), [main-title-page.pdf](docs/paper/main-title-page.pdf) (title, authors, abstract, keywords, and the corresponding author), and [main-no-references.pdf](docs/paper/main-no-references.pdf) (for similarity checks, with the reference list removed and citations kept). The manuscript's sections follow the project report format: Introduction, Literature Survey, Research Gap, Proposed Methodology, Dataset Description and Usage, Novelty, Algorithms, Implementation, and Comparison of Results. The base paper is Generative Agents (Park et al., UIST 2023), and the results section compares the engine with it. All 44 references are published papers, with no preprints. Both documents share [docs/paper/paper-preamble.tex](docs/paper/paper-preamble.tex). It is typeset in the two-column IEEE Transactions journal format: [docs/paper/IEEEtran.cls](docs/paper/IEEEtran.cls) is an unmodified copy of the class (V1.8b) from the IEEE Transactions LaTeX template, and references use the IEEEtran bibliography style. Rebuild it with `npm run paper`.
 - [RESEARCH.md](RESEARCH.md): sources and search notes for the paper's literature survey and target journal.
-- [EXPLAINER.md](EXPLAINER.md): the whole project explained from scratch, for interviews and presentations.
 - [AGENTS.md](AGENTS.md): commands, conventions, and gotchas for coding agents.
 
 ## Problem statement
@@ -333,7 +332,6 @@ RAG-Driven-NPC-Narrative-Engine/
 |-- AGENTS.md                   # Commands, conventions, and gotchas for coding agents
 |-- ARCHITECTURE.md             # Module map, dependency rules, data flow, operations
 |-- DESIGN.md                   # Frontend design system and UI decisions
-|-- EXPLAINER.md                # The whole project explained for humans
 |-- RESEARCH.md                 # Dated research behind the paper and its decisions
 |-- package.json                # Root npm scripts and the clone detector
 `-- README.md                   # This file
@@ -1651,12 +1649,11 @@ No support channel or maintainer contact is specified in the repository.
 
 ## Documentation
 
-| File                                                 | Answers                                                             |
-| ---------------------------------------------------- | ------------------------------------------------------------------- |
-| [AGENTS.md](AGENTS.md)                               | What must a coding agent know in every task here?                   |
-| [ARCHITECTURE.md](ARCHITECTURE.md)                   | How is the code organised, and why?                                 |
-| [DESIGN.md](DESIGN.md)                               | How does the UI look and behave?                                    |
-| [RESEARCH.md](RESEARCH.md)                           | What was evaluated before each research or venue decision?          |
-| [EXPLAINER.md](EXPLAINER.md)                         | How does the whole project work, explained from scratch for people? |
-| [docs/human-evaluation.md](docs/human-evaluation.md) | How do raters fill the blinded annotation sheets?                   |
-| [docs/paper/main.pdf](docs/paper/main.pdf)           | What did the evaluation find?                                       |
+| File                                                 | Answers                                                    |
+| ---------------------------------------------------- | ---------------------------------------------------------- |
+| [AGENTS.md](AGENTS.md)                               | What must a coding agent know in every task here?          |
+| [ARCHITECTURE.md](ARCHITECTURE.md)                   | How is the code organised, and why?                        |
+| [DESIGN.md](DESIGN.md)                               | How does the UI look and behave?                           |
+| [RESEARCH.md](RESEARCH.md)                           | What was evaluated before each research or venue decision? |
+| [docs/human-evaluation.md](docs/human-evaluation.md) | How do raters fill the blinded annotation sheets?          |
+| [docs/paper/main.pdf](docs/paper/main.pdf)           | What did the evaluation find?                              |

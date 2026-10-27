@@ -41,5 +41,4 @@ Last verified: 2026-10-26.
 - `ARCHITECTURE.md`: module map, dependency rules, decisions, growth signals.
 - `DESIGN.md`: UI tokens, components, and patterns.
 - `RESEARCH.md`: dated research behind references, venue, and dependencies.
-- `EXPLAINER.md`: the whole project for human readers.
 - `docs/human-evaluation.md`: the rating protocol for the annotation sheets.
