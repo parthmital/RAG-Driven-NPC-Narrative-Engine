@@ -6,7 +6,9 @@ The repository also contains a full evaluation of the engine's two mechanisms, s
 
 **Status (25 October 2026).** The engine and the notebook were revised for the faculty's Review-03 feedback: the currency invariant, crash recovery, dialogue repair after rejected changes, budgeted memory, stronger baselines, independent model families, human evaluation sheets and a self-contained notebook. The revised notebook ran end to end on Kaggle three times; the third run (24 to 25 October 2026, 7.65 hours, sample-size level 2) includes every fix from reviewing the first two, and its outputs are in [`notebooks/outputs/`](notebooks/outputs/). It confirmed H3 in live play for the first time, and showed that the Review-03 memory changes recall less than the Review-02 system.
 
-**Status (2 November 2026).** An audit of the third run's predictions found benchmark and measurement defects (ambiguous recall probes, lenient recall scoring, live sessions that left their script, an incomplete oracle, degenerate zero-event intervals). The notebook was revised for one final run with a fresh master seed (see [Revisions for the final run](#revisions-for-the-final-run)). That run has not been executed yet, so the results below and the files in [`notebooks/outputs/`](notebooks/outputs/) are still those of the third run. Human ratings have not been collected yet.
+**Status (2 November 2026).** An audit of the third run's predictions found benchmark and measurement defects (ambiguous recall probes, lenient recall scoring, live sessions that left their script, an incomplete oracle, degenerate zero-event intervals). The notebook was revised for one final run with a fresh master seed (see [Revisions for the final run](#revisions-for-the-final-run)). Human ratings have not been collected yet.
+
+**Status (3 November 2026).** The fourth run (2 November 2026, seed 20261102) stopped in its last analysis cell, so it wrote no `run_manifest.json` and no `outputs.zip`; its results exist only in the downloaded notebook's cell outputs. It also used only 5 of its 11.25 budgeted hours. The notebook was corrected for a fifth run (see [Revisions after the fourth run](#revisions-after-the-fourth-run)), which has not been executed yet. The results below and the files in [`notebooks/outputs/`](notebooks/outputs/) are still those of the third run.
 
 ## Table of contents
 
@@ -693,7 +695,7 @@ There is no separate backend build step; the backend runs directly through Pytho
 
 ## Evaluation notebook
 
-[notebooks/npc-memory-state-benchmark.ipynb](notebooks/npc-memory-state-benchmark.ipynb) runs the complete evaluation protocol of the research paper with no manual steps. It has 149 cells (74 code cells, each with a markdown explanation before it) in 11 sections. The committed copy is the version revised for the final run, with outputs cleared. The files in [`notebooks/outputs/`](notebooks/outputs/), and the results and walkthrough in this README, come from the third Review-03 Kaggle run (24 to 25 October 2026) of the earlier version at `168087e`.
+[notebooks/npc-memory-state-benchmark.ipynb](notebooks/npc-memory-state-benchmark.ipynb) runs the complete evaluation protocol of the research paper with no manual steps. It has 151 cells (75 code cells, each with a markdown explanation before it) in 11 sections. The committed copy is the version revised after the fourth run, with outputs cleared. The files in [`notebooks/outputs/`](notebooks/outputs/), and the results and walkthrough in this README, come from the third Review-03 Kaggle run (24 to 25 October 2026) of the earlier version at `168087e`.
 
 ### What it tests
 
@@ -707,7 +709,8 @@ It does not re-implement the system, and it does not clone this repository. The 
 What the evaluation contains:
 
 - a paired before-and-after comparison (Table 8): every probe output committed by the Review-02 and the corrected validator, F4v1 against F4 in live sessions, draft against repaired replies on the same turns, and the Review-02 against the corrected load path on 300 randomised crash points;
-- two contradiction judges from other model families (Qwen2.5-7B-Instruct, whose verdicts are reported, and Phi-4-mini-instruct), with Cohen's kappa between them, to be validated against human labels;
+- two contradiction judges from other model families (Qwen2.5-7B-Instruct, whose verdicts are reported, and Phi-4-mini-instruct), each scored on control items with a known verdict, with Cohen's kappa between them, to be validated against human labels;
+- an adjudication of hedged recall replies by the first independent family, as a sensitivity analysis beside strict recall;
 - B4 (the Generative Agents memory stream, with its importance term) and B5 (MemoryBank-style forgetting curve), with every condition held to the same context budget, and a budget sweep;
 - a validator differential test on about 30,000 oracle-labelled random proposals, and an offline canonicalising barrier that measures rejections caused by display names;
 - simple effects and the interaction contrast for the memory x control factorial;
@@ -721,10 +724,10 @@ What the evaluation contains:
 | -------- | ------------------------------------------------------------------------------------------------------------------ | -------------------- |
 | F4       | The proposed system: dual-tier memory packed into the context budget, the corrected validator, and dialogue repair | All stages           |
 | F4v1     | The Review-02 system: unbudgeted memory, the Review-02 validator and prompt, no repair                             | Recall, probes, live |
-| B0       | Full history in the prompt, cut only at the context limit                                                          | Recall, probes       |
-| B1       | Rolling window of the newest turns that fit token budget B (larger budgets only in the CPU budget sweep)           | Recall, probes       |
-| B2       | Independent flat vector store of turn summaries, cosine rank, no scoping, no buffer, filled to the budget          | Recall, probes       |
-| B3       | Independent generic RAG over raw dialogue chunks and world lore documents, filled to the budget                    | Recall, probes       |
+| B0       | Full history in the prompt, cut only at the context limit                                                          | Recall               |
+| B1       | Rolling window of the newest turns that fit token budget B (larger budgets only in the CPU budget sweep)           | Recall               |
+| B2       | Independent flat vector store of turn summaries, cosine rank, no scoping, no buffer, filled to the budget          | Recall               |
+| B3       | Independent generic RAG over raw dialogue chunks and world lore documents, filled to the budget                    | Recall               |
 | B4       | Generative Agents memory stream (recency, relevance and LLM-rated importance), filled to the budget                | Recall               |
 | B5       | MemoryBank-style forgetting-curve memory (tau = 50 turns), filled to the budget                                    | Recall               |
 | A1 to A4 | Memory ablations: no long term memory, no short term buffer, no scoping, no fallback                               | Recall               |
@@ -734,21 +737,23 @@ What the evaluation contains:
 | A7       | No snapshots: recovery by full replay                                                                              | Replay               |
 | F1 to F4 | 2 x 2 factorial: memory (rolling or dual-tier) x control (direct writes or barrier)                                | Live                 |
 
+An adversarial probe carries a 3-turn history, which every memory condition shows in full, so its prompt is the same under every condition. Probes are therefore sent once, under F4's context: F4 commits the outputs through the barrier, F4v1 through the Review-02 barrier, and the baselines by direct writes.
+
 ### How to run it
 
 The notebook is designed for Kaggle and is never executed locally.
 
 1. Upload the notebook to Kaggle.
 2. In the sidebar, set **Accelerator** to **GPU T4 x2** and turn **Internet** on. Internet is needed to install vLLM and the pinned packages and to download the models and the LIGHT file.
-3. Optional inputs: a `w3_world_seed.json` written by someone outside the project, which replaces the notebook-authored W3 world, and `human_ratings_*.csv` files completed by raters. Do not attach response caches from earlier runs: the final run starts from an empty cache.
+3. Optional inputs: a `w3_world_seed.json` written by someone outside the project, which replaces the notebook-authored W3 world, and `human_ratings_*.csv` files completed by raters. Do not attach response caches from earlier runs: each run starts from an empty cache.
 4. Choose **Save Version**, then **Save & Run All**, so the 12-hour session limit applies.
 5. Download `outputs.zip` from the Output tab and extract it to [`notebooks/outputs/`](notebooks/outputs/).
 
-The notebook measures its own throughput with a pilot run and picks the largest pre-declared sample size that fits its 11.25-hour budget, so it always finishes in one session and writes its outputs. Scaled from the third run's stage times this is level 3 (about 10 hours in all); the pilot decides. To rebuild every table and figure from a run's caches without a GPU, attach its `predictions/llm_cache_*.jsonl` and `metrics/run_manifest.json` and set `CACHE_ONLY=True` in the configuration cell.
+The notebook measures its own throughput with a pilot run and picks the largest pre-declared sample size that fits its 11.25-hour budget. After the required stages it climbs the sample-size ladder one level at a time while the rates measured on its own stages show that the next level ends before the reserves for the other backbones and the analysis (50, 65, 20 and 15 minutes of safety). The stopping rule uses elapsed time only. At the fourth run's rates this is about level 6, the seventh of twelve, and about 11 hours in all; these are estimates, and the measured rates decide. Every stage after the pilot runs under a guard that records an exception and continues, so the run always reaches the cell that writes `outputs.zip`. To rebuild every table and figure from a run's caches without a GPU, attach its `predictions/llm_cache_*.jsonl` and `metrics/run_manifest.json` and set `CACHE_ONLY=True` in the configuration cell.
 
 ### Revisions for the final run
 
-An audit of the third run's prediction files against the notebook code found the issues below. The revised notebook addresses each one; the full list is `PROTOCOL_AMENDMENTS` in the configuration cell, which the manifest records with a SHA-256 digest of the whole configuration. None of these changes has run on Kaggle yet.
+An audit of the third run's prediction files against the notebook code found the issues below. The revised notebook addresses each one; the full list is `PROTOCOL_AMENDMENTS` in the configuration cell, which the manifest records with a SHA-256 digest of the whole configuration. The fourth run (2 November 2026) executed these changes; the next subsection lists what it showed.
 
 | Issue found in the third run                                                                                                           | Change in the notebook                                                                                                          |
 | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
@@ -768,6 +773,21 @@ An audit of the third run's prediction files against the notebook code found the
 | one unvalidated LLM judge                                                                                                              | a second judge family and Cohen's kappa                                                                                         |
 | four development runs used the same benchmark instances                                                                                | a fresh master seed                                                                                                             |
 | identical B0 and B1 probe prompts and low-value contexts used GPU time                                                                 | probe contexts F4 and B1, B1x2 moved to the CPU budget sweep, and a finer sample-size ladder                                    |
+
+### Revisions after the fourth run
+
+The fourth run (2 November 2026, about 5 hours) completed every GPU stage and then raised `TypeError: dict() got multiple values for keyword argument 'proposals'` in the manifest cell (11.3), so `run_manifest.json`, `article_tables.md` and `outputs.zip` were never written. Its cell outputs were reviewed instead. The table lists what they showed and the change in the committed notebook. None of these changes has run on Kaggle yet.
+
+| Issue found in the fourth run                                                                                                                                                                                                                                                        | Change in the notebook                                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| the differential test's turn-level row held a `proposals` key (and stored the turn count under `lawful`), and the manifest added `proposals` again                                                                                                                                   | the row stores `turns`, and the manifest copies the row; every stage after the pilot runs under `guard`, which logs and records a failure and lets the run reach the zip cell |
+| the planner chose level 1, the second of eight (2 recall sessions per world and horizon, 1 live script per world), because it costed each live turn at the pilot's full-load latency (130 s); live sessions took 38 minutes against about 87 estimated, and the run ended at 5 hours | live sessions costed as throughput-bound with a 10-second single-stream floor; after the required stages the run extends the sample level by level from measured rates        |
+| the B1 probe context sent the same prompt as F4 for every probe, so every B1 row was a cache hit that duplicated an F4 row; pooled probe tables counted each output twice, and zero-event intervals used twice the real n                                                            | one probe context (F4); the baselines commit the same outputs by direct writes                                                                                                |
+| strict recall marks "it was X, now it is Y" as wrong; F4 recalled 18.2% of knowledge updates at age 20 or more, and 18.1% of its replies were hedged                                                                                                                                 | the first independent family adjudicates hedged replies as a sensitivity analysis; strict recall stays the confirmatory outcome                                               |
+| the Phi-4-mini judge called 85.1% of items contradictions against 25.5% for Qwen2.5-7B, with Cohen's kappa 0.05                                                                                                                                                                      | both judges are scored on control items with a known verdict; R3 uses judge verdicts only from a judge with at least 80% control accuracy                                     |
+| the factorial model used a normal reference with 7 clustered scripts                                                                                                                                                                                                                 | t reference with G - 1 degrees of freedom                                                                                                                                     |
+| the live log showed `0/49` sessions for 30 minutes                                                                                                                                                                                                                                   | the live log counts turns                                                                                                                                                     |
+| the fourth run's benchmark instances were inspected while these changes were made                                                                                                                                                                                                    | a fresh master seed (20261103) and a finer ladder (12 levels, one costly dimension raised at a time)                                                                          |
 
 ### Fixes confirmed by the third run
 
