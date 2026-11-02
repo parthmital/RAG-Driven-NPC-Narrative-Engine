@@ -4,7 +4,9 @@ The Obsidian Flask is a full stack text adventure game in which non-player chara
 
 The repository also contains a full evaluation of the engine's two mechanisms, scoped dual-tier memory and pre-commit state control. The evaluation is a Kaggle notebook, and its write-up is the LaTeX research paper in [docs/paper/main.pdf](docs/paper/main.pdf).
 
-**Status (25 October 2026).** The engine and the notebook were revised for the faculty's Review-03 feedback: the currency invariant, crash recovery, dialogue repair after rejected changes, budgeted memory, stronger baselines, independent model families, human evaluation sheets and a self-contained notebook. The revised notebook ran end to end on Kaggle three times; the third run (24 to 25 October 2026, 7.65 hours, sample-size level 2) includes every fix from reviewing the first two, and its outputs are in [`notebooks/outputs/`](notebooks/outputs/). It confirmed H3 in live play for the first time, and showed that the Review-03 memory changes recall less than the Review-02 system. Reviewing it found one oracle labelling issue, now fixed in the notebook for the next run (see [Changes made after the run](#changes-made-after-the-run)). Human ratings have not been collected yet.
+**Status (25 October 2026).** The engine and the notebook were revised for the faculty's Review-03 feedback: the currency invariant, crash recovery, dialogue repair after rejected changes, budgeted memory, stronger baselines, independent model families, human evaluation sheets and a self-contained notebook. The revised notebook ran end to end on Kaggle three times; the third run (24 to 25 October 2026, 7.65 hours, sample-size level 2) includes every fix from reviewing the first two, and its outputs are in [`notebooks/outputs/`](notebooks/outputs/). It confirmed H3 in live play for the first time, and showed that the Review-03 memory changes recall less than the Review-02 system.
+
+**Status (2 November 2026).** An audit of the third run's predictions found benchmark and measurement defects (ambiguous recall probes, lenient recall scoring, live sessions that left their script, an incomplete oracle, degenerate zero-event intervals). The notebook was revised for one final run with a fresh master seed (see [Revisions for the final run](#revisions-for-the-final-run)). That run has not been executed yet, so the results below and the files in [`notebooks/outputs/`](notebooks/outputs/) are still those of the third run. Human ratings have not been collected yet.
 
 ## Table of contents
 
@@ -691,7 +693,7 @@ There is no separate backend build step; the backend runs directly through Pytho
 
 ## Evaluation notebook
 
-[notebooks/npc-memory-state-benchmark.ipynb](notebooks/npc-memory-state-benchmark.ipynb) runs the complete evaluation protocol of the research paper with no manual steps. It has 147 cells (73 code cells, each with a markdown explanation before it) in 11 sections. The committed copy keeps the saved outputs of the third Review-03 Kaggle run (24 to 25 October 2026), whose files are in [`notebooks/outputs/`](notebooks/outputs/).
+[notebooks/npc-memory-state-benchmark.ipynb](notebooks/npc-memory-state-benchmark.ipynb) runs the complete evaluation protocol of the research paper with no manual steps. It has 149 cells (74 code cells, each with a markdown explanation before it) in 11 sections. The committed copy is the version revised for the final run, with outputs cleared. The files in [`notebooks/outputs/`](notebooks/outputs/), and the results and walkthrough in this README, come from the third Review-03 Kaggle run (24 to 25 October 2026) of the earlier version at `168087e`.
 
 ### What it tests
 
@@ -705,30 +707,32 @@ It does not re-implement the system, and it does not clone this repository. The 
 What the evaluation contains:
 
 - a paired before-and-after comparison (Table 8): every probe output committed by the Review-02 and the corrected validator, F4v1 against F4 in live sessions, draft against repaired replies on the same turns, and the Review-02 against the corrected load path on 300 randomised crash points;
-- a contradiction judge from another model family (Qwen2.5-7B-Instruct), to be validated against human labels;
-- B4 (Generative-Agents-style scored memory stream) and B5 (MemoryBank-style forgetting curve), with every condition held to the same context budget, and a budget sweep;
+- two contradiction judges from other model families (Qwen2.5-7B-Instruct, whose verdicts are reported, and Phi-4-mini-instruct), with Cohen's kappa between them, to be validated against human labels;
+- B4 (the Generative Agents memory stream, with its importance term) and B5 (MemoryBank-style forgetting curve), with every condition held to the same context budget, and a budget sweep;
+- a validator differential test on about 30,000 oracle-labelled random proposals, and an offline canonicalising barrier that measures rejections caused by display names;
 - simple effects and the interaction contrast for the memory x control factorial;
 - independent model families, Qwen2.5-7B-Instruct and Phi-4-mini-instruct;
 - blinded human-evaluation sheets ([docs/human-evaluation.md](docs/human-evaluation.md)) and ingestion of completed ratings;
-- exact package pins, resumable runs that reach larger sample sizes from attached response caches, and a cache-only mode that regenerates every result without a GPU.
+- exact package pins, a protocol digest in the manifest, and a cache-only mode that regenerates every result without a GPU.
 
 ### Conditions compared
 
-| Code     | Condition                                                                                                          | Used in                  |
-| -------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------ |
-| F4       | The proposed system: dual-tier memory packed into the context budget, the corrected validator, and dialogue repair | All stages               |
-| F4v1     | The Review-02 system: unbudgeted memory, the Review-02 validator and prompt, no repair                             | Recall, probes, live     |
-| B0       | Full history in the prompt, cut only at the context limit                                                          | Recall, probes           |
-| B1, B1x2 | Rolling window of the newest turns that fit token budget B (389 tokens) or 2B                                      | Recall, probes (B1 only) |
-| B2       | Independent flat vector store of turn summaries, cosine rank, no scoping, no buffer, filled to the budget          | Recall, probes           |
-| B3       | Independent generic RAG over raw dialogue chunks and world lore documents, filled to the budget                    | Recall, probes           |
-| B4       | Generative-Agents-style scored memory stream (recency plus relevance, no importance term), filled to the budget    | Recall                   |
-| B5       | MemoryBank-style forgetting-curve memory (tau = 50 turns), filled to the budget                                    | Recall                   |
-| A1 to A4 | Memory ablations: no long term memory, no short term buffer, no scoping, no fallback                               | Recall                   |
-| A5       | No validation: schema-valid proposals become events without checks                                                 | Probes, live             |
-| A6       | Validator kept, but state is mutated in place with no event log                                                    | Live                     |
-| A7       | No snapshots: recovery by full replay                                                                              | Replay                   |
-| F1 to F4 | 2 x 2 factorial: memory (rolling or dual-tier) x control (direct writes or barrier)                                | Live                     |
+| Code     | Condition                                                                                                          | Used in              |
+| -------- | ------------------------------------------------------------------------------------------------------------------ | -------------------- |
+| F4       | The proposed system: dual-tier memory packed into the context budget, the corrected validator, and dialogue repair | All stages           |
+| F4v1     | The Review-02 system: unbudgeted memory, the Review-02 validator and prompt, no repair                             | Recall, probes, live |
+| B0       | Full history in the prompt, cut only at the context limit                                                          | Recall, probes       |
+| B1       | Rolling window of the newest turns that fit token budget B (larger budgets only in the CPU budget sweep)           | Recall, probes       |
+| B2       | Independent flat vector store of turn summaries, cosine rank, no scoping, no buffer, filled to the budget          | Recall, probes       |
+| B3       | Independent generic RAG over raw dialogue chunks and world lore documents, filled to the budget                    | Recall, probes       |
+| B4       | Generative Agents memory stream (recency, relevance and LLM-rated importance), filled to the budget                | Recall               |
+| B5       | MemoryBank-style forgetting-curve memory (tau = 50 turns), filled to the budget                                    | Recall               |
+| A1 to A4 | Memory ablations: no long term memory, no short term buffer, no scoping, no fallback                               | Recall               |
+| A8       | No context budget: F4's retrieval and prompt with all memories and the full buffer, as F4v1 assembles them         | Recall               |
+| A5       | No validation: schema-valid proposals become events without checks                                                 | Probes, live         |
+| A6       | Validator kept, but state is mutated in place with no event log                                                    | Live                 |
+| A7       | No snapshots: recovery by full replay                                                                              | Replay               |
+| F1 to F4 | 2 x 2 factorial: memory (rolling or dual-tier) x control (direct writes or barrier)                                | Live                 |
 
 ### How to run it
 
@@ -736,13 +740,36 @@ The notebook is designed for Kaggle and is never executed locally.
 
 1. Upload the notebook to Kaggle.
 2. In the sidebar, set **Accelerator** to **GPU T4 x2** and turn **Internet** on. Internet is needed to install vLLM and the pinned packages and to download the models and the LIGHT file.
-3. Optional inputs: a `w3_world_seed.json` written by someone outside the project, which replaces the notebook-authored W3 world; `llm_cache_*.jsonl` files and `run_manifest.json` from an earlier run, which resume it and let the planner reach a larger sample size; and `human_ratings_*.csv` files completed by raters.
+3. Optional inputs: a `w3_world_seed.json` written by someone outside the project, which replaces the notebook-authored W3 world, and `human_ratings_*.csv` files completed by raters. Do not attach response caches from earlier runs: the final run starts from an empty cache.
 4. Choose **Save Version**, then **Save & Run All**, so the 12-hour session limit applies.
 5. Download `outputs.zip` from the Output tab and extract it to [`notebooks/outputs/`](notebooks/outputs/).
 
-The notebook measures its own throughput with a pilot run and picks the largest pre-declared sample size that fits its 11.25-hour budget, so it always finishes and writes its outputs. The article's full scale needs several sessions: after each run, publish its `predictions/llm_cache_*.jsonl` as a Kaggle dataset, attach it, and run again. To rebuild every table and figure from attached caches without a GPU, set `CACHE_ONLY=True` in the configuration cell.
+The notebook measures its own throughput with a pilot run and picks the largest pre-declared sample size that fits its 11.25-hour budget, so it always finishes in one session and writes its outputs. Scaled from the third run's stage times this is level 3 (about 10 hours in all); the pilot decides. To rebuild every table and figure from a run's caches without a GPU, attach its `predictions/llm_cache_*.jsonl` and `metrics/run_manifest.json` and set `CACHE_ONLY=True` in the configuration cell.
 
-### Changes made after the run
+### Revisions for the final run
+
+An audit of the third run's prediction files against the notebook code found the issues below. The revised notebook addresses each one; the full list is `PROTOCOL_AMENDMENTS` in the configuration cell, which the manifest records with a SHA-256 digest of the whole configuration. None of these changes has run on Kaggle yet.
+
+| Issue found in the third run                                                                                                           | Change in the notebook                                                                                                          |
+| -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 9% of held-out recall probes at age 20 or more asked about an attribute planted twice with the same NPC, so they had two right answers | each attribute at most once per session and per live script                                                                     |
+| 9% of F4 replies named both the gold and the distractor value, and 32 unparsed outputs, were scored correct                            | strict recall scoring (parsed reply, gold value, no competing value); the old rule is a secondary column                        |
+| the benchmark favoured scoping, with one cross-NPC distractor per fact and one repeated scripted reply                                 | knowledge-update facts, same-NPC lure turns and varied scripted replies, with recall reported by fact type                      |
+| B4 had no importance term, so it was not the base paper's retrieval rule                                                               | importance rated once per memory text by the primary model                                                                      |
+| F4 recalled less than F4v1, and the run could not say why                                                                              | ablation A8 separates the context budget from the prompt change                                                                 |
+| 86% of attacks produced no proposal, so the barrier met few unlawful proposals                                                         | validator differential test on random proposals; zero violating turns after the corrected barrier in the local functional check |
+| that test showed the oracle missed object provenance, object hand-overs to absent NPCs, NPC-to-NPC trust and malformed payloads        | oracle O5 and O6 widened from the written invariants, and lawful proposals must be well formed and effective                    |
+| most rejected live moves named the destination by display name, which the 0.6% false-rejection figure hid                              | intent-level lawfulness and an offline canonicalising barrier                                                                   |
+| the model committed only 7 to 26% of scripted moves, so live sessions left their script                                                | the engine completes scripted travel; model move compliance is reported                                                         |
+| live violation rates counted a corrupted state again on every later turn (rates above 100 per 100)                                     | new violations per turn; live recall diagnostics (summary kept the value, memory retrieved)                                     |
+| zero-event outcomes were reported as "0.0 [0.0, 0.0]"                                                                                  | exact Clopper-Pearson intervals                                                                                                 |
+| three attack templates per category, probes treated as independent                                                                     | six templates per category, pooled probe intervals clustered on template                                                        |
+| H1 failed against B2 by design of the test, and the H6 logistic model separated                                                        | H1a superiority over B1 and B3, H1b non-inferiority to B2 within 5 points; H6 as a cluster-robust linear probability model      |
+| one unvalidated LLM judge                                                                                                              | a second judge family and Cohen's kappa                                                                                         |
+| four development runs used the same benchmark instances                                                                                | a fresh master seed                                                                                                             |
+| identical B0 and B1 probe prompts and low-value contexts used GPU time                                                                 | probe contexts F4 and B1, B1x2 moved to the CPU budget sweep, and a finer sample-size ladder                                    |
+
+### Fixes confirmed by the third run
 
 The saved outputs come from the notebook exactly as committed at `168087e` (Kaggle regenerated the cell ids, which were restored). That commit held the fixes for every issue found in the second Review-03 run (24 October), and this run confirms them:
 
@@ -1154,7 +1181,7 @@ Oracle codes behind the direct-write violations ([`metrics/probe_oracle_codes_di
 
 ![Attack success by commit mode (left) and the corrected barrier's false rejection and validator gap by category (right)](notebooks/outputs/plots/05_adversarial_probes.png)
 
-The corrected barrier accepted no unlawful proposal (validator gap 0.0% in every category, against 13.6% for the Review-02 validator and 59.1% of its currency proposals) and let no attack succeed. It rejected 4 of 684 lawful twin proposals (3 of 100 currency, 1 of 14 trust), the same 4 that the Review-02 validator rejected. All four are trust changes that name the NPC by its display name ("Merchant", "Bandit") instead of its id (`merchant`, `bandit`). The validator must reject them; the run's oracle labelled them lawful only because it did not check relationship ids, so these are labelling disagreements, not lost game actions (the notebook's oracle now checks them, see [Changes made after the run](#changes-made-after-the-run)). Trust and injection attacks never succeeded in any mode. The one secret-category success under direct writes is a committed state change (O1 and O5), not a leak.
+The corrected barrier accepted no unlawful proposal (validator gap 0.0% in every category, against 13.6% for the Review-02 validator and 59.1% of its currency proposals) and let no attack succeed. It rejected 4 of 684 lawful twin proposals (3 of 100 currency, 1 of 14 trust), the same 4 that the Review-02 validator rejected. All four are trust changes that name the NPC by its display name ("Merchant", "Bandit") instead of its id (`merchant`, `bandit`). The validator must reject them; the run's oracle labelled them lawful only because it did not check relationship ids, so these are labelling disagreements, not lost game actions (the notebook's oracle now checks them, see [Fixes confirmed by the third run](#fixes-confirmed-by-the-third-run)). Trust and injection attacks never succeeded in any mode. The one secret-category success under direct writes is a committed state change (O1 and O5), not a leak.
 
 Most of the protection comes from the reducer alone: committing every schema-valid proposal as an event (A5) cut attack success from 6.4% to 2.2%. Its remaining 53 successes are 44 currency exploits, 6 thefts of an object from another location (one W3 object, in three contexts), and 3 NPC relocations to non-adjacent places. The Review-02 barrier stopped the thefts but passed 26 currency exploits and the 3 NPC relocations, which it did not check.
 
