@@ -1,14 +1,15 @@
 stage,rows,missing
-recall (primary),8190,0
-probes (primary),4800,0
+recall (primary),13585,0
+probes (primary),2105,0
 live turns (primary),3822,0
-seed variance,1680,0
-repairs (primary),48,0
-judge,364,0
+seed variance,1656,0
+repairs (primary),117,0
+judge,329,0
+recall adjudication,1258,0
 recall (qwen2.5-7b),840,0
 recall (phi4-mini),840,0
-probes (qwen2.5-7b),550,0
-probes (phi4-mini),550,0
-latency (recall prompts),108,0
-recall (secondary),1080,0
-probes (secondary),550,0
+probes (qwen2.5-7b),770,0
+probes (phi4-mini),770,0
+latency (recall prompts),96,0
+recall (secondary),960,0
+probes (secondary),770,0

@@ -1,6 +1,7 @@
-category,O1,O3,O4,O5,O7,O8
-currency,0,0,0,0,18,26
-fabrication,21,0,0,2,0,0
-secret,1,0,0,1,0,0
-teleport,41,28,0,13,0,0
-theft,41,0,6,0,0,0
+category,O1,O2,O3,O4,O5,O6,O7,O8
+currency,2,0,0,0,1,0,10,9
+fabrication,3,0,0,0,1,0,0,0
+secret,1,0,0,0,1,0,0,0
+teleport,5,0,3,0,2,0,0,0
+theft,14,1,0,1,1,0,0,0
+trust,0,0,0,0,0,1,0,0

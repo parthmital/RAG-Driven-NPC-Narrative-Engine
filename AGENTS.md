@@ -1,7 +1,7 @@
 # Agent Guide
 
 Purpose: rules and commands every agent task in this repository needs. Read when: always.
-Last verified: 2026-10-26.
+Last verified: 2026-11-03.
 
 ## Commands
 

@@ -1,0 +1,15 @@
+world,state,type,lawful,lawful_intent,rejected,rejected_v1,rejected_canon,reason,payload,kind
+W1,17,OBJECT_TAKEN,True,True,True,True,True,player already carries 'house_wine_bottle',"{""object_id"": ""house_wine_bottle"", ""taken_by"": ""silas_thief""}",false rejection v2
+W2a,16,OBJECT_TAKEN,True,True,True,True,True,player already carries 'food',"{""object_id"": ""food"", ""taken_by"": ""old_gnaisha""}",false rejection v2
+W2a,25,OBJECT_TAKEN,True,True,True,True,True,player already carries 'blacksmith_s_hammer',"{""object_id"": ""blacksmith_s_hammer"", ""taken_by"": ""soldier""}",false rejection v2
+W2b,28,OBJECT_TAKEN,True,True,True,True,True,player already carries 'silver',"{""object_id"": ""silver"", ""taken_by"": ""lord""}",false rejection v2
+W3,18,OBJECT_TAKEN,True,True,True,True,True,player already carries 'med_kit',"{""object_id"": ""med_kit"", ""taken_by"": ""cmdr_okafor""}",false rejection v2
+W3,18,OBJECT_TAKEN,True,True,True,True,True,player already carries 'med_kit',"{""object_id"": ""med_kit"", ""taken_by"": ""cmdr_okafor""}",false rejection v2
+W1,6,OBJECT_TAKEN,False,True,True,True,True,object_id 'Bottle of Darkfire Ale' not canonical,"{""object_id"": ""Bottle of Darkfire Ale"", ""taken_by"": ""silas_thief""}",false rejection canon
+W1,11,OBJECT_TAKEN,False,True,True,True,True,object_id 'Blood-Stained Ledger' not canonical,"{""object_id"": ""Blood-Stained Ledger"", ""taken_by"": ""vorn_alchemist""}",false rejection canon
+W1,17,OBJECT_TAKEN,True,True,True,True,True,player already carries 'house_wine_bottle',"{""object_id"": ""house_wine_bottle"", ""taken_by"": ""silas_thief""}",false rejection canon
+W2a,16,OBJECT_TAKEN,True,True,True,True,True,player already carries 'food',"{""object_id"": ""food"", ""taken_by"": ""old_gnaisha""}",false rejection canon
+W2a,25,OBJECT_TAKEN,True,True,True,True,True,player already carries 'blacksmith_s_hammer',"{""object_id"": ""blacksmith_s_hammer"", ""taken_by"": ""soldier""}",false rejection canon
+W2b,28,OBJECT_TAKEN,True,True,True,True,True,player already carries 'silver',"{""object_id"": ""silver"", ""taken_by"": ""lord""}",false rejection canon
+W3,18,OBJECT_TAKEN,True,True,True,True,True,player already carries 'med_kit',"{""object_id"": ""med_kit"", ""taken_by"": ""cmdr_okafor""}",false rejection canon
+W3,18,OBJECT_TAKEN,True,True,True,True,True,player already carries 'med_kit',"{""object_id"": ""med_kit"", ""taken_by"": ""cmdr_okafor""}",false rejection canon

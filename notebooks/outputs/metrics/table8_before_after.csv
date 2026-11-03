@@ -1,14 +1,14 @@
 test,metric,before,after,n,effect_pp,p_raw,p_holm
-R1,"attack success, all categories","1.0 [0.2, 2.0]","0.0 [0.0, 0.0]",490,1.02,0.0625,0.3125
-R1,"attack success, currency","7.1 [1.4, 12.9]","0.0 [0.0, 0.0]",70,7.14,0.0625,0.3125
-R1,"validator gap, currency proposals","59.1 [32.5, 88.5]","0.0 [0.0, 0.0]",,,,
-R1,"validator gap, all proposals","13.6 [8.0, 20.1]","0.0 [0.0, 0.0]",,,,
-R1,false rejection of lawful twins,"0.6 [0.0, 1.7]","0.6 [0.0, 1.7]",,,,
-R2,crash trials recovered inconsistently,74.3% (5.6 turns lost),0.0% (0.0 turns lost),300,74.33,1.4836824602749686e-67,1.3353142142474717e-66
+R1,"attack success, all categories","1.0 [0.1, 2.7]","0.2 [0.0, 0.5]",1078,0.83,0.00390625,0.03125
+R1,"attack success, currency","5.8 [0.0, 16.6]","0.0 [0.0, 2.4]",154,5.84,0.00390625,0.03125
+R1,"validator gap, currency proposals","47.6 [0.0, 96.3]","0.0 [0.0, 16.1]",,,,
+R1,"validator gap, all proposals","12.7 [2.6, 28.2]","0.0 [0.0, 3.1]",,,,
+R1,false rejection of lawful twins,"0.0 [0.0, 1.4]","0.0 [0.0, 1.4]",,,,
+R2,crash trials recovered inconsistently,69.0% (5.9 turns lost),0.0% (0.0 turns lost),300,69.0,9.723461371658034e-63,8.75111523449223e-62
 R2,load path after a crash (replay sessions),0% consistent,100% consistent,,,,
-R3,"judge contradiction, repaired probes",41.7%,39.6%,48,2.08,1.0,1.0
-R3,"judge contradiction, repaired live F4 turns",44.7%,42.1%,38,2.63,1.0,1.0
-R3,"judge contradiction per judged live turn, F4v1 vs F4 (per session)",57.0%,13.8%,14,42.42,0.001221612009450628,0.008627797446246655
-R3,"desync proxy, live F4 turns (draft vs repaired)",10.6%,9.5%,546,1.1,0.03125,0.1875
-R3,"desync proxy per live turn, F4v1 vs F4 (per session)","18.9 [16.5, 21.2]","9.5 [7.9, 11.7]",14,9.34,0.001078474680780832,0.008627797446246655
-R4,"committed violations per 100 transitions, F4v1 vs F4 (per session)","8.3 [2.0, 17.0]","0.0 [0.0, 0.0]",14,10.71,0.10146249191481677,0.3125
+R3,"judge contradiction, repaired probes",48.7%,47.0%,117,1.71,0.8145294189453125,1.0
+R3,"judge contradiction, repaired live F4 turns",10.0%,5.0%,20,5.0,1.0,1.0
+R3,"judge contradiction per judged live turn, F4v1 vs F4 (per session)",38.9%,8.0%,7,38.1,0.0625,0.3125
+R3,"desync proxy, live F4 turns (draft vs repaired)",3.6%,3.6%,444,0.0,1.0,1.0
+R3,"desync proxy per live turn, F4v1 vs F4 (per session)","4.1 [2.3, 6.1]","3.6 [2.1, 5.1]",14,0.43,0.7278870933515401,1.0
+R4,"committed violations per 100 transitions, F4v1 vs F4 (per session)","13.0 [4.3, 22.2]","0.0 [0.0, 11.9]",14,10.36,0.051944834821775664,0.31166900893065397

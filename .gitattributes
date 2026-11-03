@@ -2,3 +2,5 @@
 * text=auto
 # The third-party IEEE class file is kept byte-identical to the upstream release.
 docs/paper/IEEEtran.cls -whitespace
+# The evaluation CSVs are notebook exports of model replies, which can end in spaces; keep them byte-identical.
+notebooks/outputs/**/*.csv -whitespace

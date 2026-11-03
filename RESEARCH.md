@@ -1,6 +1,21 @@
 # Research Notes
 
 Purpose: dated evidence behind the paper's literature, venue, and dependency decisions. Read when: choosing or revisiting a library, reference, venue, or approach.
+Last verified: 2026-11-03.
+
+## Paper update for the final run (checked 2026-11-03)
+
+**Brief.** Rewrite the manuscript and supplement for the fifth and final notebook run, whose protocol adds Clopper-Pearson intervals, a cluster-robust linear probability model with a t reference, and Cohen's kappa between two judges.
+
+**Findings.**
+
+- Every number in `docs/paper/main.tex` and `docs/paper/supplementary.tex` was taken from `notebooks/outputs/metrics/` or recomputed from `notebooks/outputs/predictions/` (age-5 hedging, live move compliance, crash-trial breakdown, backbone-subset recall, validator disagreements).
+- Three references were added and checked in Crossref: Clopper and Pearson (Biometrika 26(4), 404-413, 1934, `10.1093/biomet/26.4.404`) for the exact binomial interval, Cameron and Miller (Journal of Human Resources 50(2), 317-372, 2015, `10.3368/jhr.50.2.317`) for cluster-robust inference with few clusters, and Cohen (Educational and Psychological Measurement 20(1), 37-46, 1960, `10.1177/001316446002000104`) for kappa. Cameron and Miller's author copy (Section VI.D) says "at a minimum one should use the T(G - 1) distribution rather than the standard normal", which supports the paper's sentence. The Clopper-Pearson and Cohen full texts were not opened; each is cited only for the method it introduced.
+- The manuscript stays at 10 pages including references, and the supplement is 18 pages.
+
+**Decision.** Keep IEEE Transactions on Games and the existing template. No earlier reference changed.
+
+**Sources.** [Crossref REST API](https://api.crossref.org/) (2026-11-03), [Cameron and Miller author copy](http://cameron.econ.ucdavis.edu/research/Cameron_Miller_JHR_2015_February.pdf) (2026-11-03), `notebooks/outputs/` of the run on 2 to 3 November 2026.
 
 ## Target journal for the paper (2026-10-26)
 
@@ -117,6 +132,6 @@ _Partly superseded on 2026-10-16 (section above): NCP-Bench is now cited from PM
 - AAAI OJS: [AAAI 6297 (Jericho)](https://ojs.aaai.org/index.php/AAAI/article/view/6297), [AAAI 29946 (MemoryBank)](https://ojs.aaai.org/index.php/AAAI/article/view/29946), [AIIDE 31876 (PANGeA)](https://ojs.aaai.org/index.php/AIIDE/article/view/31876)
 - NeurIPS and PMLR proceedings: [HippoRAG (2024)](https://proceedings.neurips.cc/paper_files/paper/2024/hash/6ddc001d07ca4f319af96a3024f6dbd1-Abstract-Conference.html), [A-Mem (2025)](https://proceedings.neurips.cc/paper_files/paper/2025/hash/19909c36f51abc4856b4560aff3d36d6-Abstract-Conference.html), [PMLR v235 kambhampati24a](https://proceedings.mlr.press/v235/kambhampati24a.html)
 - arXiv: [2410.10813](https://arxiv.org/abs/2410.10813), [2504.19413](https://arxiv.org/abs/2504.19413), [2504.14128](https://arxiv.org/abs/2504.14128), [2608.08160](https://arxiv.org/abs/2608.08160), [2608.04037](https://arxiv.org/abs/2608.04037), [2609.18935](https://arxiv.org/abs/2609.18935), [2510.25014](https://arxiv.org/abs/2510.25014), [2510.25820](https://arxiv.org/abs/2510.25820), [2511.10277](https://arxiv.org/abs/2511.10277), [2302.12173](https://arxiv.org/abs/2302.12173), [2309.06180](https://arxiv.org/abs/2309.06180); identifiers of every cited arXiv paper were re-checked against the [arXiv API](https://info.arxiv.org/help/api/index.html) on 2026-10-06.
-- [Crossref REST API](https://www.crossref.org/documentation/retrieve-metadata/rest-api/): Greshake et al. ([10.1145/3605764.3623985](https://doi.org/10.1145/3605764.3623985)), Gallotta et al. ([10.1109/TG.2024.3461510](https://doi.org/10.1109/TG.2024.3461510)), Zhang et al. ([10.1145/3748302](https://doi.org/10.1145/3748302)), Field and Welsh, McNemar, Wilcoxon, Efron, Seabold and Perktold, Johnson et al., Reimers and Gurevych, Kim and Schuster, Geng et al., Park et al., Liu et al., Côté et al.
+- [Crossref REST API](https://www.crossref.org/documentation/retrieve-metadata/rest-api/): Greshake et al. ([10.1145/3605764.3623985](https://doi.org/10.1145/3605764.3623985)), Gallotta et al. ([10.1109/TG.2024.3461510](https://doi.org/10.1109/TG.2024.3461510)), Zhang et al. ([10.1145/3748302](https://doi.org/10.1145/3748302)), Field and Welsh, McNemar, Wilcoxon, Efron, Seabold and Perktold, Johnson et al., Reimers and Gurevych, Kim and Schuster, Geng et al., Park et al., Liu et al., Cote et al.
 - ~~Not linked: Holm (1979) has no DOI and its JSTOR page blocks automated checks, so no URL was verified.~~ Superseded 2026-10-09: Holm (1979) has no DOI; its JSTOR stable URL [jstor.org/stable/4615733](https://www.jstor.org/stable/4615733) was read off the first page of the JSTOR-issued PDF (title, author, Scand. J. Statist. 6(2):65-70, 1979). Kleppmann (2017) has no DOI; it links the book's site [dataintensive.net](https://dataintensive.net/), which names the book, the author and O'Reilly. The O'Reilly catalogue page returned HTTP 403 to automated access.
 - IEEE format (2026-10-09): `IEEEtran.bst` v1.14 has no `doi` field, so each DOI in [`docs/paper/references.bib`](docs/paper/references.bib) is repeated as a `https://doi.org/` `url`, which the style prints as a link.

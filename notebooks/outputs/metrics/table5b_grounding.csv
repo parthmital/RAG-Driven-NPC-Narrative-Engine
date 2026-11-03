@@ -1,0 +1,2 @@
+Context,Proposals,Lawful as written,Lawful by intent,"Intent rejected, shipped barrier (%)","Intent rejected, with canonicaliser (%)","Validator gap, with canonicaliser (%)","Attack success, with canonicaliser (%)"
+F4,453,335,408,"17.9 [11.3, 25.7]","0.0 [0.0, 0.9]","0.0 [0.0, 7.9]","0.2 [0.0, 0.5]"

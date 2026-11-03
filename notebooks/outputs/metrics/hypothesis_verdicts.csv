@@ -1,12 +1,13 @@
 hypothesis,verdict,evidence
-H1 Memory,not supported,"F4 input tokens 1444 vs B2 1451, B3 1506"
-H2 Retrieval,supported,"per-probe reciprocal rank, Wilcoxon"
+"H1a Memory, superiority over B1 and B3",supported (recall) but token-cost condition vs B2/B3 not met,"F4 input tokens 1468 vs B2 1456, B3 1516"
+"H1b Memory, non-inferiority to B2",not supported,"margin 5 pp; recall 20+ F4 vs B2, non-inferiority margin 5 pp (one-sided lower bound -9.1 pp)"
+H2 Retrieval,not supported,"per-probe reciprocal rank, Wilcoxon"
 H3 State control,supported,probes McNemar + live Wilcoxon
-H4 Cost of control,supported,"false rejection 0.7 [0.0, 2.4]%; validate P95 1.397 ms"
+H4 Cost of control,not supported,"false rejection by intent 20.0 [12.3, 29.3]% (strict 0.0 [0.0, 1.4]%); validate P95 0.958 ms"
 H5 Replay,supported,"live event-sourced sessions all consistent: True; CPU replay, restart, backend load path after a crash and 300 randomised crash trials all consistent: True"
-H6 Separability,not supported,"memory->recall coef 3.38 (p=2.38e-62); control->violation coef -8.32 (p=9.37e-37); interaction p recall=3.12e-06, violation=0.105"
-H7 Generalisation,not supported,"W2 LIGHT-derived: dRecall=+0.840, dAttack=+0.048; W3 held-out genre: dRecall=+0.796, dAttack=+0.071; W4 procedural: dRecall=+0.833, dAttack=+0.000; backbone qwen2.5-7b: dRecall=+0.944, dAttack=+0.439; backbone phi4-mini: dRecall=+0.806, dAttack=+0.239"
-R1 Currency invariant,confirmed (no failure after the correction),"v2 currency validator gap 0.0 [0.0, 0.0]%"
+H6 Separability,supported,"memory->recall coef 0.46 (p=8.56e-05); control->violation coef -0.15 (p=2.08e-07); interaction p recall=0.754, violation=1"
+H7 Generalisation,supported,"W2 LIGHT-derived: dRecall=+0.636, dAttack=+0.032; W3 held-out genre: dRecall=+0.689, dAttack=+0.019; W4 procedural: dRecall=+0.612, dAttack=+0.016; backbone qwen2.5-7b: dRecall=+0.778, dAttack=+0.495; backbone phi4-mini: dRecall=+0.750, dAttack=+0.273"
+R1 Currency invariant,confirmed (no failure after the correction),"v2 currency validator gap 0.0 [0.0, 16.1]%"
 R2 Snapshot recovery,confirmed (no failure after the correction),300/300 crash trials consistent after the correction
-R3 Dialogue repair,partly confirmed,"draft vs repaired (judge, proxy) and F4v1 vs F4"
+R3 Dialogue repair,not confirmed,"draft vs repaired (judge, proxy) and F4v1 vs F4"
 R4 Committed violations,not confirmed,"F4v1 vs F4, live, per session"

@@ -1,7 +1,7 @@
 # Human evaluation protocol
 
 Purpose: how raters fill and score the notebook's blinded annotation sheets. Read when: collecting or analysing human ratings.
-Last verified: 2026-10-26.
+Last verified: 2026-11-03.
 
 This protocol goes with the blinded sheets that the evaluation notebook writes to `annotation/` (notebook section 11.1). It answers the Review-03 requirement for blinded human ratings of coherence, persona fidelity and state consistency, and it validates the two automatic scorers the paper relies on: the key-word recall scorer and the LLM contradiction judge.
 
@@ -16,7 +16,7 @@ The sheets list items in a shuffled order with no condition names. The mapping f
 
 ## Sheets and scales
 
-The third Review-03 run (24 to 25 October 2026) exported 200 dialogue-quality, 194 contradiction and 1,560 recall items to [`notebooks/outputs/annotation/`](../notebooks/outputs/annotation/). None has been rated yet.
+The final run (2 to 3 November 2026) exported 200 dialogue-quality, 200 contradiction and 1,560 recall items to [`notebooks/outputs/annotation/`](../notebooks/outputs/annotation/). None has been rated yet.
 
 ### `dialogue_quality_sheet.csv`
 
@@ -36,7 +36,7 @@ One reply per row with the committed and rejected changes. Answer `contradiction
 
 ### `recall_sheet.csv`
 
-One recall answer per row with the gold value. Answer `correct_yes_no` with `yes` if the answer states the gold value, even if worded differently.
+One recall answer per row with the gold value. Answer `correct_yes_no` with `yes` if the answer states the gold value, even if worded differently. If it gives more than one value (for example the value before a correction and the corrected one), answer `yes` only if it clearly settles on the gold value. The notebook compares these labels with the strict key-word scorer, which counts any reply that names a competing value as wrong, and with the adjudicated rule.
 
 ## Returning the ratings
 
@@ -48,6 +48,6 @@ One recall answer per row with the gold value. Answer `correct_yes_no` with `yes
 
 - Per condition, the mean of each 1-to-5 scale with a bootstrap interval over items (`metrics/human_eval.csv`).
 - Inter-rater agreement: quadratic-weighted Cohen's kappa for the 1-to-5 scales and Cohen's kappa for the yes/no labels (`metrics/human_agreement.csv`).
-- The judge's agreement with the human majority on the contradiction items, and the key-word scorer's agreement with the human recall labels.
+- The judge's agreement with the human majority on the contradiction items, and the agreement of the strict key-word scorer and the adjudicated rule with the human recall labels.
 
 No human result is imputed: until rating files are attached, the notebook reports the human evaluation as pending.
