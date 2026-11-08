@@ -525,6 +525,35 @@ Cost & ``thousands of dollars in token credits'' for two simulated days & 146{,}
 
 Automatic coding locates the failures (counts per condition in \cref{app:supp}). None of F4's recall failures came from retrieval: it had no retrieval miss, 257 replies named the gold value and a competing one, 132 ignored a retrieved gold turn, 38 used the distractor's value and 14 the outdated one. Rolling contexts failed by forgetting (546 misses for B1), generic RAG by hedging, ignoring and confusing retrieved chunks (324, 199 and 103), the scored memory stream B4 partly by forgetting (86 misses), and the ablation without long-term memory by both (638 misses, 213 confusions). The desynchronisation proxy flagged 16 F4 turns against 18 for F4v1, 13 for F2 and 12 for A6, the conditions that can reject proposals. In conditions that never reject, only the arrival cue can fire: 4 turns each for F1 and F3 and 2 for A5.
 
+\subsection{Failure modes, trust boundary and audit coverage}\label{sec:failures}
+
+\Cref{tab:failures} gathers every failure mode that the run measured, or that lies outside what it measured, with the component it arises in and its status. Two failure modes found in earlier versions, the load path that discarded logged turns and the missing currency rule, are fixed and confirmed by R2 and R1 (\cref{M-tab:before-after}). The remaining ones fall into three groups. Recall fails after retrieval, in how the model uses the memories it is given. State control fails at its two edges, the input (display names instead of ids) and the output (narration and dialogue, which no state check reads). The audit itself has two blind spots, player actions from the client and the content of state, flag, journal and clue events, which the oracle checks only for creating no entity (\cref{M-sec:oracle}).
+
+\begin{table*}[!btp]
+\centering\footnotesize
+\caption{Failure modes of F4, with the component they arise in, the measured evidence and their status. Each value has the scope of the table or section that reports it: coded recall failures on all worlds (\cref{tab:errors}), fact-age and update results on held-out worlds (\cref{tab:age,sec:retrieval-ext}), probe results on all worlds (\cref{M-tab:probes}) and live results over 14 sessions (\cref{tab:factorial,tab:livediag}).}
+\label{tab:failures}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{3.3cm} >{\raggedright\arraybackslash}p{2.6cm} L >{\raggedright\arraybackslash}p{4.2cm}@{}}
+\toprule
+Failure mode & Component & Evidence & Status \\
+\midrule
+Hedged, ignored or confused answers & generation after retrieval & 257 hedged, 132 ignored, 38 confused, 14 outdated, no retrieval miss & open, the largest source of recall loss \\
+Distractor beside the fact in the buffer & short-term buffer & 30.0\% recall at age 5, both values named in 41.1\% of replies & open, 74.4\% without the buffer (A2) \\
+Knowledge updates & memory and generation & corrected value 20.7\%, outdated value 4.3\% & open for every memory condition \\
+Lossy memory summaries & memory write & summary kept the value in 80.4\% of live plants & open, storing the raw turn is untested \\
+Display-name grounding & barrier input & false rejection by intent 20.0\% of lawful twins, 63.7\% of live proposals & removed offline by a canonicaliser (0.0\%), not shipped \\
+Narration contradicts a rejected change & dialogue after rejection & proxy 3.6\% of live turns, judge 8.0\%, repair 48.7\% to 47.0\% & open, one repair call is ineffective \\
+Secret spoken in dialogue & dialogue & two leaks under the corrected barrier, 1.0\% of all attacks & outside state control, gated by trust 60 \\
+Unparseable output & schema & probe parse success 94.0\%, 22 recall failures & no commit, the turn is lost \\
+Post-filter reach & scoped retrieval & gold retrieved for at least 99.6\% of probes & not observed at $|M|\le1000$, bound in \cref{M-prop:postfilter} \\
+Player actions & client routes & not audited & route checks only (adjacency, presence, possession) \\
+Content of state, flag, journal and clue events & oracle coverage & not audited & checked only for new entities (O1) \\
+Suffix lost on load & recovery & 69.0\% of 300 crash trials inconsistent before, 0.0\% after & fixed (R2) \\
+Currency gains unbounded & validator & validator gap 47.6\% before, 0.0\% after & fixed (R1) \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
 %=====================================================================
 \section{Additional Tables and Figures}\label{app:supp}
 This section holds the tables and figures that the manuscript states in text or that duplicate another table or figure.
