@@ -1,7 +1,25 @@
 # Research Notes
 
 Purpose: dated evidence behind the paper's literature, venue, and dependency decisions. Read when: choosing or revisiting a library, reference, venue, or approach.
-Last verified: 2026-11-03.
+Last verified: 2026-11-17.
+
+## Final submission revision of the paper (checked 2026-11-17)
+
+**Brief.** Make the manuscript and supplement submission-ready for IEEE Transactions on Games: references verified, no preprints, one-line captions, third person, every passage flagged by the Turnitin report (manuscript and supplement merged, 12% overall) reworded, and claims fact-checked.
+
+**Findings.**
+
+- Guidelines rechecked: 10 pages including references, abstract of 150 to 200 words in one paragraph with no abbreviations, 2 to 5 keywords (another passage says three or four, so the paper now has four), double-anonymous review, and data or code for review shared anonymously (the page suggests `anonymous.4open.science`).
+- Every DOI was rechecked in Crossref, and none is retracted. Fixes: issue numbers for Jericho (34(5)), MemoryBank (38(17)) and PANGeA (20(1)), pages for HippoRAG (59532-59569) and A-Mem (20004-20031), the DOI `10.52202/075280-0377` and pages 8634-8652 for Reflexion, and pages 1-18 with "early access" for Gallotta et al., which Crossref and OpenAlex list with no volume yet. NCP-Bench and SimpleMem were confirmed on their PMLR v306 pages.
+- Gallotta et al. do not name "coupling generated text to game state" as an open problem. The author page quotes hallucination, lack of grounding, NPCs that "hallucinate quests that do not exist in the game", and loss of continuity, so the introduction now says that.
+- RMM refines retrieval, not summaries, with reinforcement learning. The survey sentence was corrected.
+- The Research Gap section listed six gaps but said five. Corrected.
+- The K2-Horizon models are Apache 2.0 on their Hugging Face page. The licence sentence was dropped from the conclusion for space.
+- Turnitin: 11% of the 12% matched github.com, the paper's own repository text, and every other source was under 1% (generic keywords, the affiliation line, model and package names). All flagged sentences were reworded.
+
+**Decision.** Keep IEEE Transactions on Games. The undefined `S-` references came from compiling `main.tex` alone without `supplementary.aux`. The cross-referenced `.aux` files are now tracked (see `AGENTS.md`).
+
+**Sources.** [IEEE ToG submission guidelines](https://www.transactions.games/submit/submission-guidelines) (2026-11-17), [Crossref REST API](https://api.crossref.org/) (2026-11-17), [OpenAlex](https://api.openalex.org/) (2026-11-17), [PMLR v306 ma26ap](https://proceedings.mlr.press/v306/ma26ap.html), [PMLR v306 liu26dx](https://proceedings.mlr.press/v306/liu26dx.html), [Gallotta et al. author page](https://www.antoniosliapis.com/articles/llm_and_games.php), [IFM/K2-Horizon-7B](https://huggingface.co/IFM/K2-Horizon-7B) (all 2026-11-17).
 
 ## Paper update for the final run (checked 2026-11-03)
 

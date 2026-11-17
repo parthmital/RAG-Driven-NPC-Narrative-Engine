@@ -93,6 +93,12 @@ coverage/
 
 # LaTeX build artefacts (docs/paper/main.pdf is the tracked output)
 docs/paper/*.aux
+# The manuscript and supplement read each other's labels (xr-hyper), so these four .aux files
+# are tracked: a standalone compile of either document then resolves the S- and M- references.
+!docs/paper/main.aux
+!docs/paper/main-anonymised.aux
+!docs/paper/supplementary.aux
+!docs/paper/supplementary-anonymised.aux
 docs/paper/*.bbl
 docs/paper/*.blg
 docs/paper/*.out

@@ -75,7 +75,9 @@
 \renewcommand{\dbltopfraction}{0.95}
 \renewcommand{\textfraction}{0.05}
 \renewcommand{\floatpagefraction}{0.5}
-\renewcommand{\dblfloatpagefraction}{0.5}
+% A page of full-width floats alone must be at least 75% full, so a half-empty float page
+% (which pushed the anonymised manuscript past 10 pages) is not produced.
+\renewcommand{\dblfloatpagefraction}{0.75}
 % Stack floats from the top of float pages instead of spreading them over the page.
 \makeatletter
 \setlength{\@fptop}{0pt}
