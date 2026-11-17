@@ -1,6 +1,6 @@
 {
 	"created_utc": "2026-11-03T05:24:38Z",
-	"repo": "https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine",
+	"repo": "https://anonymous.4open.science/r/RAG-Driven-NPC-Narrative-Engine",
 	"protocol_sha256": "cdaa4f484e132abbfae86936dfc0d061198d1dd5eb05f64fbf8d08ad16894fed",
 	"protocol_amendments": [
 		"fresh master seed: every benchmark instance is new to this run",
@@ -74,7 +74,7 @@
 	},
 	"vllm_env": "0.30.0 2.13.0+cu132",
 	"config": {
-		"REPO_URL": "https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine",
+		"REPO_URL": "https://anonymous.4open.science/r/RAG-Driven-NPC-Narrative-Engine",
 		"LEGACY_COMMIT": "0ea345fe140b359d7e82e77ffb2fdfa74caf0e7c",
 		"KERNEL_PACKAGES": [
 			"faiss-cpu==1.15.1",

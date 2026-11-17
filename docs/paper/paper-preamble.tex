@@ -33,12 +33,11 @@
   \def\Variant{-anonymised}
 \else
   \def\Variant{}
-  \hypersetup{pdfauthor={Parth Mital, Bhumika Singh, Pranesh Gopal, Kalyanaraman P}}
 \fi
 
 % Repository links: Backend modules and the configuration are pinned to the evaluated
 % commit (the backend embedded in the notebook for the final run), notebook outputs are linked on main.
-\newcommand{\repo}{https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine}
+\newcommand{\repo}{https://anonymous.4open.science/r/RAG-Driven-NPC-Narrative-Engine}
 \newcommand{\evalcommit}{9b38dcfeb506b797c38a07a8bc357da707e34e7c}
 % Anonymous mirror of the repository for double-anonymous review (anonymous.4open.science,
 % created 2026-11-17, expires 2027-04-17). It serves the default branch at /r/<name>/<path>.
@@ -51,10 +50,10 @@
   \newcommand{\mainblob}{\anonrepo/}
   \newcommand{\maintree}{\anonrepo/}
 \else
-  \newcommand{\evalblob}{\repo/blob/\evalcommit/}
-  \newcommand{\evaltree}{\repo/tree/\evalcommit/}
-  \newcommand{\mainblob}{\repo/blob/main/}
-  \newcommand{\maintree}{\repo/tree/main/}
+  \newcommand{\evalblob}{\anonrepo/}
+  \newcommand{\evaltree}{\anonrepo/}
+  \newcommand{\mainblob}{\anonrepo/}
+  \newcommand{\maintree}{\anonrepo/}
 \fi
 % \linkpath{url prefix}{path}: link to prefix+path, typeset the path with url-style line breaks
 \newcommand{\linkpath}[2]{\href{#1\detokenize{#2}}{\expandafter\nolinkurl\expandafter{\detokenize{#2}}}}
@@ -63,7 +62,7 @@
 \newcommand{\msrc}[1]{\linkpath{\mainblob}{#1}}
 \newcommand{\mdir}[1]{\linkpath{\maintree}{#1}}
 \newcommand{\osrc}[1]{\linkpath{\mainblob notebooks/outputs/}{#1}}
-\newcommand{\commit}[1]{\href{\repo/commit/#1}{\nolinkurl{#1}}}
+\newcommand{\commit}[1]{[commit withheld for review]}
 % \repolink{url}{text}: a link into the repository
 \newcommand{\repolink}[2]{\href{#1}{#2}}
 % \codeavailability: the footnote that gives the code, benchmark and run outputs.
@@ -139,8 +138,6 @@
   \author{Anonymous Authors\thanks{\codeavailability}}%
   \markboth{November~2026}{Anonymous: Memory and State Control for LLM-Driven NPC Dialogue}%
 \else
-  \author{Parth~Mital, Bhumika~Singh, Pranesh~Gopal, and~Kalyanaraman~P%
-  \thanks{The authors are with the School of Computer Science and Engineering, Vellore Institute of Technology. Dr.\ Kalyanaraman P is the faculty author (e-mail: \href{mailto:parth.mital2023@vitstudent.ac.in}{\nolinkurl{parth.mital2023@vitstudent.ac.in}}, \href{mailto:bhumika.2023a@vitstudent.ac.in}{\nolinkurl{bhumika.2023a@vitstudent.ac.in}}, \href{mailto:pranesh.gopal2023@vitstudent.ac.in}{\nolinkurl{pranesh.gopal2023@vitstudent.ac.in}}, \href{mailto:pkalyanaraman@vit.ac.in}{\nolinkurl{pkalyanaraman@vit.ac.in}}).}%
-  \thanks{\codeavailability}}%
-  \markboth{November~2026}{Mital \MakeLowercase{\textit{et al.}}: Memory and State Control for LLM-Driven NPC Dialogue}%
+  \author{Anonymous Authors\thanks{\codeavailability}}%
+  \markboth{November~2026}{Anonymous: Memory and State Control for LLM-Driven NPC Dialogue}%
 \fi}
