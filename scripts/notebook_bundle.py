@@ -22,9 +22,11 @@ import base64
 import gzip
 import hashlib
 import json
+import re
 import subprocess
 import sys
 import textwrap
+import zlib
 from pathlib import Path
 
 import nbformat
@@ -93,6 +95,16 @@ def cell_source(files: dict[str, str]) -> str:
     )
 
 
+def embedded_files(source: str) -> dict[str, str] | None:
+    """Decode the files stored in a bundle cell, or None if the cell cannot be decoded."""
+    try:
+        body = source.split("BACKEND_BUNDLE = (", 1)[1]
+        b64 = "".join(re.findall(r'^\s*"([A-Za-z0-9+/=]+)"\s*$', body, re.M))
+        return json.loads(gzip.decompress(base64.b64decode(b64)))
+    except (IndexError, ValueError, OSError, EOFError, zlib.error):
+        return None
+
+
 def bundle_cell(nb):
     cells = [c for c in nb.cells if TAG in c.get("metadata", {}).get("tags", [])]
     if len(cells) != 1:
@@ -114,7 +126,9 @@ def main() -> None:
     files = collect()
     expected = cell_source(files)
     if args.check:
-        if cell.source != expected:
+        # Compare the decoded files and the declared hash, not the raw text: gzip headers
+        # differ between Python versions (the OS byte), which is not a stale bundle.
+        if embedded_files(cell.source) != files or digest(files) not in cell.source:
             sys.exit(
                 "The notebook's backend bundle is stale. Run "
                 "`.venv/Scripts/python scripts/notebook_bundle.py` and commit the notebook."
