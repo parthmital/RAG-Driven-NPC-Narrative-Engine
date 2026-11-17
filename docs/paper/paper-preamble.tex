@@ -40,21 +40,38 @@
 % commit (the backend embedded in the notebook for the final run), notebook outputs are linked on main.
 \newcommand{\repo}{https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine}
 \newcommand{\evalcommit}{9b38dcfeb506b797c38a07a8bc357da707e34e7c}
+% Anonymous mirror of the repository for double-anonymous review (anonymous.4open.science,
+% created 2026-11-17, expires 2027-04-17). It serves the default branch at /r/<name>/<path>.
+\newcommand{\anonrepo}{https://anonymous.4open.science/r/RAG-Driven-NPC-Narrative-Engine}
+% URL prefixes for files at the evaluated commit and on main. Backend/ on main equals the
+% evaluated commit, so the anonymised copies point both at the mirror.
+\ifdefined\Anonymised
+  \newcommand{\evalblob}{\anonrepo/}
+  \newcommand{\evaltree}{\anonrepo/}
+  \newcommand{\mainblob}{\anonrepo/}
+  \newcommand{\maintree}{\anonrepo/}
+\else
+  \newcommand{\evalblob}{\repo/blob/\evalcommit/}
+  \newcommand{\evaltree}{\repo/tree/\evalcommit/}
+  \newcommand{\mainblob}{\repo/blob/main/}
+  \newcommand{\maintree}{\repo/tree/main/}
+\fi
 % \linkpath{url prefix}{path}: link to prefix+path, typeset the path with url-style line breaks
 \newcommand{\linkpath}[2]{\href{#1\detokenize{#2}}{\expandafter\nolinkurl\expandafter{\detokenize{#2}}}}
-\newcommand{\bsrc}[1]{\linkpath{\repo/blob/\evalcommit/Backend/}{#1}}
-\newcommand{\esrc}[1]{\linkpath{\repo/blob/\evalcommit/}{#1}}
-\newcommand{\msrc}[1]{\linkpath{\repo/blob/main/}{#1}}
-\newcommand{\mdir}[1]{\linkpath{\repo/tree/main/}{#1}}
-\newcommand{\osrc}[1]{\linkpath{\repo/blob/main/notebooks/outputs/}{#1}}
+\newcommand{\bsrc}[1]{\linkpath{\evalblob Backend/}{#1}}
+\newcommand{\esrc}[1]{\linkpath{\evalblob}{#1}}
+\newcommand{\msrc}[1]{\linkpath{\mainblob}{#1}}
+\newcommand{\mdir}[1]{\linkpath{\maintree}{#1}}
+\newcommand{\osrc}[1]{\linkpath{\mainblob notebooks/outputs/}{#1}}
 \newcommand{\commit}[1]{\href{\repo/commit/#1}{\nolinkurl{#1}}}
 % \repolink{url}{text}: a link into the repository
 \newcommand{\repolink}[2]{\href{#1}{#2}}
-% The anonymised copies keep paths and drop every repository or commit link and the system name.
+% \codeavailability: the footnote that gives the code, benchmark and run outputs.
+\newcommand{\codeavailability}{Source code, benchmark and run outputs: \url{\repo}.}
+% The anonymised copies link the anonymous mirror, withhold commit hashes and replace the system name.
 \ifdefined\Anonymised
-  \renewcommand{\linkpath}[2]{\nolinkurl{#2}}
   \renewcommand{\commit}[1]{[commit withheld for review]}
-  \renewcommand{\repolink}[2]{#2}
+  \renewcommand{\codeavailability}{Source code, benchmark and run outputs, anonymised for review: \url{\anonrepo/}.}
 \fi
 \newcommand{\hfmodel}[1]{\href{https://huggingface.co/#1}{\texttt{#1}}}
 
@@ -119,11 +136,11 @@
 % \PaperAuthors: the author block and running heads (anonymous in the anonymised copies)
 \newcommand{\PaperAuthors}{%
 \ifdefined\Anonymised
-  \author{Anonymous Authors}%
+  \author{Anonymous Authors\thanks{\codeavailability}}%
   \markboth{November~2026}{Anonymous: Memory and State Control for LLM-Driven NPC Dialogue}%
 \else
   \author{Parth~Mital, Bhumika~Singh, Pranesh~Gopal, and~Kalyanaraman~P%
   \thanks{The authors are with the School of Computer Science and Engineering, Vellore Institute of Technology. Dr.\ Kalyanaraman P is the faculty author (e-mail: \href{mailto:parth.mital2023@vitstudent.ac.in}{\nolinkurl{parth.mital2023@vitstudent.ac.in}}, \href{mailto:bhumika.2023a@vitstudent.ac.in}{\nolinkurl{bhumika.2023a@vitstudent.ac.in}}, \href{mailto:pranesh.gopal2023@vitstudent.ac.in}{\nolinkurl{pranesh.gopal2023@vitstudent.ac.in}}, \href{mailto:pkalyanaraman@vit.ac.in}{\nolinkurl{pkalyanaraman@vit.ac.in}}).}%
-  \thanks{Source code, benchmark and run outputs: \url{https://github.com/parthmital/RAG-Driven-NPC-Narrative-Engine}.}}%
+  \thanks{\codeavailability}}%
   \markboth{November~2026}{Mital \MakeLowercase{\textit{et al.}}: Memory and State Control for LLM-Driven NPC Dialogue}%
 \fi}

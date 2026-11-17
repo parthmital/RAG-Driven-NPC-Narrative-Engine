@@ -110,7 +110,7 @@ The survey leaves six gaps. \textbf{RG1:} memory is not bound to validated state
 \section{Proposed Methodology}\label{sec:method}
 
 \subsection{Formal model}\label{sec:formal}
-The model is the one the code implements. Module paths refer to \repolink{\repo/tree/\evalcommit/Backend}{\code{Backend/}} at the evaluated commit. The engine also exists in an earlier version, frozen at the second project review and called Review-02 below. Its corrections are tested in \cref{sec:before-after}.
+The model is the one the code implements. Module paths refer to \repolink{\evaltree Backend/}{\code{Backend/}} at the evaluated commit. The engine also exists in an earlier version, frozen at the second project review and called Review-02 below. Its corrections are tested in \cref{sec:before-after}.
 
 \begin{definition}[World state]\label{def:state}
 A world state is a tuple $S=(\mathcal{L},A,\mathcal{N},\mathcal{O},\pi,\iota,c,R,J,t)$ where $\mathcal{L}$ is the set of locations with directed adjacency $A\subseteq\mathcal{L}\times\mathcal{L}$, $\mathcal{N}$ the NPCs (location, persona, knowledge, conditional secrets, \code{alive} flag), and $\mathcal{O}$ the objects (location in $\mathcal{L}\cup\{\bot\}$, owner). The player's location is $\pi\in\mathcal{L}$, the inventory $\iota$ and the currency $c\in\mathbb{Z}_{\ge 0}$. The trust map is $R:\mathcal{N}\times(\mathcal{N}\cup\{\text{player}\})\to[-100,100]$, the journal $J$ and the turn $t$ (\bsrc{schemas/world_state.py}).
@@ -170,7 +170,7 @@ The scoped branch inspects only $\topk_{fk}(\mathbf{q})$.
 \subsection{Turn pipeline}\label{sec:system}
 \Cref{fig:arch} shows one turn (\bsrc{graph/definition.py}). The LLM output is treated as untrusted: proposals reach the world state only through the validation barrier (node 6) and the pure reducer inside the commit node (node 8), and node 7 rewrites a reply whose proposal was rejected. The commit node also updates the buffer, the FAISS store and, every 16 turns, the snapshot. On later turns, retrieval (node 2) reads the FAISS store, and prompt assembly (node 3) packs the memories and the turn buffer into one budget.
 
-\emph{Trust boundary.} Two paths change state, and both append an event that the reducer applies. Model proposals must pass the barrier, while player actions from the client (travel, pick-up, drop, clue linking) are checked only by their route handlers and are not audited. Tests at the evaluated commit enforce the layer rules, under which the memory and LLM layers cannot import the barrier or the graph, and pass 3{,}000 randomly generated proposal turns through the barrier without breaking an invariant (\linkpath{\repo/tree/\evalcommit/Backend/}{tests/}).
+\emph{Trust boundary.} Two paths change state, and both append an event that the reducer applies. Model proposals must pass the barrier, while player actions from the client (travel, pick-up, drop, clue linking) are checked only by their route handlers and are not audited. Tests at the evaluated commit enforce the layer rules, under which the memory and LLM layers cannot import the barrier or the graph, and pass 3{,}000 randomly generated proposal turns through the barrier without breaking an invariant (\linkpath{\evaltree Backend/}{tests/}).
 
 \begin{figure*}[!btp]
 \centering

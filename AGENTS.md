@@ -34,7 +34,7 @@ Last verified: 2026-11-17.
 - **pip backtracks (`This is taking longer than usual`)**: a version cap in `Backend/requirements.txt` conflicts with a transitive dependency. Widen the cap. Do not re-add a `websockets` pin, because `uvicorn[standard]` owns it.
 - **Never run the notebook locally**: it needs Kaggle GPU T4 x2. Refresh `notebooks/outputs/` from a Kaggle run.
 - **`Reference 'S-...' undefined` in a paper log**: the manuscript was compiled alone without `supplementary.aux` (plain `tectonic main.tex` keeps no intermediates). Run `npm run paper`, which builds the pair in order and keeps the `.aux` files.
-- **Anonymised paper still identifies authors**: a new repository link bypassed `\repolink`, `\bsrc`, or `\commit`. Use those macros.
+- **Anonymised paper still identifies authors**: a new repository link bypassed the macros in `docs/paper/paper-preamble.tex` (`\bsrc`, `\esrc`, `\msrc`, `\mdir`, `\osrc`, `\repolink` with `\evaltree`, `\commit`, `\codeavailability`). Use them: the anonymised copies point them at the anonymous mirror `https://anonymous.4open.science/r/RAG-Driven-NPC-Narrative-Engine/`, which mirrors `main` and expires on 2027-04-17.
 - **A VS Code terminal is not in `.venv`**: it opened before setup created `.venv`, or it uses another profile. `.vscode/settings.json` makes `PowerShell (.venv)` the default. Open a new terminal, or call `.venv/Scripts/python.exe` directly.
 - **Python writes CRLF on Windows**: write files with `newline="\n"` or bytes.
 
