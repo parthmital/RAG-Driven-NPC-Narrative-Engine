@@ -327,6 +327,7 @@ RAG-Driven-NPC-Narrative-Engine/
 |   |-- dev.mjs
 |   |-- check.mjs
 |   |-- notebook_bundle.py
+|   |-- paper_submission.py
 |   `-- paper.mjs
 |-- .vscode/settings.json
 |-- AGENTS.md
@@ -452,6 +453,8 @@ Root ([package.json](package.json)):
 | `npm run build:dev` | Repository root | Runs the frontend development build                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `npm run preview`   | Repository root | Serves the built frontend locally                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `npm run paper`     | Repository root | Compiles the manuscript [docs/paper/main.tex](docs/paper/main.tex), the supplement [docs/paper/supplementary.tex](docs/paper/supplementary.tex), and their wrappers to six PDFs in `docs/paper` (manuscript, supplement, both anonymised, title page, no references), building each manuscript and supplement pair twice so their cross-references resolve, with Tectonic (`docs/tectonic.exe` on Windows, `tectonic` on PATH or `$TECTONIC` elsewhere). Fails on errors, undefined references or citations, overfull boxes, and BibTeX warnings |
+
+Journal upload packages: `.venv/Scripts/python.exe scripts/paper_submission.py` (repository root, after `npm run paper`) writes the IEEE Transactions on Games upload set to the Git-ignored `submission/` folder, one subfolder per portal field: the double-anonymised manuscript LaTeX zip with a preview PDF, the title page and conflict-of-interest statement as Word files, the anonymised supplement PDF, and its LaTeX zip. Each zip is compiled with Tectonic before it is written, and the script fails if a source or PDF still names an author, the institution, the GitHub repository or a commit hash, or if the manuscript exceeds 10 pages.
 
 Backend:
 

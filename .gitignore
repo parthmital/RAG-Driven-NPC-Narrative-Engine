@@ -91,6 +91,9 @@ coverage/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# Journal upload packages (scripts/paper_submission.py)
+submission/
+
 # LaTeX build artefacts (docs/paper/main.pdf is the tracked output)
 docs/paper/*.aux
 # The manuscript and supplement read each other's labels (xr-hyper), so these four .aux files

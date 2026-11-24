@@ -13,6 +13,7 @@ Last verified: 2026-11-17.
 - Frontend: `npm --prefix Frontend run format`, `typecheck`, `lint`, `test`, `build`.
 - Notebook backend bundle: `.venv/Scripts/python.exe scripts/notebook_bundle.py` (rewrite) or `--check`.
 - Paper, all six PDFs (manuscript, supplement, variants): `npm run paper`.
+- Journal upload packages (anonymised LaTeX zips, title page, conflict of interest) into the Git-ignored `submission/`: `.venv/Scripts/python.exe scripts/paper_submission.py`.
 
 ## Conventions
 
